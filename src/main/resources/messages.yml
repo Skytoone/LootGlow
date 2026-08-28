@@ -1,0 +1,47 @@
+# +-------------------------------------------------------------------+
+# |                        LootGlow Messages                          |
+# +-------------------------------------------------------------------+
+# Format: MiniMessage (https://docs.advntr.dev/minimessage/format.html)
+
+prefix: "<gradient:#FFD700:#FFFFFF><bold>[LootGlow]</bold></gradient> <gray>» </gray>"
+
+no-permission: "<prefix><red>You don't have permission to do this!</red>"
+config-reloaded: "<prefix><green>Configuration and messages successfully reloaded!</green>"
+
+plugin-info:
+  - "<gradient:gold:white><bold>LootGlow</bold></gradient> <gray>v<version>"
+  - "<gray>Author: <white><author>"
+  - "<gray>Use <yellow>/lg help</yellow> to see commands."
+
+help-header: "<gold>--- <yellow>LootGlow Help</yellow> ---</gold>"
+help-reload: "<yellow>/lg reload <gray>- <white>Reload the plugin configuration"
+help-toggle: "<yellow>/lg toggle <gray>- <white>Toggle item visuals for yourself"
+help-magnet: "<yellow>/lg magnet <gray>- <white>Toggle item magnet for yourself"
+
+toggle-on: "<prefix><green>Item visuals have been enabled for you.</green>"
+toggle-off: "<prefix><red>Item visuals have been disabled for you.</red>"
+
+magnet-on: "<prefix><green>Item magnet has been enabled for you.</green>"
+magnet-off: "<prefix><red>Item magnet has been disabled for you.</red>"
+
+# Hologram Format
+# Use <amount> for the quantity
+item-amount-format: " <gray>(x<amount>)</gray>"
+# Use <time> for seconds remaining
+item-timer-format: " <gray>(<time>s)</gray>"
+
+# Loot Protection Format
+# Use <owner> for the player's name
+# Supports PlaceholderAPI (e.g. %player_level%)
+owner-format: "<newline><gray>Owned by</gray> <white><owner></white>"
+
+visuals-hidden: "<prefix><red>Visuals disabled (Performance Mode ON)</red>"
+visuals-shown: "<prefix><green>Visuals enabled (Performance Mode OFF)</green>"
+bundle-format: "<gradient:gold:white>[Loot Bag]</gradient> <gray>(x<count> items)</gray>"
+
+# Announcements (optional)
+legendary-found: "<prefix><gradient:#FFD700:#FFAA00><bold>LEGENDARY!</bold></gradient> <white>A precious item has been discovered nearby!</white>"
+
+# Pickup Protection
+cannot-pickup: "<prefix><red>This item belongs to <white><owner></white>! Try again in <white><time>s</white>.</red>"
+inventory-full: "<prefix><red>Your inventory is full!</red>"

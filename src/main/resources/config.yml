@@ -1,0 +1,325 @@
+# +-------------------------------------------------------------------+
+# |                         LootGlow Config                           |
+# +-------------------------------------------------------------------+
+
+settings:
+  enabled: true
+  only-player-drops: false
+  
+  # Default Minecraft is 300 seconds (5 minutes)
+  despawn-time: 300
+  
+  # Global glow setting for items without a category
+  default-glow: true
+  
+  # Check for updates on startup
+  check-updates: true
+  
+  # Automatically sync config.yml with new default options from plugin updates.
+  # Set to false if you want to write custom YAML comments and prevent auto-updates from rewriting your config.
+  auto-update-config: true
+  
+  # Enable debug mode for troubleshooting
+  debug: false
+  
+  # World filtering system
+  worlds:
+    # Mode can be:
+    # BLACKLIST - The plugin is active everywhere EXCEPT in these worlds.
+    # WHITELIST - The plugin is ONLY active in these worlds.
+    mode: "BLACKLIST"
+    list:
+      - "creative_world"
+      - "lobby"
+
+  holograms:
+    enabled: true
+    height-offset: 0.7
+    # Forward/backward offset for holograms relative to the beam (e.g. 0.2)
+    front-offset: 0.0
+    see-through: false
+    background: false
+    # Distance (in blocks) at which the hologram becomes visible
+    view-distance: 15.0
+    # Show the amount if item is stacked (e.g. x32)
+    show-amount: true
+    # Show a countdown before the item despawns (e.g. 45s)
+    show-timer: true
+    # Show the timer on a new line below the item name
+    timer-on-new-line: true
+    # If true, holograms will NOT be displayed for items that don't belong to any category
+    hide-uncategorized: false
+
+  # --- Economy Support ---
+  # Automatically detect money drops from other plugins (PDC tags)
+  economy:
+    enabled: true
+    # Format of the hologram for money drops (<amount> is replaced by the value)
+    format: "<prefix><amount>"
+    prefix: "&a$&f"
+    color: "GOLD"
+    # Sound played when a player gets close to a money drop
+    sound: "ENTITY_EXPERIENCE_ORB_PICKUP"
+    # List of PDC keys to scan for money amounts (format: namespace:key)
+    # Common keys are already included in internal detection
+    custom-keys:
+      - "economyshopgui:value"
+      - "money:amount"
+      - "tne:value"
+      - "moneydrops:value"
+
+  # WorldGuard Support
+  worldguard:
+    enabled: true
+    # Regions where LootGlow visuals are DISABLED
+    blocked-regions:
+      - "spawn"
+      - "market"
+      - "pvp-arena"
+
+  lighting:
+    enabled: true
+    update-interval: 5 # Ticks between light updates
+    
+  # Advanced Performance Settings
+  performance:
+    lod:
+      enabled: true
+      hologram-distance: 24.0 # Hide holograms if further than this
+      beam-distance: 48.0     # Hide beams if further than this
+      particle-distance: 32.0 # Don't spawn particles if no player is nearby
+    update-interval: 20 # Ticks between LOD checks
+    
+  # Magnet Mode (Auto-pickup for VIPs)
+  magnet:
+    enabled: true
+    distance: 5.0 # Max distance to attract items
+    permission: "lootglow.magnet"
+    categories-enabled: ["legendary", "epic", "rare"] # Which categories are attracted
+    # If false, magnet will NOT attract items that belong to a loot group
+    enable-for-groups: false
+    
+  # Loot Grouping (Avoid hologram clutter in mob grinders)
+  grouping:
+    enabled: true
+    radius: 2.0 # Search radius for grouping
+    min-items: 5 # Minimum items to form a group
+    # If true, only items of the same category are grouped together
+    group-by-category: true
+    # --- Visual Loot Bag ---
+    visual:
+      enabled: true
+      # Material to use for the loot bag (e.g. BUNDLE, CHEST, PLAYER_HEAD)
+      material: "PLAYER_HEAD"
+      # Base64 Texture for PLAYER_HEAD (only used if material is PLAYER_HEAD)
+      # Default: A nice brown loot bag
+      head-texture: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYjY4ZWEzYzE2N2IxYjk0ZWRhM2RkMWFmYmZlZDRiZGRkYWQ4MTlmYTRiNmY1YTE5MjU5ZWY2Y2FmNGFmMmU2In19fQ=="
+      # If true and material is PLAYER_HEAD, use the skin of the player who dropped the item
+      use-owner-head: false
+      custom-model-data: 0
+    # --- Loot Container GUI ---
+    container:
+      enabled: true
+      # Title of the loot menu (MiniMessage supported)
+      title: "<gradient:gold:white>[Contenu du Butin]</gradient>"
+      # If true, players must right-click to open the menu (walking over still works if disabled)
+      require-click: true
+
+  # Farming Highlights (Show '!' when crops are ready)
+  farming:
+    enabled: true
+    glow-color: "GREEN"
+    # Material for the symbol display (MUST be a block material like EMERALD_BLOCK, GOLD_BLOCK, DIAMOND_BLOCK)
+    symbol-material: "EMERALD_BLOCK"
+    symbol-scale: 0.2 # Grosseur du symbole (0.2 par défaut)
+    height-offset: 1.5
+    animation: true # Gentle rotation and bobbing
+    view-distance: 5.0
+    crops:
+      - WHEAT
+      - CARROTS
+      - POTATOES
+      - BEETROOTS
+      - NETHER_WART
+      - COCOA
+      - NETHER_WART
+
+  # RPG Drops (Lay items flat on the ground)
+  rpg-drops:
+    enabled: true
+    # Categories that will be laid flat on the ground (empty = all)
+    enabled-categories: []
+    # Rotation angle (90.0 for perfectly flat)
+    rotation-angle: 90.0
+    # Custom scales for item visuals
+    item-scale: 0.6
+    block-scale: 0.8
+    # Materials/blocks that will be forced to lie FLAT on the ground (even if they are blocks)
+    # Default includes CAKE, CHAIN, CANDLE, END_CRYSTAL so they lie flat like food items
+    force-flat-materials:
+      - "CAKE"
+      - "CHAIN"
+      - "CANDLE"
+      - "END_CRYSTAL"
+    # Materials that will be forced to stay UPRIGHT (vertical)
+    force-upright-materials: []
+    # --- Dynamic Shadows (Visual Depth) ---
+    # Adds a small semi-transparent shadow under the item for a realistic 3D feel.
+    shadows:
+      enabled: true
+      # Grosseur de l'ombre (0.4 par défaut)
+      scale: 0.4
+    
+  # Loot Protection Display (Show owner name for a few seconds)
+  loot-protection:
+    enabled: true
+    # Duration (in seconds) during which the owner's name is displayed
+    display-duration: 10
+    # NEW: Hard lock - prevents other players from picking up the item during the duration
+    hard-lock: true
+    # Bypass permission for admins
+    bypass-permission: "lootglow.bypass.lock"
+
+  # NEW: Visual Beams for high rarity items
+  beams:
+    enabled: true
+    # Height of the beam in blocks (approximate)
+    height: 10
+    # Width of the beam (default 0.05 for a thin line)
+    width: 0.05
+    # Which categories should have a beam?
+    enabled-categories:
+      - "legendary"
+      - "epic"
+    # Animate the beam (rotation)
+    animate: true
+    # Use the category's color for the beam glass (instead of white)
+    use-category-color: true
+
+  particles:
+    enabled: true
+    frequency: 10
+    # Animation pattern for particles:
+    # STILL  - Particles float around the item (Default)
+    # CIRCLE - Particles orbit the item in a horizontal circle
+    # SPIRAL - Particles rise in a spiral around the item
+    animation-type: "STILL"
+    # Size of particles (Works for DUST, REDSTONE, etc.)
+    # Default is 1.0
+    size: 1.0
+    
+  # NEW: Spawn Animation (The "Pop" effect)
+  spawn-animation:
+    enabled: true
+    # Small jump when item appears
+    jump-force: 0.25
+    # Amount of particles in the explosion
+    burst-amount: 15
+    # Bouncing physics when landing
+    bouncing:
+      enabled: true
+      max-bounces: 3
+      # How much force is kept after each bounce (0.0 to 1.0)
+      damping: 0.6
+      # Set to true if bouncing should ONLY happen on snow blocks
+      only-on-snow: false
+      # Blocks on which bouncing is disabled (e.g. grass)
+      blocked-blocks:
+        - "GRASS_BLOCK"
+        - "SHORT_GRASS"
+        - "TALL_GRASS"
+
+  # NEW: Aspiration Animation (Fly to player on pickup)
+  aspiration:
+    enabled: true
+    # Speed factor (0.1 to 0.5 recommended)
+    speed: 0.15
+
+  # NEW: Interaction settings
+  interaction:
+    rmb-pickup:
+      # If enabled, players can right-click an item (or its hologram) to pick it up
+      enabled: true
+      # If true, players MUST right-click to pick up (walking over items is disabled)
+      force: false
+      # Maximum distance to right-click
+      range: 3.0
+      # Allow right-click pickup on grouped items (false = force GUI opening on groups)
+      enable-for-groups: false
+
+  # MythicMobs Integration
+  mythicmobs:
+    # If true, tags individual item stacks dropped by MythicMobs with source mob metadata
+    tag-itemstack: false
+
+default-color: "WHITE"
+
+# categories configuration
+# You can use Material names (DIAMOND) 
+# OR Custom IDs from various plugins using the prefixes below:
+# - ORAXEN:itemID
+# - ITEMSADDER:itemID
+# - NEXO:itemID
+# - MYTHIC:itemID
+# - ADVANCEDITEMS:itemID
+# - ITEMEDIT:itemID
+# - MMOITEMS:itemType:itemID
+# - ECOITEMS:itemID
+# - MYTHICDROPS:tierID
+categories:
+  legendary:
+    color: "GOLD"
+    glow: true
+    particle: "FLAME"
+    sound: "BLOCK_AMETHYST_BLOCK_CHIME"
+    light-level: 15
+    items:
+      - "NETHERITE_INGOT"
+      - "NETHERITE_SCRAP"
+      - "ENCHANTED_GOLDEN_APPLE"
+      - "ELYTRA"
+      - "NETHER_STAR"
+      - "TOTEM_OF_UNDYING"
+      # --- Custom Items Examples ---
+      - "ORAXEN:legendary_sword"
+      - "ITEMSADDER:ruby_sword"
+      - "NEXO:mythic_blade"
+      - "MYTHIC:Excalibur"
+    display-names:
+      "NETHERITE_INGOT": "<gradient:red:gold>Lingot Divin</gradient>"
+      "MYTHIC:Excalibur": "<gradient:gold:white>Excalibur</gradient>"
+  epic:
+    color: "LIGHT_PURPLE"
+    glow: true
+    particle: "WITCH_PELLETS"
+    sound: "BLOCK_AMETHYST_BLOCK_STEP"
+    items:
+      - "DIAMOND"
+      - "DIAMOND_BLOCK"
+      - "DRAGON_EGG"
+      - "DRAGON_BREATH"
+      - "EXPERIENCE_BOTTLE"
+      # --- Custom Items Examples ---
+      - "ORAXEN:mithril_ingot"
+      - "ITEMSADDER:amethyst_cluster_custom"
+      - "NEXO:silver_coin"
+  rare:
+    color: "AQUA"
+    glow: true
+    particle: "END_ROD"
+    sound: "ENTITY_EXPERIENCE_ORB_PICKUP"
+    items:
+      - "EMERALD"
+      - "EMERALD_BLOCK"
+      - "GOLD_INGOT"
+      - "GOLD_BLOCK"
+      - "GOLDEN_APPLE"
+  uncommon:
+    color: "GREEN"
+    glow: true
+    particle: "VILLAGER_HAPPY"
+    items:
+      - "IRON_INGOT"
+      - "IRON_BLOCK"
+      - "LAPIS_LAZULI"
+      - "AMETHYST_SHARD"

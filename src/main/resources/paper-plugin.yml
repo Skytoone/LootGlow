@@ -1,0 +1,42 @@
+name: LootGlow
+version: '${project.version}'
+main: fr.skynex.lootglow.LootGlow
+api-version: '1.21'
+folia-supported: true
+author: Skynex
+authors: [Skynex]
+website: 'https://www.spigotmc.org/resources/134648'
+description: Items on the ground glow with custom colors!
+prefix: LootGlow
+
+dependencies:
+  server:
+    PlaceholderAPI:
+      load: BEFORE
+      required: false
+    WorldGuard:
+      load: BEFORE
+      required: false
+    MythicMobs:
+      load: BEFORE
+      required: false
+    ProtocolLib:
+      load: BEFORE
+      required: false
+    packetevents:
+      load: BEFORE
+      required: true
+
+permissions:
+  lootglow.admin:
+    description: Allows reloading the configuration and seeing plugin info.
+    default: op
+  lootglow.magnet:
+    description: Allows using the item magnet feature.
+    default: true
+  lootglow.toggle:
+    description: Allows toggling item visuals for yourself.
+    default: true
+  lootglow.bypass.lock:
+    description: Allows picking up items owned by other players.
+    default: op

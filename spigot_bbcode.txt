@@ -1,0 +1,371 @@
+[CENTER]
+[SIZE=7][B][COLOR=#FFD700]LOOT[/COLOR][COLOR=#D3D3D3]GLOW[/COLOR][/B][/SIZE]
+[SIZE=3][COLOR=#888888]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/COLOR][/SIZE]
+[SIZE=4][COLOR=#CCCCCC]The Ultimate RPG-Style Item Visuals for Modern Servers[/COLOR][/SIZE]
+[SIZE=3][COLOR=#888888]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/COLOR][/SIZE]
+
+[SIZE=4][COLOR=#D3D3D3]LootGlow brings a professional, RPG-like feel to your Minecraft server by adding subtle glow effects, holographic labels, and 3D flat-item rendering. Perfectly optimized for [B]1.21.4+[/B].[/COLOR][/SIZE]
+
+[/CENTER]
+
+[LEFT]
+[SIZE=5][B][COLOR=#FFD700]✨  CORE FEATURES[/COLOR][/B][/SIZE]
+[COLOR=#888888]────────────────────────────────────────────────────[/COLOR]
+
+[LIST]
+[*][B][COLOR=#FFD700]Dynamic Shadows[/COLOR][/B] [COLOR=#AAAAAA]— Adds subtle semi-transparent 3D shadows under items for incredible depth.[/COLOR]
+[*][B][COLOR=#FFD700]Inter-dimensional Support[/COLOR][/B] [COLOR=#AAAAAA]— Glows and holograms persist perfectly through portals.[/COLOR]
+[*][B][COLOR=#FFD700]Economy Integration[/COLOR][/B] [COLOR=#AAAAAA]— Automatic detection of money drops with specialized holograms.[/COLOR]
+[*][B][COLOR=#FFD700]RPG Visuals[/COLOR][/B] [COLOR=#AAAAAA]— Items lay flat on the ground with custom scale and rotation.[/COLOR]
+[*][B][COLOR=#FFD700]Despawn Timer[/COLOR][/B] [COLOR=#AAAAAA]— Live countdown on holograms before item disappearance.[/COLOR]
+[*][B][COLOR=#FFD700]Farming Highlights[/COLOR][/B] [COLOR=#AAAAAA]— Shows a '!' symbol above fully grown crops for better visibility. Fully integrated with custom WorldGuard flags.[/COLOR]
+[*][B][COLOR=#FFD700]VIP Magnet[/COLOR][/B] [COLOR=#AAAAAA]— Auto-pickup feature for high-rarity items (toggleable by players).[/COLOR]
+[*][B][COLOR=#FFD700]Loot Protection[/COLOR][/B] [COLOR=#AAAAAA]— Hard-lock protection and owner labels for valuable drops, visible for a configurable duration.[/COLOR]
+[*][B][COLOR=#FFD700]Grouping System[/COLOR][/B] [COLOR=#AAAAAA]— Avoids hologram clutter in mob grinders by bundling identical items.[/COLOR]
+[*][B][COLOR=#FFD700]Loot Container GUI[/COLOR][/B] [COLOR=#AAAAAA]— Right-click grouped items to browse their content.[/COLOR]
+[*][B][COLOR=#FFD700]Custom Items Support[/COLOR][/B] [COLOR=#AAAAAA]— Native support for Oraxen, ItemsAdder, Nexo, MythicMobs and more.[/COLOR]
+[*][B][COLOR=#FFD700]WorldGuard Support[/COLOR][/B] [COLOR=#AAAAAA]— Disable general visuals in specific regions, or selectively toggle crop farming highlights via the custom `lootglow-farming` flag.[/COLOR]
+[*][B][COLOR=#FFD700]Personal Toggle[/COLOR][/B] [COLOR=#AAAAAA]— Players can hide visuals using /lg toggle.[/COLOR]
+[*][B][COLOR=#FFD700]Ultra-Smooth Holograms[/COLOR][/B] [COLOR=#AAAAAA]— 100% jitter-free movement using Display Entities.[/COLOR]
+[*][B][COLOR=#FFD700]Beacon Beams[/COLOR][/B] [COLOR=#AAAAAA]— Vertical light beams for legendary and epic loot.[/COLOR]
+[*][B][COLOR=#FFD700]Spawn Animations[/COLOR][/B] [COLOR=#AAAAAA]— Items "pop" with a jump and particle burst.[/COLOR]
+[*][B][COLOR=#FFD700]Bouncing & Aspiration[/COLOR][/B] [COLOR=#AAAAAA]— Items bounce on ground and fly to player on pickup.[/COLOR]
+[*][B][COLOR=#FFD700]Ultra Optimized[/COLOR][/B] [COLOR=#AAAAAA]— Zero lag with built-in LOD (Level Of Detail) system.[/COLOR]
+[*][B][COLOR=#FFD700]Standalone[/COLOR][/B] [COLOR=#AAAAAA]— No dependencies required. Ready to use out of the box.[/COLOR]
+[/LIST]
+
+[SIZE=3] [/SIZE]
+
+[SIZE=5][B][COLOR=#FFD700]💎  WHY CHOOSE LOOTGLOW?[/COLOR][/B][/SIZE]
+[COLOR=#888888]────────────────────────────────────────────────────[/COLOR]
+
+[LIST]
+[*][B][COLOR=#FFFFFF]The Most Immersive Experience[/COLOR][/B] [COLOR=#AAAAAA]— Unlike simple glowing plugins, LootGlow uses 3D physics, dynamic shadows, and smooth animations to make your items feel part of the world.[/COLOR]
+[*][B][COLOR=#FFFFFF]Industrial-Grade Performance[/COLOR][/B] [COLOR=#AAAAAA]— Designed for high-population servers. Our Level Of Detail (LOD) system ensures that thousands of items on the ground won't impact your TPS or your players' FPS.[/COLOR]
+[*][B][COLOR=#FFFFFF]Zero-Config Required[/COLOR][/B] [COLOR=#AAAAAA]— It works instantly. Drop it in, and your server is transformed. Advanced admins can still customize every single pixel and particle.[/COLOR]
+[/LIST]
+
+[SIZE=3] [/SIZE]
+
+[SIZE=5][B][COLOR=#FFD700]🔌  PLUG & PLAY INTEGRATIONS[/COLOR][/B][/SIZE]
+[COLOR=#888888]────────────────────────────────────────────────────[/COLOR]
+[COLOR=#AAAAAA]LootGlow speaks the language of your favorite plugins. No setup required for:[/COLOR]
+
+[CENTER]
+[SIZE=4][B][COLOR=#D3D3D3]● Oraxen  ●  ItemsAdder  ●  Nexo  ●  MythicMobs  ●  MMOItems  ●  EcoItems  ●  PlaceholderAPI  ●  WorldGuard[/COLOR][/B][/SIZE]
+[/CENTER]
+
+[SIZE=3] [/SIZE]
+
+[SIZE=5][B][COLOR=#FFD700]🛠️  COMMANDS[/COLOR][/B][/SIZE]
+[COLOR=#888888]────────────────────────────────────────────────────[/COLOR]
+
+[TABLE]
+[TR]
+[TD][B][COLOR=#FFD700]/lg[/COLOR][/B][/TD]
+[TD][COLOR=#AAAAAA]Plugin information[/COLOR][/TD]
+[/TR]
+[TR]
+[TD][B][COLOR=#FFD700]/lg help[/COLOR][/B][/TD]
+[TD][COLOR=#AAAAAA]List available commands[/COLOR][/TD]
+[/TR]
+[TR]
+[TD][B][COLOR=#FFD700]/lg toggle[/COLOR][/B][/TD]
+[TD][COLOR=#AAAAAA]Hide visuals for yourself[/COLOR][/TD]
+[/TR]
+[TR]
+[TD][B][COLOR=#FFD700]/lg magnet[/COLOR][/B][/TD]
+[TD][COLOR=#AAAAAA]Toggle your personal item magnet[/COLOR][/TD]
+[/TR]
+[TR]
+[TD][B][COLOR=#FFD700]/lg reload[/COLOR][/B][/TD]
+[TD][COLOR=#AAAAAA]Reload configuration (requires lootglow.admin)[/COLOR][/TD]
+[/TR]
+[/TABLE]
+
+[SIZE=3] [/SIZE]
+
+[SIZE=5][B][COLOR=#FFD700]📄  CONFIGURATION[/COLOR][/B][/SIZE]
+[COLOR=#888888]────────────────────────────────────────────────────[/COLOR]
+[COLOR=#AAAAAA]The plugin generates a fully-commented [B]config.yml[/B] on first launch. Below is an overview of the available options:[/COLOR]
+
+[SIZE=3] [/SIZE]
+
+[CODE=yaml]
+# +-------------------------------------------------------------------+
+# |                         LootGlow Config                           |
+# +-------------------------------------------------------------------+
+
+settings:
+  enabled: true
+  only-player-drops: false
+  
+  # Default Minecraft is 300 seconds (5 minutes)
+  despawn-time: 300
+  
+  # Global glow setting for items without a category
+  default-glow: true
+  
+  # Check for updates on startup
+  check-updates: true
+  
+  # Enable debug mode for troubleshooting
+  debug: false
+  
+  # List of worlds where the plugin is DISABLED
+  disabled-worlds:
+    - "creative_world"
+    - "lobby"
+
+  holograms:
+    enabled: true
+    height-offset: 0.7
+    see-through: false
+    background: false
+    # Distance (in blocks) at which the hologram becomes visible
+    view-distance: 15.0
+    # Show the amount if item is stacked (e.g. x32)
+    show-amount: true
+    # Show a countdown before the item despawns (e.g. 45s)
+    show-timer: true
+    # Show the timer on a new line below the item name
+    timer-on-new-line: true
+
+  # --- Economy Support ---
+  # Automatically detect money drops from other plugins (PDC tags)
+  economy:
+    enabled: true
+    # Format of the hologram for money drops (<amount> is replaced by the value)
+    format: "<prefix><amount>"
+    prefix: "&a$&f"
+    color: "GOLD"
+    # Sound played when a player gets close to a money drop
+    sound: "ENTITY_EXPERIENCE_ORB_PICKUP"
+    # List of PDC keys to scan for money amounts (format: namespace:key)
+    # Common keys are already included in internal detection
+    custom-keys:
+      - "economyshopgui:value"
+      - "money:amount"
+      - "tne:value"
+      - "moneydrops:value"
+
+  # WorldGuard Support
+  worldguard:
+    enabled: true
+    # Regions where LootGlow visuals are DISABLED
+    blocked-regions:
+      - "spawn"
+      - "market"
+      - "pvp-arena"
+
+  lighting:
+    enabled: true
+    update-interval: 5 # Ticks between light updates
+    
+  # Advanced Performance Settings
+  performance:
+    lod:
+      enabled: true
+      hologram-distance: 24.0 # Hide holograms if further than this
+      beam-distance: 48.0     # Hide beams if further than this
+      particle-distance: 32.0 # Don't spawn particles if no player is nearby
+    update-interval: 20 # Ticks between LOD checks
+    
+  # Magnet Mode (Auto-pickup for VIPs)
+  magnet:
+    enabled: true
+    distance: 5.0 # Max distance to attract items
+    permission: "lootglow.magnet"
+    categories-enabled: ["legendary", "epic", "rare"] # Which categories are attracted
+    
+  # Loot Grouping (Avoid hologram clutter in mob grinders)
+  grouping:
+    enabled: true
+    radius: 2.0 # Search radius for grouping
+    min-items: 5 # Minimum items to form a group
+    # If true, only items of the same category are grouped together
+    group-by-category: true
+    # --- Visual Loot Bag ---
+    visual:
+      enabled: true
+      # Material to use for the loot bag (e.g. BUNDLE, CHEST, PLAYER_HEAD)
+      material: "PLAYER_HEAD"
+      # Base64 Texture for PLAYER_HEAD (only used if material is PLAYER_HEAD)
+      head-texture: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYjY4ZWEzYzE2N2IxYjk0ZWRhM2RkMWFmYmZlZDRiZGRkYWQ4MTlmYTRiNmY1YTE5MjU5ZWY2Y2FmNGFmMmU2In19fQ=="
+      # If true and material is PLAYER_HEAD, use the skin of the player who dropped the item
+      use-owner-head: false
+      custom-model-data: 0
+    # --- Loot Container GUI ---
+    container:
+      enabled: true
+      # Title of the loot menu (MiniMessage supported)
+      title: "<gradient:gold:white>[Contenu du Butin]</gradient>"
+      # If true, players must right-click to open the menu (walking over still works if disabled)
+      require-click: true
+
+  # Farming Highlights (Show '!' when crops are ready)
+  farming:
+    enabled: true
+    glow-color: "GREEN"
+    symbol-material: "EMERALD_BLOCK"
+    symbol-scale: 0.2 # Grosseur du symbole (0.2 par défaut)
+    height-offset: 1.5
+    animation: true # Gentle rotation and bobbing
+    view-distance: 5.0
+    crops:
+      - WHEAT
+      - CARROTS
+      - POTATOES
+      - BEETROOTS
+      - NETHER_WART
+      - COCOA
+
+  # RPG Drops (Lay items flat on the ground)
+  rpg-drops:
+    enabled: true
+    # Categories that will be laid flat on the ground (empty = all)
+    enabled-categories: []
+    # Rotation angle (90.0 for perfectly flat)
+    rotation-angle: 90.0
+    # Custom scale for the item visual
+    scale: 0.8
+    
+    # --- Dynamic Shadows (Visual Depth) ---
+    # Adds a small semi-transparent shadow under the item for a realistic 3D feel.
+    shadows:
+      enabled: true
+      # Grosseur de l'ombre (0.4 par défaut)
+      scale: 0.4
+    
+  # Loot Protection Display (Show owner name for a few seconds)
+  loot-protection:
+    enabled: true
+    # Duration (in seconds) during which the owner's name is displayed
+    display-duration: 10
+    # Hard lock - prevents other players from picking up the item during the duration
+    hard-lock: true
+    # Bypass permission for admins
+    bypass-permission: "lootglow.bypass.lock"
+
+  # Visual Beams for high rarity items
+  beams:
+    enabled: true
+    # Height of the beam in blocks (approximate)
+    height: 10
+    # Width of the beam (default 0.05 for a thin line)
+    width: 0.05
+    # Which categories should have a beam?
+    enabled-categories:
+      - "legendary"
+      - "epic"
+    # Animate the beam (rotation)
+    animate: true
+    # Use the category's color for the beam glass (instead of white)
+    use-category-color: true
+
+  particles:
+    enabled: true
+    frequency: 10
+    
+  # Spawn Animation (The "Pop" effect)
+  spawn-animation:
+    enabled: true
+    # Small jump when item appears
+    jump-force: 0.25
+    # Amount of particles in the explosion
+    burst-amount: 15
+    # Bouncing physics when landing
+    bouncing:
+      enabled: true
+      max-bounces: 3
+      # How much force is kept after each bounce (0.0 to 1.0)
+      damping: 0.6
+
+  # Aspiration Animation (Fly to player on pickup)
+  aspiration:
+    enabled: true
+    # Speed factor (0.1 to 0.5 recommended)
+    speed: 0.15
+
+  # Interaction settings
+  interaction:
+    rmb-pickup:
+      # If enabled, players can right-click an item (or its hologram) to pick it up
+      enabled: true
+      # If true, players MUST right-click to pick up (walking over items is disabled)
+      force: false
+      # Maximum distance to right-click
+      range: 3.0
+
+default-color: "WHITE"
+
+# categories configuration
+# You can use Material names (DIAMOND) 
+# OR Custom IDs from various plugins using the prefixes below:
+# - ORAXEN:itemID
+# - ITEMSADDER:itemID
+# - NEXO:itemID
+# - MYTHIC:itemID
+# - ADVANCEDITEMS:itemID
+# - ITEMEDIT:itemID
+# - MMOITEMS:type:id
+# - ECOITEMS:itemID
+categories:
+  legendary:
+    color: "GOLD"
+    glow: true
+    particle: "FLAME"
+    sound: "BLOCK_AMETHYST_BLOCK_CHIME"
+    light-level: 15
+    items:
+      - "NETHERITE_INGOT"
+      - "NETHERITE_SCRAP"
+      - "ENCHANTED_GOLDEN_APPLE"
+      - "ELYTRA"
+      - "NETHER_STAR"
+      - "TOTEM_OF_UNDYING"
+      # --- Custom Items Examples ---
+      - "ORAXEN:legendary_sword"
+      - "ITEMSADDER:ruby_sword"
+      - "NEXO:mythic_blade"
+      - "MYTHIC:Excalibur"
+    display-names:
+      "NETHERITE_INGOT": "<gradient:red:gold>Lingot Divin</gradient>"
+      "MYTHIC:Excalibur": "<gradient:gold:white>Excalibur</gradient>"
+  epic:
+    color: "LIGHT_PURPLE"
+    glow: true
+    particle: "WITCH_PELLETS"
+    sound: "BLOCK_AMETHYST_BLOCK_STEP"
+    items:
+      - "DIAMOND"
+      - "DIAMOND_BLOCK"
+      - "DRAGON_EGG"
+      - "DRAGON_BREATH"
+      - "EXPERIENCE_BOTTLE"
+      # --- Custom Items Examples ---
+      - "ORAXEN:mithril_ingot"
+      - "ITEMSADDER:amethyst_cluster_custom"
+      - "NEXO:silver_coin"
+  rare:
+    color: "AQUA"
+    glow: true
+    particle: "END_ROD"
+    sound: "ENTITY_EXPERIENCE_ORB_PICKUP"
+    items:
+      - "EMERALD"
+      - "EMERALD_BLOCK"
+      - "GOLD_INGOT"
+      - "GOLD_BLOCK"
+      - "GOLDEN_APPLE"
+[/CODE]
+
+[/LEFT]
+
+[CENTER]
+[SIZE=3][COLOR=#888888]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/COLOR][/SIZE]
+[SIZE=3][COLOR=#AAAAAA]Questions? Suggestions? Join us on Discord![/COLOR][/SIZE]
+[SIZE=3][COLOR=#888888]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/COLOR][/SIZE]
+
+[URL='https://discord.gg/ycxRfd44fm'][IMG]https://image.noelshack.com/fichiers/2026/19/2/1778002404-universal-banner-edited-final-177800224786112.png[/IMG][/URL]
+[/CENTER]

@@ -1,0 +1,8 @@
+name: LootGlow
+version: '${project.version}'
+main: fr.skynex.lootglow.LootGlow
+api-version: '1.20'
+folia-supported: true
+author: Skynex
+description: Items on the ground glow with custom colors!
+softdepend: [PlaceholderAPI, WorldGuard, MythicMobs, ProtocolLib, packetevents]
