@@ -4325,4 +4325,80 @@ public class LootGlow extends JavaPlugin implements org.bukkit.event.Listener, f
             hiddenVisuals.remove(player.getUniqueId());
         }
     }
+
+    @Override
+    public void setParticleEffect(@NotNull Item item, @Nullable Particle particle) {
+        if (item == null || !item.isValid()) return;
+        itemParticlesCache.put(item.getUniqueId(), particle);
+    }
+
+    @Override
+    public void clearParticleEffect(@NotNull Item item) {
+        if (item == null || !item.isValid()) return;
+        itemParticlesCache.remove(item.getUniqueId());
+    }
+
+    @Override
+    public void setDropSound(@NotNull Item item, @Nullable Sound sound, float volume, float pitch) {
+        if (item == null || !item.isValid() || sound == null) return;
+        item.getWorld().playSound(item.getLocation(), sound, volume, pitch);
+    }
+
+    @Override
+    public void triggerPopAnimation(@NotNull Item item, double jumpVelocity) {
+        if (item == null || !item.isValid()) return;
+        item.setVelocity(new Vector(0, Math.max(0.1, jumpVelocity), 0));
+        item.getWorld().spawnParticle(Particle.FIREWORK, item.getLocation(), 15, 0.2, 0.2, 0.2, 0.05);
+    }
+
+    @Override
+    public void setBouncingEnabled(@NotNull Item item, boolean bouncing) {
+        if (item == null || !item.isValid()) return;
+        if (!bouncing) {
+            recentlyBounced.add(item.getUniqueId());
+        } else {
+            recentlyBounced.remove(item.getUniqueId());
+        }
+    }
+
+    @Override
+    public void setCropHighlight(@NotNull org.bukkit.block.Block cropBlock, boolean highlight) {
+        if (cropBlock == null) return;
+        if (highlight) {
+            if (!activeCropSymbols.containsKey(cropBlock)) {
+                activeCropSymbols.put(cropBlock, new CropSymbol(cropBlock.getLocation()));
+            }
+        } else {
+            CropSymbol symbol = activeCropSymbols.remove(cropBlock);
+            if (symbol != null) {
+                symbol.forEach(d -> { if (d != null && d.isValid()) d.remove(); });
+            }
+        }
+    }
+
+    @Override
+    public boolean isCropHighlighted(@NotNull org.bukkit.block.Block cropBlock) {
+        return cropBlock != null && activeCropSymbols.containsKey(cropBlock);
+    }
+
+    @Nullable
+    @Override
+    public String getItemCategory(@NotNull Item item) {
+        if (item == null) return null;
+        return itemCategoriesCache.get(item.getUniqueId());
+    }
+
+    @NotNull
+    @Override
+    public List<Item> getNearbyGlowingItems(@NotNull Location location, double radius) {
+        if (location == null || location.getWorld() == null) return List.of();
+        double radiusSq = radius * radius;
+        List<Item> result = new ArrayList<>();
+        for (Item item : location.getWorld().getEntitiesByClass(Item.class)) {
+            if (item.isValid() && item.isGlowing() && item.getLocation().distanceSquared(location) <= radiusSq) {
+                result.add(item);
+            }
+        }
+        return result;
+    }
 }
