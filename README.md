@@ -39,6 +39,62 @@ LootGlow seamlessly integrates out of the box with your favorite plugins:
 - **PlaceholderAPI**
 - **ProtocolLib** / **packetevents**
 
+## 📦 Developer Integration (LootGlow-API)
+
+Add `LootGlow-API` to your project using **JitPack**:
+
+### Maven (`pom.xml`)
+```xml
+<repositories>
+    <repository>
+        <id>jitpack.io</id>
+        <url>https://jitpack.io</url>
+    </repository>
+</repositories>
+
+<dependencies>
+    <dependency>
+        <groupId>com.github.Skytoone</groupId>
+        <artifactId>LootGlow-API</artifactId>
+        <version>1.6.1</version>
+        <scope>provided</scope>
+    </dependency>
+</dependencies>
+```
+
+### Gradle (`build.gradle`)
+```groovy
+repositories {
+    maven { url 'https://jitpack.io' }
+}
+
+dependencies {
+    compileOnly 'com.github.Skytoone:LootGlow-API:1.6.1'
+}
+```
+
+### 💻 API Example Usage
+```java
+import fr.skynex.lootglow.api.util.LootGlowHook;
+import org.bukkit.Color;
+
+public class MyPlugin {
+
+    public void applyGoldGlow(Item droppedItem) {
+        LootGlowHook.getAPI().ifPresent(api -> {
+            // Set custom glow color
+            api.setGlowColor(droppedItem, Color.fromRGB(255, 215, 0));
+
+            // Set custom hologram label
+            api.setCustomHologram(droppedItem, "<gold>⭐ Legendary Loot ⭐</gold>");
+
+            // Enable vertical beacon beam
+            api.setBeaconBeam(droppedItem, true);
+        });
+    }
+}
+```
+
 ---
 
 ## 🛠️ Commands & Permissions

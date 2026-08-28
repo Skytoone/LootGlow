@@ -71,11 +71,11 @@ public class PacketEventsProvider extends PacketListenerAbstract implements Pack
             if (!needsInvisible && !needsNoGlow)
                 return;
 
-            List<EntityData<?>> data = new ArrayList<>(wrapper.getEntityMetadata());
+            List<EntityData> data = new ArrayList<>(wrapper.getEntityMetadata());
             boolean modified = false;
             boolean foundIndex0 = false;
 
-            for (EntityData<?> val : data) {
+            for (EntityData val : data) {
                 if (val.getIndex() == 0) {
                     foundIndex0 = true;
                     byte flags = (byte) val.getValue();
@@ -83,7 +83,7 @@ public class PacketEventsProvider extends PacketListenerAbstract implements Pack
                         flags |= 0x20;
                     if (needsNoGlow)
                         flags &= ~0x40;
-                    ((EntityData<Byte>) val).setValue(flags);
+                    val.setValue(flags);
                     modified = true;
                 }
             }
@@ -92,7 +92,7 @@ public class PacketEventsProvider extends PacketListenerAbstract implements Pack
                 byte flags = 0x20;
                 if (needsNoGlow)
                     flags &= ~0x40;
-                data.add(new EntityData<>(0, EntityDataTypes.BYTE, flags));
+                data.add(new EntityData(0, EntityDataTypes.BYTE, flags));
                 modified = true;
             }
 

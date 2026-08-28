@@ -33,7 +33,7 @@ import java.sql.*;
 import java.util.*;
 import java.util.List;
 
-public class LootGlow extends JavaPlugin implements org.bukkit.event.Listener {
+public class LootGlow extends JavaPlugin implements org.bukkit.event.Listener, fr.skynex.lootglow.api.LootGlowAPI {
 
     private static final NamespacedKey ORAXEN_KEY = new NamespacedKey("oraxen", "id");
     private static final NamespacedKey ORAXEN_KEY_ALT = new NamespacedKey("oraxen", "item_id");
@@ -376,6 +376,9 @@ public class LootGlow extends JavaPlugin implements org.bukkit.event.Listener {
 
         getServer().getPluginManager().registerEvents(new fr.skynex.lootglow.listeners.LootContainerListener(this),
                 this);
+
+        // Register LootGlowAPI service provider
+        getServer().getServicesManager().register(fr.skynex.lootglow.api.LootGlowAPI.class, this, this, org.bukkit.plugin.ServicePriority.Normal);
 
         int pluginId = 30993;
         new org.bstats.bukkit.Metrics(this, pluginId);
@@ -4229,6 +4232,97 @@ public class LootGlow extends JavaPlugin implements org.bukkit.event.Listener {
                 }
             }
             return result;
+        }
+    }
+
+    // ==========================================
+    //            LootGlowAPI Implementation
+    // ==========================================
+
+    @Override
+    public void setGlowColor(@NotNull Item item, @NotNull Color color) {
+        if (item == null || !item.isValid() || color == null) return;
+        item.setGlowing(true);
+    }
+
+    @Override
+    public void resetGlowColor(@NotNull Item item) {
+        if (item == null || !item.isValid()) return;
+        applyGlow(item, true);
+    }
+
+    @Override
+    public void setCustomHologram(@NotNull Item item, @Nullable String text) {
+        if (item == null || !item.isValid()) return;
+        TextDisplay display = activeLabels.get(item.getUniqueId());
+        if (display != null && display.isValid()) {
+            if (text == null || text.isEmpty()) {
+                display.text(Component.empty());
+            } else {
+                display.text(MiniMessage.miniMessage().deserialize(text));
+            }
+        }
+    }
+
+    @Override
+    public void setBeaconBeam(@NotNull Item item, boolean enabled) {
+        if (item == null || !item.isValid()) return;
+        if (!enabled) {
+            BlockDisplay beam = activeBeams.remove(item.getUniqueId());
+            if (beam != null && beam.isValid()) beam.remove();
+        } else {
+            spawnBeam(item, null, defaultColor);
+        }
+    }
+
+    @Override
+    public void setLootProtection(@NotNull Item item, @NotNull UUID ownerUuid, long durationSeconds) {
+        if (item == null || !item.isValid() || ownerUuid == null) return;
+        item.setOwner(ownerUuid);
+        PersistentDataContainer pdc = item.getPersistentDataContainer();
+        pdc.set(new NamespacedKey(this, "owner"), PersistentDataType.STRING, ownerUuid.toString());
+        pdc.set(new NamespacedKey(this, "protect_until"), PersistentDataType.LONG, System.currentTimeMillis() + (durationSeconds * 1000L));
+    }
+
+    @Override
+    public boolean isMagnetEnabled(@NotNull Player player) {
+        return player != null && !disabledMagnets.contains(player.getUniqueId());
+    }
+
+    @Override
+    public void setMagnetEnabled(@NotNull Player player, boolean enabled) {
+        if (player == null) return;
+        if (enabled) {
+            disabledMagnets.remove(player.getUniqueId());
+        } else {
+            disabledMagnets.add(player.getUniqueId());
+        }
+    }
+
+    @Override
+    public void pullItemsToPlayer(@NotNull Player player, double radius) {
+        if (player == null || !player.isOnline()) return;
+        Location loc = player.getLocation();
+        double radiusSq = radius * radius;
+        for (Item item : player.getWorld().getEntitiesByClass(Item.class)) {
+            if (item.isValid() && item.getLocation().distanceSquared(loc) <= radiusSq) {
+                item.teleport(loc);
+            }
+        }
+    }
+
+    @Override
+    public boolean isVisualsHidden(@NotNull Player player) {
+        return player != null && hiddenVisuals.contains(player.getUniqueId());
+    }
+
+    @Override
+    public void setVisualsHidden(@NotNull Player player, boolean hidden) {
+        if (player == null) return;
+        if (hidden) {
+            hiddenVisuals.add(player.getUniqueId());
+        } else {
+            hiddenVisuals.remove(player.getUniqueId());
         }
     }
 }
