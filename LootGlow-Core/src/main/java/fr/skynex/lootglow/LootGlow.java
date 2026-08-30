@@ -87,7 +87,7 @@ public class LootGlow extends JavaPlugin implements org.bukkit.event.Listener, f
     private final Map<UUID, Set<UUID>> visibleEntities = new HashMap<>();
     private final Map<String, org.bukkit.Particle.DustOptions> categoryDustOptions = new HashMap<>();
     private org.bukkit.Particle.DustOptions defaultDustOptions;
-    private Set<UUID> globallyVisibleEntities = new HashSet<>();
+    private Set<UUID> globallyVisibleEntities = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     private static class SurfaceState {
         final double y;

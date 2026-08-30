@@ -6,7 +6,7 @@
 
     <groupId>fr.skynex</groupId>
     <artifactId>LootGlow-Parent</artifactId>
-    <version>1.6.1</version>
+    <version>1.6.2-beta1</version>
     <packaging>pom</packaging>
 
     <name>LootGlow-Parent</name>
@@ -66,8 +66,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.11.0</version>
                 <configuration>
-                    <source>21</source>
-                    <target>21</target>
+                    <release>21</release>
                 </configuration>
             </plugin>
         </plugins>
