@@ -45,6 +45,7 @@ public class LootContainerListener implements Listener {
         Item item = plugin.getActiveItems().get(itemUuid);
 
         if (item != null && item.isValid()) {
+            org.bukkit.Location oldLoc = item.getLocation().clone();
             ItemStack toAdd = item.getItemStack().clone();
             // Try to add to player inventory
             java.util.HashMap<Integer, ItemStack> leftovers = player.getInventory().addItem(toAdd);
@@ -63,6 +64,10 @@ public class LootContainerListener implements Listener {
                 } else {
                     if (slot == 0 && !members.isEmpty()) {
                         UUID newLeaderUuid = members.get(0);
+                        Item newLeaderItem = plugin.getActiveItems().get(newLeaderUuid);
+                        if (newLeaderItem != null && newLeaderItem.isValid() && oldLoc != null) {
+                            newLeaderItem.teleport(oldLoc);
+                        }
                         plugin.transferLeaderVisuals(leaderUuid, newLeaderUuid);
                         plugin.getOpenContainers().put(player.getUniqueId(), newLeaderUuid);
                     }

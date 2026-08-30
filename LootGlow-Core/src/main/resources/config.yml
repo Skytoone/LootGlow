@@ -35,7 +35,8 @@ settings:
   holograms:
     enabled: true
     height-offset: 0.7
-    # Forward/backward offset for holograms relative to the beam (e.g. 0.2)
+    # Forward offset applied in world-space so the hologram stays in front of the item,
+    # regardless of camera angle. This avoids beams covering hologram text. (e.g. 0.2)
     front-offset: 0.0
     see-through: false
     background: false
@@ -76,6 +77,11 @@ settings:
       - "spawn"
       - "market"
       - "pvp-arena"
+
+  # MythicMobs Support
+  mythicmobs:
+    # Tag MythicMobs dropped items with internal PDC tags for custom glow tracking
+    tag-itemstack: false
 
   lighting:
     enabled: true
@@ -246,11 +252,6 @@ settings:
       range: 3.0
       # Allow right-click pickup on grouped items (false = force GUI opening on groups)
       enable-for-groups: false
-
-  # MythicMobs Integration
-  mythicmobs:
-    # If true, tags individual item stacks dropped by MythicMobs with source mob metadata
-    tag-itemstack: false
 
 default-color: "WHITE"
 

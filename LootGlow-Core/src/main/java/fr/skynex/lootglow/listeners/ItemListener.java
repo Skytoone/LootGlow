@@ -252,10 +252,11 @@ public class ItemListener implements Listener {
         }
 
         if (targetItem != null) {
-            boolean isGroup = plugin.getGroupMembers().containsKey(targetItem.getUniqueId());
-            // Check if it's a group leader for the container GUI
+            UUID leaderUuid = plugin.getGroupLeader(targetItem.getUniqueId());
+            boolean isGroup = (leaderUuid != null);
+            // Check if it's a group item/leader for the container GUI
             if (plugin.isContainerEnabled() && isGroup) {
-                plugin.openLootContainer(player, targetItem.getUniqueId());
+                plugin.openLootContainer(player, leaderUuid);
                 event.setCancelled(true);
                 return;
             }

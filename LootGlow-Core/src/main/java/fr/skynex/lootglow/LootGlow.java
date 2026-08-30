@@ -2317,11 +2317,12 @@ public class LootGlow extends JavaPlugin implements org.bukkit.event.Listener, f
                                 }
                             }
                             visual.setItemStack(bag);
-                            visual.setItemDisplayTransform(org.bukkit.entity.ItemDisplay.ItemDisplayTransform.HEAD);
+                            visual.setItemDisplayTransform(org.bukkit.entity.ItemDisplay.ItemDisplayTransform.FIXED);
                             // Adjust transformation for upright bag
                             org.bukkit.util.Transformation t = visual.getTransformation();
                             t.getLeftRotation().set(new org.joml.Quaternionf()); // Upright
-                            t.getTranslation().set(0f, 0.25f, 0f); // Elevate above ground
+                            t.getTranslation().set(0f, 0.05f, 0f); // Elevate slightly above ground
+                            t.getScale().set(1.0f, 1.0f, 1.0f);
                             visual.setTransformation(t);
                         }
                     } else {
@@ -2427,7 +2428,11 @@ public class LootGlow extends JavaPlugin implements org.bukkit.event.Listener, f
             return;
         if (activeLabels.containsKey(uuid))
             return;
-        TextDisplay display = item.getWorld().spawn(item.getLocation(), TextDisplay.class, ent -> {
+        Location spawnLoc = item.getLocation().clone();
+        if (holoFrontOffset != 0.0) {
+            spawnLoc.add(0, 0, holoFrontOffset);
+        }
+        TextDisplay display = item.getWorld().spawn(spawnLoc, TextDisplay.class, ent -> {
             ent.setShadowed(true);
             ent.setBillboard(Display.Billboard.CENTER);
             ent.setSeeThrough(holoSeeThrough);
@@ -3416,36 +3421,67 @@ public class LootGlow extends JavaPlugin implements org.bukkit.event.Listener, f
         ItemStack visualStack = item.getItemStack().clone();
 
         ItemDisplay display = item.getWorld().spawn(spawnLoc, ItemDisplay.class, ent -> {
-            ent.setItemStack(visualStack);
+            if (isGroupVisual) {
+                // Spawn directly as a visual loot bag with consistent transform
+                ItemStack bag;
+                if (bagMaterial == Material.PLAYER_HEAD) {
+                    if (useOwnerHead && item.getThrower() != null) {
+                        bag = getOwnerHead(item.getThrower());
+                    } else if (!bagHeadTexture.isEmpty()) {
+                        bag = createTexturedHead(bagHeadTexture);
+                    } else {
+                        bag = new ItemStack(bagMaterial);
+                    }
+                } else {
+                    bag = new ItemStack(bagMaterial);
+                }
+                if (bagCustomModelData != 0) {
+                    org.bukkit.inventory.meta.ItemMeta bMeta = bag.getItemMeta();
+                    if (bMeta != null) {
+                        bMeta.setCustomModelData(bagCustomModelData);
+                        bag.setItemMeta(bMeta);
+                    }
+                }
+                ent.setItemStack(bag);
+                ent.setItemDisplayTransform(org.bukkit.entity.ItemDisplay.ItemDisplayTransform.FIXED);
+                org.bukkit.util.Transformation bagTransform = new org.bukkit.util.Transformation(
+                        new org.joml.Vector3f(0f, 0.05f, 0f),
+                        new org.joml.Quaternionf(),
+                        new org.joml.Vector3f(1.0f, 1.0f, 1.0f),
+                        new org.joml.Quaternionf());
+                ent.setTransformation(bagTransform);
+            } else {
+                ent.setItemStack(visualStack);
 
-            Material mat = visualStack.getType();
-            boolean isCustom = isCustomItem(visualStack);
-            boolean isUpright = isUprightItem(mat);
-            org.bukkit.entity.ItemDisplay.ItemDisplayTransform transform = isCustom
-                    ? org.bukkit.entity.ItemDisplay.ItemDisplayTransform.FIXED
-                    : org.bukkit.entity.ItemDisplay.ItemDisplayTransform.NONE;
+                Material mat = visualStack.getType();
+                boolean isCustom = isCustomItem(visualStack);
+                boolean isUpright = isUprightItem(mat);
+                org.bukkit.entity.ItemDisplay.ItemDisplayTransform transform = isCustom
+                        ? org.bukkit.entity.ItemDisplay.ItemDisplayTransform.FIXED
+                        : org.bukkit.entity.ItemDisplay.ItemDisplayTransform.NONE;
 
-            float baseScale = isUpright ? rpgBlockScale : rpgItemScale;
-            if (isFishItem(mat)) {
-                baseScale *= 0.55f;
+                float baseScale = isUpright ? rpgBlockScale : rpgItemScale;
+                if (isFishItem(mat)) {
+                    baseScale *= 0.55f;
+                }
+
+                float rotX = (isCustom || isUpright) ? 0f : rpgRotation;
+                float transY = isCustom ? 0.1f : 0.02f;
+                if (mat == Material.TRIDENT) {
+                    transY += 0.35f;
+                } else if (mat == Material.SHIELD) {
+                    transY += 0.42f;
+                }
+
+                org.bukkit.util.Transformation transformation = new org.bukkit.util.Transformation(
+                        new org.joml.Vector3f(0, transY, 0),
+                        new org.joml.Quaternionf().rotationX(rotX),
+                        new org.joml.Vector3f(baseScale, baseScale, baseScale),
+                        new org.joml.Quaternionf());
+
+                ent.setTransformation(transformation);
+                ent.setItemDisplayTransform(transform);
             }
-
-            float rotX = (isCustom || isUpright) ? 0f : rpgRotation;
-            float transY = isCustom ? 0.1f : 0.02f;
-            if (mat == Material.TRIDENT) {
-                transY += 0.35f;
-            } else if (mat == Material.SHIELD) {
-                transY += 0.42f;
-            }
-
-            org.bukkit.util.Transformation transformation = new org.bukkit.util.Transformation(
-                    new org.joml.Vector3f(0, transY, 0),
-                    new org.joml.Quaternionf().rotationX(rotX),
-                    new org.joml.Vector3f(baseScale, baseScale, baseScale),
-                    new org.joml.Quaternionf());
-
-            ent.setTransformation(transformation);
-            ent.setItemDisplayTransform(transform);
             ent.setVisibleByDefault(false);
             ent.setTeleportDuration(1);
             ent.setPersistent(false);
@@ -3538,7 +3574,9 @@ public class LootGlow extends JavaPlugin implements org.bukkit.event.Listener, f
             double visualYOffset = baseWeight + (isBlockItem ? (rpgBlockScale / 2.0) : 0.0);
             if (visual != null && visual.isValid() && visual.getItemStack() != null) {
                 Material vMat = visual.getItemStack().getType();
-                if (vMat == Material.PLAYER_HEAD) {
+                if (vMat == bagMaterial && groupLeaders.containsKey(itemUuid)) {
+                    visualYOffset = 0.05;
+                } else if (vMat == Material.PLAYER_HEAD) {
                     visualYOffset += 0.15;
                 } else if (vMat == Material.CHEST || vMat == Material.TRAPPED_CHEST || vMat == Material.ENDER_CHEST) {
                     visualYOffset += 0.20;
@@ -3849,6 +3887,17 @@ public class LootGlow extends JavaPlugin implements org.bukkit.event.Listener, f
         return containerRequireClick;
     }
 
+    public UUID getGroupLeader(UUID itemUuid) {
+        if (itemUuid == null) return null;
+        if (groupMembers.containsKey(itemUuid)) return itemUuid;
+        for (Map.Entry<UUID, List<UUID>> entry : groupMembers.entrySet()) {
+            if (entry.getValue() != null && entry.getValue().contains(itemUuid)) {
+                return entry.getKey();
+            }
+        }
+        return null;
+    }
+
     @SuppressWarnings("deprecation")
     public ItemStack createTexturedHead(String textureInput) {
         ItemStack head = new ItemStack(Material.PLAYER_HEAD);
@@ -3864,23 +3913,50 @@ public class LootGlow extends JavaPlugin implements org.bukkit.event.Listener, f
             String base64Value = getBase64Texture(trimmed);
             if (base64Value != null && !base64Value.isEmpty()) {
                 UUID id = UUID.nameUUIDFromBytes(base64Value.getBytes(StandardCharsets.UTF_8));
-                boolean reflectionSuccess = false;
-                try {
-                    Class<?> gameProfileClass = Class.forName("com.mojang.authlib.GameProfile");
-                    Class<?> propertyClass = Class.forName("com.mojang.authlib.properties.Property");
-                    Object gameProfile = gameProfileClass.getConstructor(UUID.class, String.class).newInstance(id, "LootBag");
-                    Object property = propertyClass.getConstructor(String.class, String.class).newInstance("textures", base64Value);
-                    Object properties = gameProfileClass.getMethod("getProperties").invoke(gameProfile);
-                    properties.getClass().getMethod("put", Object.class, Object.class).invoke(properties, "textures", property);
+                boolean profileSet = false;
 
-                    java.lang.reflect.Field profileField = meta.getClass().getDeclaredField("profile");
-                    profileField.setAccessible(true);
-                    profileField.set(meta, gameProfile);
-                    reflectionSuccess = true;
+                // 1. Paper / Spigot PlayerProfile API (Paper 1.18+)
+                try {
+                    org.bukkit.profile.PlayerProfile profile = Bukkit.createProfile(id, "LootBag");
+                    try {
+                        Class<?> propClass = Class.forName("com.destroystokyo.paper.profile.ProfileProperty");
+                        Object prop = propClass.getConstructor(String.class, String.class).newInstance("textures", base64Value);
+                        profile.getClass().getMethod("setProperty", propClass).invoke(profile, prop);
+                        meta.setOwnerProfile(profile);
+                        profileSet = true;
+                    } catch (Throwable t1) {
+                        try {
+                            Class<?> propClass = Class.forName("org.bukkit.profile.ProfileProperty");
+                            Object prop = propClass.getConstructor(String.class, String.class).newInstance("textures", base64Value);
+                            profile.getClass().getMethod("setProperty", propClass).invoke(profile, prop);
+                            meta.setOwnerProfile(profile);
+                            profileSet = true;
+                        } catch (Throwable t2) {
+                        }
+                    }
                 } catch (Throwable ignored) {
                 }
 
-                if (!reflectionSuccess) {
+                // 2. Authlib reflection fallback
+                if (!profileSet) {
+                    try {
+                        Class<?> gameProfileClass = Class.forName("com.mojang.authlib.GameProfile");
+                        Class<?> propertyClass = Class.forName("com.mojang.authlib.properties.Property");
+                        Object gameProfile = gameProfileClass.getConstructor(UUID.class, String.class).newInstance(id, "LootBag");
+                        Object property = propertyClass.getConstructor(String.class, String.class).newInstance("textures", base64Value);
+                        Object properties = gameProfileClass.getMethod("getProperties").invoke(gameProfile);
+                        properties.getClass().getMethod("put", Object.class, Object.class).invoke(properties, "textures", property);
+
+                        java.lang.reflect.Field profileField = meta.getClass().getDeclaredField("profile");
+                        profileField.setAccessible(true);
+                        profileField.set(meta, gameProfile);
+                        profileSet = true;
+                    } catch (Throwable ignored) {
+                    }
+                }
+
+                // 3. Texture URL fallback
+                if (!profileSet) {
                     org.bukkit.profile.PlayerProfile profile = Bukkit.createProfile(id, "LootBag");
                     String textureUrl = parseTextureUrl(trimmed);
                     if (textureUrl != null) {
