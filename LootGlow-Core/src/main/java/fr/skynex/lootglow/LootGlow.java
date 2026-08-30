@@ -162,7 +162,7 @@ public class LootGlow extends JavaPlugin implements org.bukkit.event.Listener, f
     // Hologram settings
     private boolean holoEnabled;
     private double holoOffset;
-    private double holoFrontOffset;
+    // front-offset removed: was applying Z world-space offset instead of player-relative, causing mirrored hologram positions
     private boolean groupingEnabled;
     private boolean holoSeeThrough;
     private boolean holoBackground;
@@ -675,7 +675,7 @@ public class LootGlow extends JavaPlugin implements org.bukkit.event.Listener, f
 
         this.holoEnabled = getConfig().getBoolean("settings.holograms.enabled", true);
         this.holoOffset = getConfig().getDouble("settings.holograms.height-offset", 0.7);
-        this.holoFrontOffset = getConfig().getDouble("settings.holograms.front-offset", 0.0);
+        // front-offset removed (caused mirrored hologram positions depending on player facing direction)
         this.holoSeeThrough = getConfig().getBoolean("settings.holograms.see-through", false);
         this.holoBackground = getConfig().getBoolean("settings.holograms.background", false);
         this.holoViewDistance = (float) getConfig().getDouble("settings.holograms.view-distance", 15.0);
@@ -1974,7 +1974,8 @@ public class LootGlow extends JavaPlugin implements org.bukkit.event.Listener, f
                     continue;
 
                 UUID itemUuid = item.getUniqueId();
-                if (!magnetEnableForGroups && (groupMembers.containsKey(itemUuid) || groupedItems.contains(itemUuid)))
+                // Fix: also check groupLeaders so the group leader item itself is excluded when enable-for-groups is false
+                if (!magnetEnableForGroups && (groupLeaders.containsKey(itemUuid) || groupMembers.containsKey(itemUuid) || groupedItems.contains(itemUuid)))
                     continue;
                 String category = itemCategoriesCache.get(itemUuid);
                 if (!magnetCats.isEmpty() && (category == null || !magnetCats.contains(category.toLowerCase())))
@@ -2429,9 +2430,6 @@ public class LootGlow extends JavaPlugin implements org.bukkit.event.Listener, f
         if (activeLabels.containsKey(uuid))
             return;
         Location spawnLoc = item.getLocation().clone();
-        if (holoFrontOffset != 0.0) {
-            spawnLoc.add(0, 0, holoFrontOffset);
-        }
         TextDisplay display = item.getWorld().spawn(spawnLoc, TextDisplay.class, ent -> {
             ent.setShadowed(true);
             ent.setBillboard(Display.Billboard.CENTER);
@@ -2652,6 +2650,52 @@ public class LootGlow extends JavaPlugin implements org.bukkit.event.Listener, f
         if (item == null)
             return;
         removeGlow(item.getUniqueId());
+    }
+
+    /**
+     * Like removeGlow but keeps Display entities alive (hologram, visual bag, beam, shadow).
+     * Used when removing the group leader during a leader transfer so the displays can be
+     * seamlessly re-assigned to the new leader without any flicker or respawn delay.
+     */
+    public void removeGlowKeepDisplays(UUID uuid) {
+        if (uuid == null) return;
+
+        // Do NOT touch activeLabels, activeBeams, activeItemVisuals, activeShadows —
+        // they will be re-keyed by transferLeaderVisuals() immediately after this call.
+
+        try {
+            org.bukkit.scoreboard.Scoreboard scoreboard = org.bukkit.Bukkit.getScoreboardManager().getMainScoreboard();
+            String itemEntry = uuid.toString();
+            org.bukkit.scoreboard.Team itemTeam = scoreboard.getEntryTeam(itemEntry);
+            if (itemTeam != null && itemTeam.getName().startsWith("LG_"))
+                itemTeam.removeEntry(itemEntry);
+        } catch (Exception ignored) {}
+
+        activeBeamConfigs.remove(uuid);
+        trackedItems.remove(uuid);
+
+        // Clean up item data maps
+        itemSpawnTimes.remove(uuid);
+        itemCategoriesCache.remove(uuid);
+        itemMoneyAmounts.remove(uuid);
+        lastHoloState.remove(uuid);
+        baseNameCache.remove(uuid);
+        itemParticlesCache.remove(uuid);
+        bounceCounts.remove(uuid);
+        recentlyBounced.remove(uuid);
+        waterLogCache.remove(uuid);
+        surfaceStates.remove(uuid);
+
+        Item item = activeItems.remove(uuid);
+        if (item != null) {
+            int entityId = item.getEntityId();
+            entityIdMap.remove(entityId);
+            hiddenVanillaItems.remove(entityId);
+            String world = item.getWorld().getName();
+            if (itemsByWorld.containsKey(world))
+                itemsByWorld.get(world).remove(uuid);
+        }
+        groupedItems.remove(uuid);
     }
 
     public void refreshHologram(Item item) {
@@ -3575,7 +3619,8 @@ public class LootGlow extends JavaPlugin implements org.bukkit.event.Listener, f
             if (visual != null && visual.isValid() && visual.getItemStack() != null) {
                 Material vMat = visual.getItemStack().getType();
                 if (vMat == bagMaterial && groupLeaders.containsKey(itemUuid)) {
-                    visualYOffset = 0.05;
+                    // Fix: PLAYER_HEAD bag needs a higher Y offset to sit properly on the ground surface (0.05 was too low and caused sinking ~1/3 into ground)
+                    visualYOffset = bagMaterial == Material.PLAYER_HEAD ? 0.40 : 0.20;
                 } else if (vMat == Material.PLAYER_HEAD) {
                     visualYOffset += 0.15;
                 } else if (vMat == Material.CHEST || vMat == Material.TRAPPED_CHEST || vMat == Material.ENDER_CHEST) {
@@ -3610,9 +3655,6 @@ public class LootGlow extends JavaPlugin implements org.bukkit.event.Listener, f
                 if (label != null && label.isValid()) {
                     Location labelLoc = itemLoc.clone();
                     labelLoc.setY(targetSurfaceY + visualYOffset + holoOffset);
-                    if (holoFrontOffset != 0.0) {
-                        labelLoc.add(0, 0, holoFrontOffset);
-                    }
                     label.setTeleportDuration(1);
                     label.teleport(labelLoc);
                 }

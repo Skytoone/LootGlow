@@ -51,29 +51,44 @@ public class LootContainerListener implements Listener {
             java.util.HashMap<Integer, ItemStack> leftovers = player.getInventory().addItem(toAdd);
             
             if (leftovers.isEmpty()) {
-                // Success, remove item from world
-                plugin.removeGlow(item);
-                item.remove();
-                player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_ITEM_PICKUP, 0.5f, 1.5f);
-                
-                // Remove from members list
+                // Remove from members list first so we know the new state
                 members.remove(slot);
-                
+
                 if (members.isEmpty()) {
+                    // Last item picked up — clean up everything normally
+                    plugin.removeGlow(item);
+                    item.remove();
+                    player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_ITEM_PICKUP, 0.5f, 1.5f);
                     player.closeInventory();
                 } else {
-                    if (slot == 0 && !members.isEmpty()) {
+                    if (slot == 0) {
+                        // ── Leader was removed ──
+                        // STEP 1: Teleport the new leader to the old leader position BEFORE transfer,
+                        //         so tickGlobalSync can place displays at the correct location immediately.
                         UUID newLeaderUuid = members.get(0);
                         Item newLeaderItem = plugin.getActiveItems().get(newLeaderUuid);
-                        if (newLeaderItem != null && newLeaderItem.isValid() && oldLoc != null) {
+                        if (newLeaderItem != null && newLeaderItem.isValid()) {
                             newLeaderItem.teleport(oldLoc);
                         }
+
+                        // STEP 2: Seamlessly re-key all Display entities to the new leader
+                        //         BEFORE destroying anything — this prevents the flicker/respawn delay.
                         plugin.transferLeaderVisuals(leaderUuid, newLeaderUuid);
                         plugin.getOpenContainers().put(player.getUniqueId(), newLeaderUuid);
+
+                        // STEP 3: Clean up the old leader item data WITHOUT destroying the displays
+                        //         (they now belong to the new leader).
+                        plugin.removeGlowKeepDisplays(itemUuid);
+                        item.remove();
+                    } else {
+                        // Non-leader slot removed — normal cleanup (displays belong to the leader, untouched)
+                        plugin.removeGlow(item);
+                        item.remove();
                     }
+
+                    player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_ITEM_PICKUP, 0.5f, 1.5f);
+
                     // Refresh GUI
-                    event.getClickedInventory().setItem(slot, null);
-                    // Shift items in GUI to avoid gaps
                     refreshInventory(event.getClickedInventory(), members);
                 }
             } else {

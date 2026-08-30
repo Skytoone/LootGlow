@@ -35,9 +35,6 @@ settings:
   holograms:
     enabled: true
     height-offset: 0.7
-    # Forward offset applied in world-space so the hologram stays in front of the item,
-    # regardless of camera angle. This avoids beams covering hologram text. (e.g. 0.2)
-    front-offset: 0.0
     see-through: false
     background: false
     # Distance (in blocks) at which the hologram becomes visible
