@@ -254,15 +254,12 @@ public class ItemListener implements Listener {
         if (targetItem != null) {
             UUID leaderUuid = plugin.getGroupLeader(targetItem.getUniqueId());
             boolean isGroup = (leaderUuid != null);
-            // Check if it's a group item/leader for the container GUI
-            if (plugin.isContainerEnabled() && isGroup) {
-                plugin.openLootContainer(player, leaderUuid);
-                event.setCancelled(true);
-                return;
-            }
-
-            // If it's a group item and enable-for-groups is false, bypass RMB pickup
+            // If it's a group item and enable-for-groups (pickup) is false, check for container GUI or bypass RMB pickup
             if (isGroup && !plugin.isRmbPickupEnableForGroups()) {
+                if (plugin.isContainerEnabled()) {
+                    plugin.openLootContainer(player, leaderUuid);
+                    event.setCancelled(true);
+                }
                 return;
             }
 
