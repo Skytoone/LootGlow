@@ -68,7 +68,11 @@ public class LootContainerListener implements Listener {
                         UUID newLeaderUuid = members.get(0);
                         Item newLeaderItem = plugin.getActiveItems().get(newLeaderUuid);
                         if (newLeaderItem != null && newLeaderItem.isValid()) {
-                            newLeaderItem.teleport(oldLoc);
+                            fr.skynex.lootglow.util.FoliaScheduler.runAtEntity(plugin, newLeaderItem, () -> {
+                                if (newLeaderItem.isValid()) {
+                                    newLeaderItem.teleport(oldLoc);
+                                }
+                            });
                         }
 
                         // STEP 2: Seamlessly re-key all Display entities to the new leader

@@ -63,7 +63,7 @@ public class LootGlow extends JavaPlugin implements org.bukkit.event.Listener, f
     private final Map<String, Particle> categoryParticles = new HashMap<>();
     private final Map<String, String> categoryAnimTypes = new HashMap<>();
     private final Map<String, Sound> categorySounds = new HashMap<>();
-    private final Map<UUID, TrackedItem> trackedItems = new HashMap<>();
+    private final Map<UUID, TrackedItem> trackedItems = new java.util.concurrent.ConcurrentHashMap<>();
     private final Map<UUID, TextDisplay> activeLabels = new DelegatingMap<>(ti -> ti.label, (ti, v) -> ti.label = v);
     private final Map<UUID, BlockDisplay> activeBeams = new DelegatingMap<>(ti -> ti.beam, (ti, v) -> ti.beam = v);
     private final Set<String> filteredWorlds = new HashSet<>();
@@ -80,7 +80,7 @@ public class LootGlow extends JavaPlugin implements org.bukkit.event.Listener, f
     private final Map<UUID, Location> lastFarmingScanLocations = new HashMap<>();
     private final Map<UUID, org.bukkit.entity.Display> activeShadows = new DelegatingMap<>(ti -> ti.shadow, (ti, v) -> ti.shadow = v);
     private final Map<UUID, ItemDisplay> activeItemVisuals = new DelegatingMap<>(ti -> ti.visual, (ti, v) -> ti.visual = v);
-    private final Map<UUID, Item> activeItems = new HashMap<>();
+    private final Map<UUID, Item> activeItems = new java.util.concurrent.ConcurrentHashMap<>();
     private final Map<String, Set<UUID>> itemsByWorld = new HashMap<>();
 
     private final Map<Integer, Component> timerComponentCache = new HashMap<>();
@@ -106,8 +106,8 @@ public class LootGlow extends JavaPlugin implements org.bukkit.event.Listener, f
             this.lastItemZ = lastItemZ;
         }
     }
-    private final Map<UUID, SurfaceState> surfaceStates = new HashMap<>();
-    private final Set<UUID> waterLogCache = new HashSet<>();
+    private final Map<UUID, SurfaceState> surfaceStates = new java.util.concurrent.ConcurrentHashMap<>();
+    private final Set<UUID> waterLogCache = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private final Map<UUID, Long> lastHoloState = new DelegatingMap<>(ti -> ti.lastHoloState, (ti, v) -> ti.lastHoloState = v);
     private final Map<UUID, Component> baseNameCache = new DelegatingMap<>(ti -> ti.baseName, (ti, v) -> ti.baseName = v);
     private final Map<UUID, String> itemCategoriesCache = new DelegatingMap<>(ti -> ti.category, (ti, v) -> ti.category = v);
@@ -1742,13 +1742,13 @@ public class LootGlow extends JavaPlugin implements org.bukkit.event.Listener, f
         activeBeamConfigs.remove(uuid);
         trackedItems.remove(uuid);
         if (beam != null) {
-            beam.getPassengers().forEach(passenger -> { if (passenger != null) passenger.remove(); });
-            beam.remove();
+            beam.getPassengers().forEach(passenger -> { if (passenger != null) FoliaScheduler.removeEntity(this, passenger); });
+            FoliaScheduler.removeEntity(this, beam);
         }
 
         if (shadow != null) {
             entityIdMap.remove(shadow.getEntityId());
-            shadow.remove();
+            FoliaScheduler.removeEntity(this, shadow);
         }
         if (display != null) {
             entityIdMap.remove(display.getEntityId());
@@ -1781,9 +1781,9 @@ public class LootGlow extends JavaPlugin implements org.bukkit.event.Listener, f
         }
 
         if (display != null)
-            display.remove();
+            FoliaScheduler.removeEntity(this, display);
         if (visual != null && !flyingVisuals.containsKey(uuid))
-            visual.remove();
+            FoliaScheduler.removeEntity(this, visual);
     }
 
     private void startLODTask() {
@@ -2005,7 +2005,12 @@ public class LootGlow extends JavaPlugin implements org.bukkit.event.Listener, f
                 double d = Math.sqrt(d2);
                 if (d < 0.01) continue; // Guard against division by zero
                 double speed = 0.4;
-                item.setVelocity(new Vector((dx / d) * speed, (dy / d) * speed, (dz / d) * speed));
+                Vector vel = new Vector((dx / d) * speed, (dy / d) * speed, (dz / d) * speed);
+                FoliaScheduler.runAtEntity(this, item, () -> {
+                    if (item.isValid()) {
+                        item.setVelocity(vel);
+                    }
+                });
             }
         }
     }
@@ -2027,32 +2032,35 @@ public class LootGlow extends JavaPlugin implements org.bukkit.event.Listener, f
             boolean shouldAnimate = (config != null) ? config.animate() : beamsAnimate;
             boolean shouldPulse   = (config != null) ? config.pulse() : true;
 
-            Transformation trans = beam.getTransformation();
-            if (shouldAnimate) trans.getLeftRotation().set(rot);
+            FoliaScheduler.runAtEntity(this, beam, () -> {
+                if (!beam.isValid()) return;
+                Transformation trans = beam.getTransformation();
+                if (shouldAnimate) trans.getLeftRotation().set(rot);
 
-            float bH = (config != null) ? config.height() : beamHeight;
-            float bW = (config != null) ? config.width() : beamWidth;
-            float currentWidth = shouldPulse ? bW * scalePulse : bW;
+                float bH = (config != null) ? config.height() : beamHeight;
+                float bW = (config != null) ? config.width() : beamWidth;
+                float currentWidth = shouldPulse ? bW * scalePulse : bW;
 
-            trans.getScale().set(currentWidth, bH, currentWidth);
-            trans.getTranslation().set(-currentWidth / 2, 0, -currentWidth / 2);
-            beam.setTransformation(trans);
-            beam.setInterpolationDuration(2);
-            beam.setInterpolationDelay(0);
+                trans.getScale().set(currentWidth, bH, currentWidth);
+                trans.getTranslation().set(-currentWidth / 2, 0, -currentWidth / 2);
+                beam.setTransformation(trans);
+                beam.setInterpolationDuration(2);
+                beam.setInterpolationDelay(0);
 
-            // Animate passengers (core beam)
-            for (Entity pass : beam.getPassengers()) {
-                if (pass instanceof BlockDisplay bd) {
-                    Transformation cTrans = bd.getTransformation();
-                    cTrans.getLeftRotation().set(rot);
-                    float cWidth = beamWidth * 0.4f * scalePulse;
-                    cTrans.getScale().set(cWidth, beamHeight, cWidth);
-                    cTrans.getTranslation().set(-cWidth / 2, 0, -cWidth / 2);
-                    bd.setTransformation(cTrans);
-                    bd.setInterpolationDuration(2);
-                    bd.setInterpolationDelay(0);
+                // Animate passengers (core beam)
+                for (Entity pass : beam.getPassengers()) {
+                    if (pass instanceof BlockDisplay bd && bd.isValid()) {
+                        Transformation cTrans = bd.getTransformation();
+                        cTrans.getLeftRotation().set(rot);
+                        float cWidth = beamWidth * 0.4f * scalePulse;
+                        cTrans.getScale().set(cWidth, beamHeight, cWidth);
+                        cTrans.getTranslation().set(-cWidth / 2, 0, -cWidth / 2);
+                        bd.setTransformation(cTrans);
+                        bd.setInterpolationDuration(2);
+                        bd.setInterpolationDelay(0);
+                    }
                 }
-            }
+            });
 
             // Rising particles along the beam
             if (tick % 2 == 0) {
@@ -2060,8 +2068,12 @@ public class LootGlow extends JavaPlugin implements org.bukkit.event.Listener, f
                 Particle part = itemParticlesCache.get(itemUuid);
                 if (part != null) {
                     double heightOffset = (angle * 5) % beamHeight;
-                    Location beamLoc = beam.getLocation().add(0, heightOffset, 0);
-                    beam.getWorld().spawnParticle(part, beamLoc, 1, 0.05, 0.05, 0.05, 0.01);
+                    FoliaScheduler.runAtEntity(this, beam, () -> {
+                        if (beam.isValid()) {
+                            Location beamLoc = beam.getLocation().add(0, heightOffset, 0);
+                            beam.getWorld().spawnParticle(part, beamLoc, 1, 0.05, 0.05, 0.05, 0.01);
+                        }
+                    });
                 }
             }
         }
@@ -2080,17 +2092,22 @@ public class LootGlow extends JavaPlugin implements org.bukkit.event.Listener, f
             if (!bar.isValid()) continue;
             if (!globallyVisibleEntities.contains(bar.getUniqueId())) continue;
 
-            org.bukkit.util.Transformation bT = bar.getTransformation();
-            bT.getLeftRotation().set(rot);
-            bar.setTransformation(bT);
-            bar.setInterpolationDuration(2);
-            bar.setInterpolationDelay(0);
+            FoliaScheduler.runAtEntity(this, bar, () -> {
+                if (!bar.isValid()) return;
+                org.bukkit.util.Transformation bT = bar.getTransformation();
+                bT.getLeftRotation().set(rot);
+                bar.setTransformation(bT);
+                bar.setInterpolationDuration(2);
+                bar.setInterpolationDelay(0);
 
-            org.bukkit.util.Transformation dT = dot.getTransformation();
-            dT.getLeftRotation().set(rot);
-            dot.setTransformation(dT);
-            dot.setInterpolationDuration(2);
-            dot.setInterpolationDelay(0);
+                if (dot != null && dot.isValid()) {
+                    org.bukkit.util.Transformation dT = dot.getTransformation();
+                    dT.getLeftRotation().set(rot);
+                    dot.setTransformation(dT);
+                    dot.setInterpolationDuration(2);
+                    dot.setInterpolationDelay(0);
+                }
+            });
         }
     }
 
@@ -3648,15 +3665,23 @@ public class LootGlow extends JavaPlugin implements org.bukkit.event.Listener, f
                         teleportLoc.setYaw(state.yaw);
                     if (state != null && state.pitch != null)
                         teleportLoc.setPitch(state.pitch);
-                    visual.setTeleportDuration(1);
-                    visual.teleport(teleportLoc);
+                    FoliaScheduler.runAtEntity(this, visual, () -> {
+                        if (visual.isValid()) {
+                            visual.setTeleportDuration(1);
+                            visual.teleport(teleportLoc);
+                        }
+                    });
                 }
 
                 if (label != null && label.isValid()) {
                     Location labelLoc = itemLoc.clone();
                     labelLoc.setY(targetSurfaceY + visualYOffset + holoOffset);
-                    label.setTeleportDuration(1);
-                    label.teleport(labelLoc);
+                    FoliaScheduler.runAtEntity(this, label, () -> {
+                        if (label.isValid()) {
+                            label.setTeleportDuration(1);
+                            label.teleport(labelLoc);
+                        }
+                    });
                 }
             }
 
@@ -3665,10 +3690,12 @@ public class LootGlow extends JavaPlugin implements org.bukkit.event.Listener, f
                 if (beam != null && beam.isValid()) {
                     Location beamTarget = itemLoc.clone();
                     beamTarget.setY(targetSurfaceY + baseWeight);
-                    if (beam.getLocation().distanceSquared(beamTarget) > 0.0001) {
-                        beam.setTeleportDuration(1);
-                        beam.teleport(beamTarget);
-                    }
+                    FoliaScheduler.runAtEntity(this, beam, () -> {
+                        if (beam.isValid() && beam.getLocation().distanceSquared(beamTarget) > 0.0001) {
+                            beam.setTeleportDuration(1);
+                            beam.teleport(beamTarget);
+                        }
+                    });
                 }
 
                 if (shadow != null && shadow.isValid()) {
@@ -3680,15 +3707,21 @@ public class LootGlow extends JavaPlugin implements org.bukkit.event.Listener, f
                             baseRadius *= 1.4f;
 
                         float scale = item.getItemStack().getType().isBlock() ? rpgBlockScale : rpgItemScale;
-                        shadow.setShadowRadius(baseRadius * radiusFactor * (scale / 0.8f));
-                        shadow.setShadowStrength((float) Math.max(0.2, 1.0 - (height * 0.5)));
+                        float targetRadius = baseRadius * radiusFactor * (scale / 0.8f);
+                        float targetStrength = (float) Math.max(0.2, 1.0 - (height * 0.5));
 
                         Location shadowTarget = itemLoc.clone();
                         shadowTarget.setY(targetSurfaceY);
-                        if (shadow.getLocation().distanceSquared(shadowTarget) > 0.0001) {
-                            shadow.setTeleportDuration(1);
-                            shadow.teleport(shadowTarget);
-                        }
+                        FoliaScheduler.runAtEntity(this, shadow, () -> {
+                            if (shadow.isValid()) {
+                                shadow.setShadowRadius(targetRadius);
+                                shadow.setShadowStrength(targetStrength);
+                                if (shadow.getLocation().distanceSquared(shadowTarget) > 0.0001) {
+                                    shadow.setTeleportDuration(1);
+                                    shadow.teleport(shadowTarget);
+                                }
+                            }
+                        });
                     }
                 }
             }
@@ -3702,9 +3735,13 @@ public class LootGlow extends JavaPlugin implements org.bukkit.event.Listener, f
                 if (currentlyInWater) {
                     waterLogCache.add(itemUuid);
                     if (isFish) {
-                        Location vLoc = visual.getLocation();
-                        vLoc.setYaw(vLoc.getYaw() + 3.0f);
-                        visual.teleport(vLoc);
+                        FoliaScheduler.runAtEntity(this, visual, () -> {
+                            if (visual.isValid()) {
+                                Location vLoc = visual.getLocation();
+                                vLoc.setYaw(vLoc.getYaw() + 3.0f);
+                                visual.teleport(vLoc);
+                            }
+                        });
                     }
                 } else {
                     if (waterLogCache.remove(itemUuid)) {
@@ -3713,9 +3750,13 @@ public class LootGlow extends JavaPlugin implements org.bukkit.event.Listener, f
                             boolean isCustom = isCustomItem(item.getItemStack());
                             boolean isUpright = isUprightItem(mat);
                             float targetRotX = (isCustom || isUpright) ? 0f : rpgRotation;
-                            org.bukkit.util.Transformation t = visual.getTransformation();
-                            t.getLeftRotation().set(new org.joml.Quaternionf().rotationX(targetRotX));
-                            visual.setTransformation(t);
+                            FoliaScheduler.runAtEntity(this, visual, () -> {
+                                if (visual.isValid()) {
+                                    org.bukkit.util.Transformation t = visual.getTransformation();
+                                    t.getLeftRotation().set(new org.joml.Quaternionf().rotationX(targetRotX));
+                                    visual.setTransformation(t);
+                                }
+                            });
                         }
                     }
                 }
@@ -3746,36 +3787,34 @@ public class LootGlow extends JavaPlugin implements org.bukkit.event.Listener, f
                 continue;
             }
 
-            if (item.isOnGround()) {
-                if (!recentlyBounced.contains(uuid)) {
-                    org.bukkit.block.Block blockAt = item.getLocation().getBlock();
-                    org.bukkit.block.Block blockBelow = blockAt.getRelative(org.bukkit.block.BlockFace.DOWN);
-                    Material blockMat = blockBelow.getType();
-                    Material atMat = blockAt.getType();
-                    boolean isSnowBlock = blockMat == Material.SNOW || blockMat == Material.SNOW_BLOCK || blockMat == Material.POWDER_SNOW
-                            || atMat == Material.SNOW || atMat == Material.SNOW_BLOCK || atMat == Material.POWDER_SNOW;
-                    boolean isBlocked = bouncingBlockedBlocks.contains(blockMat) || bouncingBlockedBlocks.contains(atMat) || (bouncingOnlyOnSnow && !isSnowBlock);
+            FoliaScheduler.runAtEntity(this, item, () -> {
+                if (!item.isValid() || item.isDead()) return;
 
-                    if (!isBlocked && count < maxBounces) {
-                        double force = jumpForce * Math.pow(bounceDamping, count + 1);
-                        if (force > 0.05) {
-                            Vector vel = item.getVelocity();
-                            item.setVelocity(vel.setY(force));
-                            surfaceStates.remove(uuid);
-                            bounceCounts.put(uuid, count + 1);
-                            recentlyBounced.add(uuid);
-                        } else {
-                            it.remove();
-                            recentlyBounced.remove(uuid);
+                if (item.isOnGround()) {
+                    if (!recentlyBounced.contains(uuid)) {
+                        org.bukkit.block.Block blockAt = item.getLocation().getBlock();
+                        org.bukkit.block.Block blockBelow = blockAt.getRelative(org.bukkit.block.BlockFace.DOWN);
+                        Material blockMat = blockBelow.getType();
+                        Material atMat = blockAt.getType();
+                        boolean isSnowBlock = blockMat == Material.SNOW || blockMat == Material.SNOW_BLOCK || blockMat == Material.POWDER_SNOW
+                                || atMat == Material.SNOW || atMat == Material.SNOW_BLOCK || atMat == Material.POWDER_SNOW;
+                        boolean isBlocked = bouncingBlockedBlocks.contains(blockMat) || bouncingBlockedBlocks.contains(atMat) || (bouncingOnlyOnSnow && !isSnowBlock);
+
+                        if (!isBlocked && count < maxBounces) {
+                            double force = jumpForce * Math.pow(bounceDamping, count + 1);
+                            if (force > 0.05) {
+                                Vector vel = item.getVelocity();
+                                item.setVelocity(vel.setY(force));
+                                surfaceStates.remove(uuid);
+                                bounceCounts.put(uuid, count + 1);
+                                recentlyBounced.add(uuid);
+                            }
                         }
-                    } else {
-                        it.remove();
-                        recentlyBounced.remove(uuid);
                     }
+                } else {
+                    recentlyBounced.remove(uuid);
                 }
-            } else {
-                recentlyBounced.remove(uuid);
-            }
+            });
         }
     }
 
@@ -3800,45 +3839,44 @@ public class LootGlow extends JavaPlugin implements org.bukkit.event.Listener, f
             Map.Entry<UUID, VisualAnimation> entry = it.next();
             VisualAnimation anim = entry.getValue();
 
-            if (!anim.target.isOnline() || !anim.display.isValid()) {
-                anim.display.remove();
-                it.remove();
-                continue;
-            }
+            FoliaScheduler.runAtEntity(this, anim.display, () -> {
+                if (!anim.target.isOnline() || !anim.display.isValid()) {
+                    if (anim.display.isValid()) anim.display.remove();
+                    return;
+                }
 
-            Location targetLoc = anim.target.getLocation().add(0, anim.target.getEyeHeight() - 0.3, 0);
-            Location displayLoc = anim.display.getLocation();
+                Location targetLoc = anim.target.getLocation().add(0, anim.target.getEyeHeight() - 0.3, 0);
+                Location displayLoc = anim.display.getLocation();
 
-            double distSq = displayLoc.distanceSquared(targetLoc);
-            if (distSq < 0.09 || anim.ticks > 20) {
-                anim.display.remove();
-                it.remove();
-                continue;
-            }
+                double distSq = displayLoc.distanceSquared(targetLoc);
+                if (distSq < 0.09 || anim.ticks > 20) {
+                    anim.display.remove();
+                    return;
+                }
 
-            double dist = Math.sqrt(distSq);
-            if (dist < 0.01) { // Guard against division by zero
-                anim.display.remove();
-                it.remove();
-                continue;
-            }
+                double dist = Math.sqrt(distSq);
+                if (dist < 0.01) { // Guard against division by zero
+                    anim.display.remove();
+                    return;
+                }
 
-            double dx = targetLoc.getX() - displayLoc.getX();
-            double dy = targetLoc.getY() - displayLoc.getY();
-            double dz = targetLoc.getZ() - displayLoc.getZ();
-            double speed = aspirationSpeed + (anim.ticks * 0.02);
-            Location newLoc = displayLoc.clone().add((dx / dist) * speed, (dy / dist) * speed, (dz / dist) * speed);
+                double dx = targetLoc.getX() - displayLoc.getX();
+                double dy = targetLoc.getY() - displayLoc.getY();
+                double dz = targetLoc.getZ() - displayLoc.getZ();
+                double speed = aspirationSpeed + (anim.ticks * 0.02);
+                Location newLoc = displayLoc.clone().add((dx / dist) * speed, (dy / dist) * speed, (dz / dist) * speed);
 
-            // Shrinking
-            anim.scale = Math.max(0.1, anim.scale - 0.05);
-            Transformation trans = anim.display.getTransformation();
-            trans.getScale().set((float) anim.scale);
-            anim.display.setTransformation(trans);
+                // Shrinking
+                anim.scale = Math.max(0.1, anim.scale - 0.05);
+                Transformation trans = anim.display.getTransformation();
+                trans.getScale().set((float) anim.scale);
+                anim.display.setTransformation(trans);
 
-            // Increase rotation
-            newLoc.setYaw(displayLoc.getYaw() + 20);
-            anim.display.teleport(newLoc);
-            anim.ticks++;
+                // Increase rotation
+                newLoc.setYaw(displayLoc.getYaw() + 20);
+                anim.display.teleport(newLoc);
+                anim.ticks++;
+            });
         }
     }
 

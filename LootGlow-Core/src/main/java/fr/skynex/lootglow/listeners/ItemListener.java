@@ -279,16 +279,20 @@ public class ItemListener implements Listener {
 
             // Attempt pickup
             if (targetItem.isValid() && !targetItem.isDead()) {
-                java.util.HashMap<Integer, org.bukkit.inventory.ItemStack> leftovers = player.getInventory().addItem(targetItem.getItemStack());
-                if (leftovers.isEmpty()) {
-                    plugin.playAspirationAnimation(targetItem, player);
-                    plugin.removeGlow(targetItem);
-                    targetItem.remove();
-                    player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_ITEM_PICKUP, 0.5f, 1.5f);
-                } else {
-                    // Adjust stack if inventory was partially full
-                    targetItem.getItemStack().setAmount(leftovers.get(0).getAmount());
-                }
+                final Item finalTargetItem = targetItem;
+                fr.skynex.lootglow.util.FoliaScheduler.runAtEntity(plugin, finalTargetItem, () -> {
+                    if (!finalTargetItem.isValid() || finalTargetItem.isDead()) return;
+                    java.util.HashMap<Integer, org.bukkit.inventory.ItemStack> leftovers = player.getInventory().addItem(finalTargetItem.getItemStack());
+                    if (leftovers.isEmpty()) {
+                        plugin.playAspirationAnimation(finalTargetItem, player);
+                        plugin.removeGlow(finalTargetItem);
+                        finalTargetItem.remove();
+                        player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_ITEM_PICKUP, 0.5f, 1.5f);
+                    } else {
+                        // Adjust stack if inventory was partially full
+                        finalTargetItem.getItemStack().setAmount(leftovers.get(0).getAmount());
+                    }
+                });
             }
         }
     }

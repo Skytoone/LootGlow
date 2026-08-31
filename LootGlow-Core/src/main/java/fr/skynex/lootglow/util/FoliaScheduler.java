@@ -126,6 +126,32 @@ public class FoliaScheduler {
         return new FoliaBukkitTask(Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, runnable, delayTicks, periodTicks));
     }
 
+    public static void runAtEntity(Plugin plugin, org.bukkit.entity.Entity entity, Runnable runnable) {
+        if (entity == null) return;
+        if (IS_FOLIA) {
+            try {
+                Object scheduler = entity.getClass().getMethod("getScheduler").invoke(entity);
+                java.util.function.Consumer<Object> consumer = task -> runnable.run();
+                scheduler.getClass()
+                        .getMethod("run", Plugin.class, java.util.function.Consumer.class, Runnable.class)
+                        .invoke(scheduler, plugin, consumer, null);
+                return;
+            } catch (Exception ignored) {}
+        }
+        runnable.run();
+    }
+
+    public static void removeEntity(Plugin plugin, org.bukkit.entity.Entity entity) {
+        if (entity == null) return;
+        runAtEntity(plugin, entity, () -> {
+            try {
+                if (entity.isValid()) {
+                    entity.remove();
+                }
+            } catch (Exception ignored) {}
+        });
+    }
+
     public static void cancelTasks(Plugin plugin) {
         if (!IS_FOLIA) {
             Bukkit.getScheduler().cancelTasks(plugin);

@@ -42,7 +42,6 @@ public class PacketEventsProvider extends PacketListenerAbstract implements Pack
 
     @Override
     @PacketHandler
-    @SuppressWarnings("unchecked")
     public void onPacketSend(PacketSendEvent event) {
         Player player = (Player) event.getPlayer();
         if (player == null) return;
