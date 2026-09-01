@@ -32,4 +32,36 @@ public class UpdateChecker {
             }
         });
     }
+
+    public void checkUpdateOnStartup() {
+        if (plugin.getConfig().getBoolean("settings.check-updates", true)) {
+            getVersion(version -> {
+                if (isNewerVersion(plugin.getPluginMeta().getVersion(), version)) {
+                    plugin.getLogger().warning("A new update is available (" + version
+                            + ")! Download it here: https://www.spigotmc.org/resources/134648");
+                } else if (plugin.getPluginMeta().getVersion().equals(version)) {
+                    plugin.getLogger().info("The plugin is up to date.");
+                }
+            });
+        }
+    }
+
+    public static boolean isNewerVersion(String current, String online) {
+        try {
+            String[] currentParts = current.split("\\.");
+            String[] onlineParts = online.split("\\.");
+            int length = Math.max(currentParts.length, onlineParts.length);
+            for (int i = 0; i < length; i++) {
+                int c = (i < currentParts.length) ? Integer.parseInt(currentParts[i].replaceAll("[^0-9]", "")) : 0;
+                int o = (i < onlineParts.length) ? Integer.parseInt(onlineParts[i].replaceAll("[^0-9]", "")) : 0;
+                if (o > c)
+                    return true;
+                if (c > o)
+                    return false;
+            }
+        } catch (Exception e) {
+            return false;
+        }
+        return false;
+    }
 }

@@ -393,4 +393,44 @@ public class ItemListener implements Listener {
             }
         }
     }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onWorldUnload(org.bukkit.event.world.WorldUnloadEvent event) {
+        String worldName = event.getWorld().getName();
+        java.util.List<UUID> toRemove = new java.util.ArrayList<>();
+        if (plugin.getTrackedItemManager() != null) {
+            for (java.util.Map.Entry<UUID, fr.skynex.lootglow.managers.TrackedItemManager.TrackedItem> entry : plugin.getTrackedItemManager().getTrackedItems().entrySet()) {
+                fr.skynex.lootglow.managers.TrackedItemManager.TrackedItem ti = entry.getValue();
+                Entity testEnt = ti.label != null ? ti.label : (ti.beam != null ? ti.beam : (ti.visual != null ? ti.visual : ti.shadow));
+                if (testEnt != null && testEnt.getWorld().getName().equals(worldName)) {
+                    toRemove.add(entry.getKey());
+                }
+            }
+        }
+        for (java.util.Map.Entry<UUID, Item> entry : plugin.getActiveItems().entrySet()) {
+            if (entry.getValue().getWorld().getName().equals(worldName)) {
+                UUID uuid = entry.getKey();
+                if (!toRemove.contains(uuid)) {
+                    toRemove.add(uuid);
+                }
+            }
+        }
+        for (UUID uuid : toRemove) {
+            plugin.removeGlow(uuid);
+        }
+    }
+
+    @EventHandler
+    public void onPlayerQuit(org.bukkit.event.player.PlayerQuitEvent event) {
+        UUID uuid = event.getPlayer().getUniqueId();
+        plugin.getVisibleEntities().remove(uuid);
+        plugin.getHiddenVisuals().remove(uuid);
+        plugin.getDisabledMagnets().remove(uuid);
+        plugin.getLastFarmingScanLocations().remove(uuid);
+    }
+
+    @EventHandler
+    public void onItemMerge(ItemMergeEvent event) {
+        plugin.removeGlow(event.getEntity().getUniqueId());
+    }
 }

@@ -180,17 +180,24 @@ LootGlowAPI api = getServer().getServicesManager()
 
 #### Glow Color
 ```java
-// Set a custom gold glow color on a dropped item
+// Set a custom gold glow color on a dropped item (all players)
 api.setGlowColor(item, Color.fromRGB(255, 215, 0));
 
-// Reset to the default category color
+// Set a custom glow color for a specific player only
+api.setGlowColor(item, Color.fromRGB(255, 215, 0), player);
+
+// Reset to the default category color (global or per-player)
 api.resetGlowColor(item);
+api.resetGlowColor(item, player);
 ```
 
 #### Holograms
 ```java
 // Set a custom holographic label (supports MiniMessage & legacy codes)
 api.setCustomHologram(item, "<gold>⭐ Legendary Loot ⭐</gold>");
+
+// Set a custom holographic label for a specific player only
+api.setCustomHologram(item, "<green>Your Personal Drop</green>", player);
 
 // Remove custom hologram (reverts to default)
 api.setCustomHologram(item, null);
@@ -200,13 +207,20 @@ api.setCustomHologram(item, null);
 ```java
 // Enable or disable the vertical beacon beam
 api.setBeaconBeam(item, true);
-api.setBeaconBeam(item, false);
+
+// Enable beacon beam with a custom RGB color
+api.setBeaconBeam(item, true, Color.fromRGB(0, 255, 200));
 ```
 
 #### Loot Protection
 ```java
 // Lock an item for 30 seconds to a specific player
 api.setLootProtection(item, player.getUniqueId(), 30L);
+
+// Check loot protection state & permissions
+boolean protectedItem = api.isLootProtected(item);
+boolean allowed = api.isPlayerAllowedToPickup(player, item);
+UUID ownerUuid = api.getLootOwner(item);
 ```
 
 #### VIP Magnet
@@ -230,7 +244,8 @@ api.clearParticleEffect(item);
 
 #### Sounds & Animations
 ```java
-// Play a custom drop sound
+// Play a custom drop sound (simplified or with custom volume/pitch)
+api.setDropSound(item, Sound.ENTITY_ITEM_PICKUP);
 api.setDropSound(item, Sound.ENTITY_ITEM_PICKUP, 1.0f, 1.2f);
 
 // Trigger a pop-jump animation with particle burst
@@ -246,14 +261,21 @@ api.setBouncingEnabled(item, true);
 api.setVisualsHidden(player, true);
 boolean hidden = api.isVisualsHidden(player);
 
+// Check if player has direct line of sight to item within 32 blocks (raycast block collision)
+boolean canSee = api.hasLineOfSight(player, item, 32.0);
+
+// Automatically update item glow/visual visibility for player based on raycast occlusion
+boolean isVisible = api.updateOcclusionVisibility(player, item, 32.0);
+
 // Farming highlights on crop blocks
 api.setCropHighlight(cropBlock, true);
 boolean highlighted = api.isCropHighlighted(cropBlock);
 ```
 
-#### Queries
+#### Categories & Queries
 ```java
-// Get the LootGlow category name assigned to an item
+// Dynamically override or read the LootGlow category assigned to an item
+api.setItemCategory(item, "legendary");
 String category = api.getItemCategory(item); // e.g. "legendary", "rare"
 
 // Find all glowing items near a location

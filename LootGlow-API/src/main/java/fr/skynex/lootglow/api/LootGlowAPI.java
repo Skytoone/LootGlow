@@ -27,11 +27,28 @@ public interface LootGlowAPI {
     void setGlowColor(@NotNull Item item, @NotNull Color color);
 
     /**
+     * Overrides the glowing color of a specific dropped item entity for a specific player.
+     *
+     * @param item Dropped item entity
+     * @param color Custom RGB Color
+     * @param player Target player who sees the custom glow color
+     */
+    void setGlowColor(@NotNull Item item, @NotNull Color color, @NotNull Player player);
+
+    /**
      * Resets the glowing color of an item to its default configured category color.
      *
      * @param item Dropped item entity
      */
     void resetGlowColor(@NotNull Item item);
+
+    /**
+     * Resets the glowing color of an item for a specific player.
+     *
+     * @param item Dropped item entity
+     * @param player Target player
+     */
+    void resetGlowColor(@NotNull Item item, @NotNull Player player);
 
     /**
      * Sets a custom holographic label above a dropped item entity.
@@ -42,12 +59,30 @@ public interface LootGlowAPI {
     void setCustomHologram(@NotNull Item item, @Nullable String text);
 
     /**
+     * Sets a custom holographic label above a dropped item entity for a specific player.
+     *
+     * @param item Dropped item entity
+     * @param text Custom text label
+     * @param player Target player
+     */
+    void setCustomHologram(@NotNull Item item, @Nullable String text, @NotNull Player player);
+
+    /**
      * Toggles vertical beacon light beam effect for a dropped item entity.
      *
      * @param item Dropped item entity
      * @param enabled True to enable beam, false to disable
      */
     void setBeaconBeam(@NotNull Item item, boolean enabled);
+
+    /**
+     * Toggles vertical beacon light beam effect with a custom color for a dropped item entity.
+     *
+     * @param item Dropped item entity
+     * @param enabled True to enable beam, false to disable
+     * @param color Custom RGB Color for the beacon beam
+     */
+    void setBeaconBeam(@NotNull Item item, boolean enabled, @Nullable Color color);
 
     /**
      * Grants temporary owner-only loot protection for an item drop.
@@ -57,6 +92,32 @@ public interface LootGlowAPI {
      * @param durationSeconds Duration of protection in seconds
      */
     void setLootProtection(@NotNull Item item, @NotNull UUID ownerUuid, long durationSeconds);
+
+    /**
+     * Checks if a dropped item currently has active loot protection.
+     *
+     * @param item Dropped item entity
+     * @return True if protected
+     */
+    boolean isLootProtected(@NotNull Item item);
+
+    /**
+     * Checks if a player is allowed to pick up a protected dropped item.
+     *
+     * @param player Target player attempting to pick up item
+     * @param item Target dropped item
+     * @return True if player is allowed to pick up
+     */
+    boolean isPlayerAllowedToPickup(@NotNull Player player, @NotNull Item item);
+
+    /**
+     * Retrieves the UUID of the owner who has loot protection over an item.
+     *
+     * @param item Target dropped item
+     * @return UUID of owner or null if unprotected
+     */
+    @Nullable
+    UUID getLootOwner(@NotNull Item item);
 
     /**
      * Checks if VIP magnet is enabled for a player.
@@ -97,6 +158,26 @@ public interface LootGlowAPI {
      * @param hidden True to hide visuals
      */
     void setVisualsHidden(@NotNull Player player, boolean hidden);
+
+    /**
+     * Checks if a dropped item entity is visible to a player within max distance and line-of-sight raycast.
+     *
+     * @param player Target player
+     * @param item Target dropped item
+     * @param maxDistance Maximum viewing distance in blocks
+     * @return True if player has direct line of sight to item within maxDistance
+     */
+    boolean hasLineOfSight(@NotNull Player player, @NotNull Item item, double maxDistance);
+
+    /**
+     * Updates visibility of item glow/visuals for a player based on line-of-sight raycast occlusion check.
+     *
+     * @param player Target player
+     * @param item Target dropped item
+     * @param maxDistance Max distance in blocks for visibility
+     * @return True if item is visible to the player after occlusion check
+     */
+    boolean updateOcclusionVisibility(@NotNull Player player, @NotNull Item item, double maxDistance);
 
     /**
      * Assigns a custom particle effect to surround a dropped item entity.
@@ -154,6 +235,14 @@ public interface LootGlowAPI {
      * @return True if highlighted
      */
     boolean isCropHighlighted(@NotNull Block cropBlock);
+
+    /**
+     * Overrides the LootGlow category assigned to a dropped item dynamically.
+     *
+     * @param item Target dropped item
+     * @param category Category name (e.g. "legendary", "epic", "rare")
+     */
+    void setItemCategory(@NotNull Item item, @NotNull String category);
 
     /**
      * Gets the configured LootGlow category name assigned to a dropped item.

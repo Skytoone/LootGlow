@@ -1,0 +1,300 @@
+package fr.skynex.lootglow.service;
+
+import fr.skynex.lootglow.LootGlow;
+import me.clip.placeholderapi.PlaceholderAPI;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.entity.Display;
+import org.bukkit.entity.Item;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.TextDisplay;
+import org.bukkit.util.Transformation;
+
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+
+/**
+ * Handles TextDisplay hologram creation, base name resolution, and dynamic tag formatting.
+ */
+public class HologramService {
+
+    private final LootGlow plugin;
+    private final MiniMessage miniMessage = MiniMessage.miniMessage();
+
+    public HologramService(LootGlow plugin) {
+        this.plugin = plugin;
+    }
+
+    public Component calculateBaseName(Item item, NamedTextColor color,
+                                       Map<String, Component> displayNameOverridesCache,
+                                       Map<UUID, Double> itemMoneyAmounts,
+                                       String economyFormat,
+                                       String economyPrefix) {
+        String customId = plugin.getInternalId(item.getItemStack());
+        String matName = item.getItemStack().getType().name();
+
+        Component name = displayNameOverridesCache.get(customId);
+        if (name == null) name = displayNameOverridesCache.get(matName);
+
+        if (name == null) {
+            Double amount = itemMoneyAmounts.get(item.getUniqueId());
+            if (amount != null) {
+                String formatted = economyFormat
+                        .replace("<prefix>", economyPrefix)
+                        .replace("<amount>", String.format("%.2f", amount));
+                name = miniMessage.deserialize(formatted);
+            }
+        }
+
+        if (name == null) {
+            if (item.getItemStack().hasItemMeta()) {
+                org.bukkit.inventory.meta.ItemMeta meta = item.getItemStack().getItemMeta();
+                if (meta.hasDisplayName()) {
+                    name = meta.displayName();
+                } else if (meta.hasItemName()) {
+                    name = meta.itemName();
+                }
+            }
+        }
+
+        if (name == null) {
+            name = plugin.getItemNameFormatter() != null ? plugin.getItemNameFormatter().getItemName(item.getItemStack()) : Component.text(matName);
+        }
+
+        if (name.color() == null && !name.children().stream().anyMatch(c -> c.color() != null)) {
+            name = name.color(color);
+        }
+
+        return name.decoration(TextDecoration.ITALIC, false);
+    }
+
+    public Component buildFinalName(Item item, Component baseName,
+                                    boolean holoShowAmount,
+                                    String rawAmountFormat,
+                                    boolean protectionEnabled,
+                                    int protectionDuration,
+                                    Map<UUID, Long> itemSpawnTimes,
+                                    String rawOwnerFormat,
+                                    boolean usePapi,
+                                    boolean holoShowTimer,
+                                    Map<Integer, Component> timerComponentCache,
+                                    boolean holoTimerNewLine) {
+
+        Component result = baseName;
+
+        if (holoShowAmount && item.getItemStack().getAmount() > 1) {
+            String amountText = rawAmountFormat.replace("<amount>", String.valueOf(item.getItemStack().getAmount()));
+            result = result.append(miniMessage.deserialize(amountText));
+        }
+
+        if (protectionEnabled) {
+            Long spawnTime = itemSpawnTimes.get(item.getUniqueId());
+            if (spawnTime != null) {
+                long elapsed = (System.currentTimeMillis() - spawnTime) / 1000;
+                long remaining = protectionDuration - elapsed;
+                if (remaining > 0) {
+                    if (plugin.getLootProtectionManager() != null) {
+                        UUID ownerUuid = plugin.getLootProtectionManager().getLootOwner(item);
+                        if (ownerUuid != null) {
+                            Player ownerPlayer = Bukkit.getPlayer(ownerUuid);
+                            String ownerName = ownerPlayer != null ? ownerPlayer.getName() : null;
+                            if (ownerName != null) {
+                                String ownerMsg = rawOwnerFormat.replace("<owner>", ownerName);
+                                result = result.append(miniMessage.deserialize(ownerMsg));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (usePapi) {
+            String legacy = net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().serialize(result);
+            if (legacy.contains("%")) {
+                legacy = PlaceholderAPI.setPlaceholders((Player) null, legacy);
+                result = net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().deserialize(legacy);
+            }
+        }
+
+        if (holoShowTimer) {
+            int remaining = Math.max(0, (6000 - item.getTicksLived()) / 20);
+            Component timerComp = timerComponentCache.get(remaining);
+            if (timerComp == null) {
+                timerComp = miniMessage.deserialize(plugin.getMessageService() != null ? plugin.getMessageService().getRawTimerFormat().replace("<time>", String.valueOf(remaining)) : "");
+            }
+            if (timerComp != null) {
+                if (holoTimerNewLine) {
+                    result = result.append(Component.newline()).append(timerComp);
+                } else {
+                    result = result.append(timerComp);
+                }
+            }
+        }
+
+        return result;
+    }
+
+    public void updateHologram(Item item, NamedTextColor color,
+                               boolean holoEnabled,
+                               Map<UUID, String> itemCategoriesCache,
+                               boolean holoHideUncategorized,
+                               Map<UUID, TextDisplay> activeLabels,
+                               Map<UUID, ?> groupLeaders,
+                               Map<UUID, Long> lastHoloState,
+                               Map<UUID, Component> baseNameCache,
+                               Map<String, Component> displayNameOverridesCache,
+                               Map<UUID, Double> itemMoneyAmounts,
+                               String economyFormat,
+                               String economyPrefix,
+                               boolean holoShowAmount,
+                               String rawAmountFormat,
+                               boolean protectionEnabled,
+                               int protectionDuration,
+                               Map<UUID, Long> itemSpawnTimes,
+                               String rawOwnerFormat,
+                               boolean usePapi,
+                               boolean holoShowTimer,
+                               Map<Integer, Component> timerComponentCache,
+                               boolean holoTimerNewLine) {
+
+        if (!holoEnabled || item == null) return;
+        UUID uuid = item.getUniqueId();
+        String cat = itemCategoriesCache.get(uuid);
+        if (holoHideUncategorized && cat == null) return;
+
+        TextDisplay display = activeLabels.get(uuid);
+        if (display == null || !display.isValid()) {
+            if (display != null) activeLabels.remove(uuid);
+            spawnHologram(item, color, holoEnabled, itemCategoriesCache, holoHideUncategorized,
+                    activeLabels, plugin.getConfig().getBoolean("settings.holograms.see-through", false),
+                    plugin.getConfig().getDouble("settings.holograms.view-distance", 48.0),
+                    plugin.getConfig().getBoolean("settings.holograms.background", false),
+                    plugin.getConfig().getDouble("settings.holograms.offset", 0.6),
+                    baseNameCache, displayNameOverridesCache, itemMoneyAmounts, economyFormat, economyPrefix,
+                    holoShowAmount, rawAmountFormat, protectionEnabled, protectionDuration, itemSpawnTimes,
+                    rawOwnerFormat, usePapi, holoShowTimer, timerComponentCache, holoTimerNewLine,
+                    plugin.getLodManager() != null ? plugin.getLodManager().getLodHoloDistanceSquared() : 1024.0,
+                    plugin.getHiddenVisuals(), plugin.getVisibleEntities());
+            return;
+        }
+
+        if (groupLeaders.containsKey(uuid)) return;
+
+        int currentSec = (6000 - item.getTicksLived()) / 20;
+        int currentCount = item.getItemStack().getAmount();
+
+        long stateHash = ((long) currentSec << 32) | ((long) currentCount << 16);
+        Long lastHash = lastHoloState.get(uuid);
+
+        if (lastHash != null && lastHash == stateHash) return;
+
+        Component baseName = baseNameCache.get(uuid);
+        if (baseName == null) {
+            baseName = calculateBaseName(item, color, displayNameOverridesCache, itemMoneyAmounts, economyFormat, economyPrefix);
+            baseNameCache.put(uuid, baseName);
+        }
+        display.text(buildFinalName(item, baseName, holoShowAmount, rawAmountFormat, protectionEnabled, protectionDuration, itemSpawnTimes, rawOwnerFormat, usePapi, holoShowTimer, timerComponentCache, holoTimerNewLine));
+        lastHoloState.put(uuid, stateHash);
+    }
+
+    public void spawnHologram(Item item, NamedTextColor color,
+                              boolean holoEnabled,
+                              Map<UUID, String> itemCategoriesCache,
+                              boolean holoHideUncategorized,
+                              Map<UUID, TextDisplay> activeLabels,
+                              boolean holoSeeThrough,
+                              double holoViewDistance,
+                              boolean holoBackground,
+                              double holoOffset,
+                              Map<UUID, Component> baseNameCache,
+                              Map<String, Component> displayNameOverridesCache,
+                              Map<UUID, Double> itemMoneyAmounts,
+                              String economyFormat,
+                              String economyPrefix,
+                              boolean holoShowAmount,
+                              String rawAmountFormat,
+                              boolean protectionEnabled,
+                              int protectionDuration,
+                              Map<UUID, Long> itemSpawnTimes,
+                              String rawOwnerFormat,
+                              boolean usePapi,
+                              boolean holoShowTimer,
+                              Map<Integer, Component> timerComponentCache,
+                              boolean holoTimerNewLine,
+                              double lodHoloDistSq,
+                              Set<UUID> hiddenVisuals,
+                              Map<UUID, Set<UUID>> visibleEntities) {
+
+        if (!holoEnabled || item == null) return;
+
+        UUID uuid = item.getUniqueId();
+        String cat = itemCategoriesCache.get(uuid);
+        if (holoHideUncategorized && cat == null) return;
+
+        TextDisplay existing = activeLabels.get(uuid);
+        if (existing != null && existing.isValid()) return;
+
+        Component baseName = calculateBaseName(item, color, displayNameOverridesCache, itemMoneyAmounts, economyFormat, economyPrefix);
+        baseNameCache.put(uuid, baseName);
+
+        Component finalName = buildFinalName(item, baseName, holoShowAmount, rawAmountFormat, protectionEnabled, protectionDuration, itemSpawnTimes, rawOwnerFormat, usePapi, holoShowTimer, timerComponentCache, holoTimerNewLine);
+
+        Location loc = item.getLocation().add(0, holoOffset, 0);
+        TextDisplay label = item.getWorld().spawn(loc, TextDisplay.class, td -> {
+            td.text(finalName);
+            td.setBillboard(Display.Billboard.CENTER);
+            td.setSeeThrough(holoSeeThrough);
+            td.setViewRange((float) (holoViewDistance / 64.0));
+            td.setPersistent(false);
+
+            if (holoBackground) {
+                td.setBackgroundColor(org.bukkit.Color.fromARGB(160, 0, 0, 0));
+            } else {
+                td.setBackgroundColor(org.bukkit.Color.fromARGB(0, 0, 0, 0));
+            }
+
+            td.setTransformation(new Transformation(
+                    new org.joml.Vector3f(0, 0, 0),
+                    new org.joml.Quaternionf(),
+                    new org.joml.Vector3f(1.0f, 1.0f, 1.0f),
+                    new org.joml.Quaternionf()
+            ));
+        });
+
+        label.setVisibleByDefault(false);
+        activeLabels.put(uuid, label);
+
+        for (Player p : item.getWorld().getPlayers()) {
+            UUID pUuid = p.getUniqueId();
+            if (hiddenVisuals.contains(pUuid)) continue;
+
+            if (p.getLocation().distanceSquared(item.getLocation()) <= lodHoloDistSq) {
+                p.showEntity(plugin, label);
+                visibleEntities.computeIfAbsent(pUuid, k -> new HashSet<>()).add(label.getUniqueId());
+            }
+        }
+    }
+
+    public void refreshHologram(Item item, boolean holoEnabled, boolean holoHideUncategorized,
+                                Map<UUID, String> itemCategoriesCache, Map<String, NamedTextColor> itemCategories,
+                                NamedTextColor defaultColor, Map<UUID, Long> lastHoloState) {
+        if (!holoEnabled || item == null || !item.isValid())
+            return;
+        UUID uuid = item.getUniqueId();
+        String cat = itemCategoriesCache.get(uuid);
+        if (holoHideUncategorized && cat == null)
+            return;
+        NamedTextColor color = itemCategories.get(cat);
+        if (color == null)
+            color = defaultColor;
+
+        if (lastHoloState != null) lastHoloState.remove(uuid);
+        plugin.updateHologram(item, color);
+    }
+}
