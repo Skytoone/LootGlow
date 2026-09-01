@@ -258,6 +258,28 @@ settings:
       # Allow right-click pickup on grouped items (force GUI opening on groups if false)
       enable-for-groups: false
 
+  # NEW: WOW Factor Effects (Ground Auras, Impact Shockwaves, Pickup Actionbar)
+  wow-effects:
+    enabled: true
+    # Ground magic aura circles rotating beneath rare items
+    ground-auras:
+      enabled: true
+      categories: ["mythic", "legendary", "epic"]
+      radius: 0.7
+      particle-count: 12
+    # Expanding particle shockwave when item hits the ground
+    impact-shockwave:
+      enabled: true
+      categories: ["mythic", "legendary", "epic", "rare"]
+      particle-count: 24
+      sound: "BLOCK_AMETHYST_BLOCK_RESONATE"
+    # Actionbar notification when a player picks up a rare item
+    pickup-actionbar:
+      enabled: true
+      categories: ["mythic", "legendary", "epic", "rare"]
+      format: "<gradient:#FF0055:#FF8800><b>✦ BUTIN <category> ✦</b></gradient> <gray>—</gray> <white><item></white>"
+      sound: "UI_TOAST_CHALLENGE_COMPLETE"
+
 # =====================================================================
 # SECTION 2: ITEM RARITY SYSTEM & HOLOGRAM BANNERS
 # =====================================================================

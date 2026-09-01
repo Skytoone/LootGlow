@@ -81,6 +81,48 @@ public class ParticleAnimationManager {
         item.getWorld().spawnParticle(part, item.getLocation(), 20, 0.2, 0.2, 0.2, 0.05);
     }
 
+    public void triggerImpactShockwave(Item item, String category) {
+        if (item == null || !item.isValid()) return;
+        if (!plugin.getConfig().getBoolean("settings.wow-effects.enabled", true)) return;
+        if (!plugin.getConfig().getBoolean("settings.wow-effects.impact-shockwave.enabled", true)) return;
+
+        java.util.List<String> enabledCategories = plugin.getConfig().getStringList("settings.wow-effects.impact-shockwave.categories");
+        if (category != null && !enabledCategories.isEmpty() && enabledCategories.stream().noneMatch(c -> c.equalsIgnoreCase(category))) {
+            return;
+        }
+
+        int count = plugin.getConfig().getInt("settings.wow-effects.impact-shockwave.particle-count", 24);
+        String soundStr = plugin.getConfig().getString("settings.wow-effects.impact-shockwave.sound", "BLOCK_AMETHYST_BLOCK_RESONATE");
+
+        Location loc = item.getLocation();
+        World world = loc.getWorld();
+        if (world == null) return;
+
+        net.kyori.adventure.text.format.NamedTextColor color = category != null ? plugin.getConfigManager().getCategoryColors().get(category) : null;
+        org.bukkit.Color dustColor = color != null ? org.bukkit.Color.fromRGB(color.red(), color.green(), color.blue()) : org.bukkit.Color.WHITE;
+        Particle.DustOptions dustOptions = new Particle.DustOptions(dustColor, 1.2f);
+
+        for (int r = 1; r <= 3; r++) {
+            final double radius = r * 0.4;
+            FoliaScheduler.runLater(plugin, () -> {
+                if (!item.isValid()) return;
+                Location center = item.getLocation();
+                for (int i = 0; i < count; i++) {
+                    double angle = (2 * Math.PI * i) / count;
+                    double x = center.getX() + radius * Math.cos(angle);
+                    double z = center.getZ() + radius * Math.sin(angle);
+                    Location pLoc = new Location(center.getWorld(), x, center.getY() + 0.1, z);
+                    center.getWorld().spawnParticle(Particle.DUST, pLoc, 1, 0, 0, 0, 0, dustOptions);
+                }
+            }, (r - 1) * 2L);
+        }
+
+        Sound sound = plugin.parseSound(soundStr);
+        if (sound != null) {
+            world.playSound(loc, sound, 1.0f, 1.2f);
+        }
+    }
+
     public void setBouncingEnabled(Item item, boolean bouncing, Set<UUID> recentlyBounced) {
         if (item == null || !item.isValid() || recentlyBounced == null) return;
         if (!bouncing) {
@@ -114,6 +156,9 @@ public class ParticleAnimationManager {
             if (!isEnabled || !particlesEnabled) return;
 
             particleTick++;
+            if (plugin.getGroundAuraManager() != null) {
+                plugin.getGroundAuraManager().tickAuras(activeItems, itemCategoriesCache);
+            }
             double partDistSq = lodPartDistSq;
 
             record CachedItemLoc(UUID uuid, double x, double y, double z, World world, Particle particle, String category, AnimType animType) {}

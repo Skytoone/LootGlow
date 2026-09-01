@@ -140,6 +140,32 @@ public class ItemListener implements Listener {
                 plugin.getDatabaseManager().incrementLootStat(player.getUniqueId(), category != null ? category : "DEFAULT", event.getItem().getItemStack().getAmount());
             }
 
+            // Pickup Actionbar Notification & Sound
+            if (plugin.getConfig().getBoolean("settings.wow-effects.enabled", true) &&
+                plugin.getConfig().getBoolean("settings.wow-effects.pickup-actionbar.enabled", true)) {
+
+                String itemCat = category != null ? category : plugin.getTrackedItemManager().getItemCategoriesCache().get(event.getItem().getUniqueId());
+                if (itemCat != null) {
+                    java.util.List<String> enabledCategories = plugin.getConfig().getStringList("settings.wow-effects.pickup-actionbar.categories");
+                    if (enabledCategories.isEmpty() || enabledCategories.stream().anyMatch(c -> c.equalsIgnoreCase(itemCat))) {
+                        String format = plugin.getConfig().getString("settings.wow-effects.pickup-actionbar.format", "<gradient:#FF0055:#FF8800><b>✦ BUTIN <category> ✦</b></gradient> <gray>—</gray> <white><item></white>");
+                        String itemName = event.getItem().getItemStack().hasItemMeta() && event.getItem().getItemStack().getItemMeta().hasDisplayName() ?
+                                net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(event.getItem().getItemStack().getItemMeta().displayName()) :
+                                event.getItem().getItemStack().getType().name();
+
+                        String formatted = format.replace("<category>", itemCat.toUpperCase()).replace("<item>", itemName);
+                        net.kyori.adventure.text.Component actionbarComp = net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(formatted);
+                        player.sendActionBar(actionbarComp);
+
+                        String soundStr = plugin.getConfig().getString("settings.wow-effects.pickup-actionbar.sound", "UI_TOAST_CHALLENGE_COMPLETE");
+                        org.bukkit.Sound sound = plugin.parseSound(soundStr);
+                        if (sound != null) {
+                            player.playSound(player.getLocation(), sound, 0.8f, 1.2f);
+                        }
+                    }
+                }
+            }
+
             // Player pickup: play aspiration animation then remove glow
             plugin.playAspirationAnimation(event.getItem(), player);
             plugin.removeGlow(event.getItem());

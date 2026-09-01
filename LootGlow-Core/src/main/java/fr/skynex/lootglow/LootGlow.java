@@ -72,6 +72,7 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
     private fr.skynex.lootglow.service.ItemPhysicsService itemPhysicsService;
     private fr.skynex.lootglow.managers.PluginLifecycleManager pluginLifecycleManager;
     private fr.skynex.lootglow.managers.RarityManager rarityManager;
+    private fr.skynex.lootglow.managers.GroundAuraManager groundAuraManager;
 
     public fr.skynex.lootglow.managers.RarityManager getRarityManager() { return rarityManager; }
     public fr.skynex.lootglow.managers.PluginLifecycleManager getPluginLifecycleManager() { return pluginLifecycleManager; }
@@ -105,6 +106,7 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
     public fr.skynex.lootglow.util.ItemNameFormatter getItemNameFormatter() { return itemNameFormatter; }
     public fr.skynex.lootglow.managers.LootWorldManager getLootWorldManager() { return lootWorldManager; }
     public fr.skynex.lootglow.managers.VanillaItemVisibilityManager getVanillaItemVisibilityManager() { return vanillaItemVisibilityManager; }
+    public fr.skynex.lootglow.managers.GroundAuraManager getGroundAuraManager() { return groundAuraManager; }
     public fr.skynex.lootglow.service.HologramTickService getHologramTickService() { return hologramTickService; }
     public fr.skynex.lootglow.service.BeamTickService getBeamTickService() { return beamTickService; }
     public fr.skynex.lootglow.service.ItemRotationService getItemRotationService() { return itemRotationService; }
@@ -963,6 +965,7 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
         this.lootWorldManager = new fr.skynex.lootglow.managers.LootWorldManager(this);
         this.vanillaItemVisibilityManager = new fr.skynex.lootglow.managers.VanillaItemVisibilityManager(this);
         this.rarityManager = new fr.skynex.lootglow.managers.RarityManager(this);
+        this.groundAuraManager = new fr.skynex.lootglow.managers.GroundAuraManager(this);
         this.hologramTickService = new fr.skynex.lootglow.service.HologramTickService(this);
         this.beamTickService = new fr.skynex.lootglow.service.BeamTickService(this);
         this.itemRotationService = new fr.skynex.lootglow.service.ItemRotationService(this);

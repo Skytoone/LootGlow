@@ -304,6 +304,7 @@ public class ItemGlowApplyService {
                 if (rarity == fr.skynex.lootglow.managers.RarityManager.ItemRarity.LEGENDARY || rarity == fr.skynex.lootglow.managers.RarityManager.ItemRarity.MYTHIC) {
                     plugin.getParticleAnimationManager().triggerParabolaDropAnimation(item, rarity);
                 }
+                plugin.getParticleAnimationManager().triggerImpactShockwave(item, finalCategory);
             }
 
             // Title & Subtitle RPG drop notification broadcast
