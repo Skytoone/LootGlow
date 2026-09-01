@@ -338,5 +338,24 @@ public interface LootGlowAPI {
      */
     @NotNull
     Set<UUID> getLootSharers(@NotNull Item item);
+
+    /**
+     * Detects and returns the configured LootGlow rarity name for an item stack
+     * (e.g. "MYTHIC", "LEGENDARY", "EPIC", "RARE", "UNCOMMON", "COMMON").
+     *
+     * @param itemStack Target item stack to analyze
+     * @return Rarity name string
+     */
+    @NotNull
+    String detectItemRarity(@NotNull ItemStack itemStack);
+
+    /**
+     * Detects and returns the configured LootGlow rarity name for a dropped item entity.
+     *
+     * @param item Target dropped item entity
+     * @return Rarity name string
+     */
+    @NotNull
+    String detectItemRarity(@NotNull Item item);
 }
 

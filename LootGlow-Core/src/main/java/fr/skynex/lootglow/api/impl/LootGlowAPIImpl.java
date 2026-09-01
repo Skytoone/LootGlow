@@ -334,4 +334,18 @@ public class LootGlowAPIImpl implements LootGlowAPI {
     public Set<UUID> getLootSharers(@NotNull Item item) {
         return plugin.getLootProtectionManager() != null ? plugin.getLootProtectionManager().getLootSharers(item) : Set.of();
     }
+
+    @NotNull
+    @Override
+    public String detectItemRarity(@NotNull ItemStack itemStack) {
+        if (itemStack == null || plugin.getRarityManager() == null) return "COMMON";
+        return plugin.getRarityManager().detectRarity(itemStack).name();
+    }
+
+    @NotNull
+    @Override
+    public String detectItemRarity(@NotNull Item item) {
+        if (item == null || !item.isValid()) return "COMMON";
+        return detectItemRarity(item.getItemStack());
+    }
 }

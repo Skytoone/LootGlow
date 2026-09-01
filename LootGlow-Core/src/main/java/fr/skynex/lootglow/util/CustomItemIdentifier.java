@@ -37,7 +37,18 @@ public class CustomItemIdentifier {
     private static final NamespacedKey ECO_KEY_ALT = new NamespacedKey("auxilium", "id");
 
     private static final NamespacedKey EXECUTABLEITEMS_KEY = new NamespacedKey("executableitems", "id");
+    private static final NamespacedKey EXECUTABLEITEMS_KEY_EI_ID = new NamespacedKey("executableitems", "ei-id");
+    private static final NamespacedKey EXECUTABLEITEMS_KEY_EI_ID2 = new NamespacedKey("executableitems", "ei_id");
+    private static final NamespacedKey SSOMAR_EI_KEY = new NamespacedKey("ssomar", "ei-id");
+    private static final NamespacedKey SSOMAR_EI_KEY2 = new NamespacedKey("ssomar", "ei_id");
+    private static final NamespacedKey SSOMAR_EI_KEY3 = new NamespacedKey("ssomar_ei", "id");
+
     private static final NamespacedKey EXECUTABLEBLOCKS_KEY = new NamespacedKey("executableblocks", "id");
+    private static final NamespacedKey EXECUTABLEBLOCKS_KEY_EB_ID = new NamespacedKey("executableblocks", "eb-id");
+    private static final NamespacedKey EXECUTABLEBLOCKS_KEY_EB_ID2 = new NamespacedKey("executableblocks", "eb_id");
+    private static final NamespacedKey SSOMAR_EB_KEY = new NamespacedKey("ssomar", "eb-id");
+    private static final NamespacedKey SSOMAR_EB_KEY2 = new NamespacedKey("ssomar", "eb_id");
+    private static final NamespacedKey SSOMAR_EB_KEY3 = new NamespacedKey("ssomar_eb", "id");
 
     private static final NamespacedKey MMO_TYPE_KEY = new NamespacedKey("mmoitems", "item_type");
     private static final NamespacedKey MMO_ID_KEY = new NamespacedKey("mmoitems", "item_id");
@@ -211,8 +222,29 @@ public class CustomItemIdentifier {
         // ExecutableItems & ExecutableBlocks
         if (pdc.has(EXECUTABLEITEMS_KEY, PersistentDataType.STRING))
             return "EXECUTABLEITEMS:" + pdc.get(EXECUTABLEITEMS_KEY, PersistentDataType.STRING).toUpperCase();
+        if (pdc.has(EXECUTABLEITEMS_KEY_EI_ID, PersistentDataType.STRING))
+            return "EXECUTABLEITEMS:" + pdc.get(EXECUTABLEITEMS_KEY_EI_ID, PersistentDataType.STRING).toUpperCase();
+        if (pdc.has(EXECUTABLEITEMS_KEY_EI_ID2, PersistentDataType.STRING))
+            return "EXECUTABLEITEMS:" + pdc.get(EXECUTABLEITEMS_KEY_EI_ID2, PersistentDataType.STRING).toUpperCase();
+        if (pdc.has(SSOMAR_EI_KEY, PersistentDataType.STRING))
+            return "EXECUTABLEITEMS:" + pdc.get(SSOMAR_EI_KEY, PersistentDataType.STRING).toUpperCase();
+        if (pdc.has(SSOMAR_EI_KEY2, PersistentDataType.STRING))
+            return "EXECUTABLEITEMS:" + pdc.get(SSOMAR_EI_KEY2, PersistentDataType.STRING).toUpperCase();
+        if (pdc.has(SSOMAR_EI_KEY3, PersistentDataType.STRING))
+            return "EXECUTABLEITEMS:" + pdc.get(SSOMAR_EI_KEY3, PersistentDataType.STRING).toUpperCase();
+
         if (pdc.has(EXECUTABLEBLOCKS_KEY, PersistentDataType.STRING))
             return "EXECUTABLEBLOCKS:" + pdc.get(EXECUTABLEBLOCKS_KEY, PersistentDataType.STRING).toUpperCase();
+        if (pdc.has(EXECUTABLEBLOCKS_KEY_EB_ID, PersistentDataType.STRING))
+            return "EXECUTABLEBLOCKS:" + pdc.get(EXECUTABLEBLOCKS_KEY_EB_ID, PersistentDataType.STRING).toUpperCase();
+        if (pdc.has(EXECUTABLEBLOCKS_KEY_EB_ID2, PersistentDataType.STRING))
+            return "EXECUTABLEBLOCKS:" + pdc.get(EXECUTABLEBLOCKS_KEY_EB_ID2, PersistentDataType.STRING).toUpperCase();
+        if (pdc.has(SSOMAR_EB_KEY, PersistentDataType.STRING))
+            return "EXECUTABLEBLOCKS:" + pdc.get(SSOMAR_EB_KEY, PersistentDataType.STRING).toUpperCase();
+        if (pdc.has(SSOMAR_EB_KEY2, PersistentDataType.STRING))
+            return "EXECUTABLEBLOCKS:" + pdc.get(SSOMAR_EB_KEY2, PersistentDataType.STRING).toUpperCase();
+        if (pdc.has(SSOMAR_EB_KEY3, PersistentDataType.STRING))
+            return "EXECUTABLEBLOCKS:" + pdc.get(SSOMAR_EB_KEY3, PersistentDataType.STRING).toUpperCase();
 
         // AdvancedItems
         if (pdc.has(ADVANCEDITEMS_KEY, PersistentDataType.STRING))

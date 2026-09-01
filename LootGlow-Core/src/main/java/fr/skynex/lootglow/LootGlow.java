@@ -930,6 +930,8 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
     @Override public void addLootSharer(@NotNull Item item, @NotNull UUID playerUuid) { apiImpl.addLootSharer(item, playerUuid); }
     @Override public void removeLootSharer(@NotNull Item item, @NotNull UUID playerUuid) { apiImpl.removeLootSharer(item, playerUuid); }
     @NotNull @Override public Set<UUID> getLootSharers(@NotNull Item item) { return apiImpl.getLootSharers(item); }
+    @NotNull @Override public String detectItemRarity(@NotNull ItemStack itemStack) { return apiImpl.detectItemRarity(itemStack); }
+    @NotNull @Override public String detectItemRarity(@NotNull Item item) { return apiImpl.detectItemRarity(item); }
     private void initManagersAndServices() {
         this.databaseManager = new DatabaseManager(this);
         this.trackedItemManager = new TrackedItemManager(this);

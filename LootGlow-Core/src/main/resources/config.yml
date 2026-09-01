@@ -338,6 +338,8 @@ default-color: "WHITE"
 # - ITEMSADDER:itemID
 # - NEXO:itemID
 # - MYTHIC:itemID
+# - EXECUTABLEITEMS:itemID
+# - EXECUTABLEBLOCKS:itemID
 # - ADVANCEDITEMS:itemID
 # - ITEMEDIT:itemID
 # - MMOITEMS:itemType:itemID
