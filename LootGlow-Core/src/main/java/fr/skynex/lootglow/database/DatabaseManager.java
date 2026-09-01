@@ -6,6 +6,8 @@ import org.bukkit.entity.Player;
 
 import java.io.File;
 import java.sql.*;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Logger;
@@ -38,6 +40,7 @@ public class DatabaseManager {
                     s.execute("ALTER TABLE player_settings ADD COLUMN magnet_disabled INTEGER DEFAULT 0");
                 } catch (SQLException ignored) {
                 }
+                s.execute("CREATE TABLE IF NOT EXISTS player_loot_stats (uuid TEXT, category TEXT, count INTEGER DEFAULT 0, PRIMARY KEY (uuid, category))");
             }
         } catch (SQLException e) {
             logger.severe("Could not initialize SQLite database: " + e.getMessage());
@@ -52,6 +55,80 @@ public class DatabaseManager {
         } catch (SQLException e) {
             logger.severe("Error closing SQLite database connection: " + e.getMessage());
         }
+    }
+
+    public record LooterStat(String uuid, String category, int count) {}
+
+    public void incrementLootStat(UUID uuid, String category, int amount) {
+        if (uuid == null || category == null || amount <= 0) return;
+        String catUpper = category.toUpperCase();
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            if (dbConnection == null) return;
+            synchronized (dbConnection) {
+                try (PreparedStatement ps = dbConnection.prepareStatement(
+                        "INSERT INTO player_loot_stats (uuid, category, count) VALUES (?, ?, ?) " +
+                                "ON CONFLICT(uuid, category) DO UPDATE SET count = count + ?")) {
+                    ps.setString(1, uuid.toString());
+                    ps.setString(2, catUpper);
+                    ps.setInt(3, amount);
+                    ps.setInt(4, amount);
+                    ps.executeUpdate();
+                } catch (SQLException e) {
+                    logger.severe("Could not increment loot stat for " + uuid + ": " + e.getMessage());
+                }
+            }
+        });
+    }
+
+    public void getPlayerLootStats(UUID uuid, java.util.function.Consumer<Map<String, Integer>> callback) {
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            Map<String, Integer> stats = new java.util.HashMap<>();
+            if (dbConnection != null) {
+                synchronized (dbConnection) {
+                    try (PreparedStatement ps = dbConnection.prepareStatement(
+                            "SELECT category, count FROM player_loot_stats WHERE uuid = ?")) {
+                        ps.setString(1, uuid.toString());
+                        try (ResultSet rs = ps.executeQuery()) {
+                            while (rs.next()) {
+                                stats.put(rs.getString("category"), rs.getInt("count"));
+                            }
+                        }
+                    } catch (SQLException e) {
+                        logger.severe("Could not load loot stats for " + uuid + ": " + e.getMessage());
+                    }
+                }
+            }
+            Bukkit.getScheduler().runTask(plugin, () -> callback.accept(stats));
+        });
+    }
+
+    public void getTopLooters(String category, int limit, java.util.function.Consumer<List<LooterStat>> callback) {
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            List<LooterStat> top = new java.util.ArrayList<>();
+            if (dbConnection != null) {
+                synchronized (dbConnection) {
+                    String query = category != null && !category.equalsIgnoreCase("ALL")
+                            ? "SELECT uuid, category, count FROM player_loot_stats WHERE category = ? ORDER BY count DESC LIMIT ?"
+                            : "SELECT uuid, 'ALL' AS category, SUM(count) AS count FROM player_loot_stats GROUP BY uuid ORDER BY count DESC LIMIT ?";
+                    try (PreparedStatement ps = dbConnection.prepareStatement(query)) {
+                        if (category != null && !category.equalsIgnoreCase("ALL")) {
+                            ps.setString(1, category.toUpperCase());
+                            ps.setInt(2, limit);
+                        } else {
+                            ps.setInt(1, limit);
+                        }
+                        try (ResultSet rs = ps.executeQuery()) {
+                            while (rs.next()) {
+                                top.add(new LooterStat(rs.getString("uuid"), rs.getString("category"), rs.getInt("count")));
+                            }
+                        }
+                    } catch (SQLException e) {
+                        logger.severe("Could not fetch top looters: " + e.getMessage());
+                    }
+                }
+            }
+            Bukkit.getScheduler().runTask(plugin, () -> callback.accept(top));
+        });
     }
 
     public void loadPlayerData(Player player, Set<UUID> hiddenVisuals, Set<UUID> disabledMagnets) {

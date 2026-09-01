@@ -27,6 +27,11 @@ public class LootGlowConfigManager {
     private final Map<String, Sound> categorySounds = new HashMap<>();
     private final Map<String, String> categoryNames = new HashMap<>();
     private final Map<String, Boolean> categoryGlow = new HashMap<>();
+    private final Map<String, List<String>> categoryLorePatterns = new HashMap<>();
+    private final Map<String, List<String>> categoryNbtPatterns = new HashMap<>();
+    private final Map<String, String> categoryTitles = new HashMap<>();
+    private final Map<String, String> categorySubtitles = new HashMap<>();
+    private final Map<String, Double> categoryNotificationRadius = new HashMap<>();
 
     public LootGlowConfigManager(LootGlow plugin) {
         this.plugin = plugin;
@@ -76,6 +81,26 @@ public class LootGlowConfigManager {
         return categoryGlow;
     }
 
+    public Map<String, List<String>> getCategoryLorePatterns() {
+        return categoryLorePatterns;
+    }
+
+    public Map<String, List<String>> getCategoryNbtPatterns() {
+        return categoryNbtPatterns;
+    }
+
+    public Map<String, String> getCategoryTitles() {
+        return categoryTitles;
+    }
+
+    public Map<String, String> getCategorySubtitles() {
+        return categorySubtitles;
+    }
+
+    public Map<String, Double> getCategoryNotificationRadius() {
+        return categoryNotificationRadius;
+    }
+
     public boolean isWorldAllowed(String worldName) {
         if (isWorldWhitelist) {
             return filteredWorlds.contains(worldName);
@@ -98,6 +123,12 @@ public class LootGlowConfigManager {
                                Map<String, String> categoryAnimTypes,
                                String particleAnimType,
                                Map<String, Sound> categorySounds) {
+        categoryLorePatterns.clear();
+        categoryNbtPatterns.clear();
+        categoryTitles.clear();
+        categorySubtitles.clear();
+        categoryNotificationRadius.clear();
+
         if (config.getConfigurationSection("categories") != null) {
             for (String key : config.getConfigurationSection("categories").getKeys(false)) {
                 String colorStr = config.getString("categories." + key + ".color", "WHITE");
@@ -128,6 +159,28 @@ public class LootGlowConfigManager {
 
                 boolean glowEnabled = config.getBoolean("categories." + key + ".glow", true);
                 categoryGlow.put(key, glowEnabled);
+
+                List<String> lorePats = config.getStringList("categories." + key + ".lore-patterns");
+                if (!lorePats.isEmpty()) {
+                    List<String> lowerLorePats = new ArrayList<>();
+                    for (String lp : lorePats) lowerLorePats.add(lp.toLowerCase());
+                    categoryLorePatterns.put(key, lowerLorePats);
+                }
+
+                List<String> nbtPats = config.getStringList("categories." + key + ".nbt-patterns");
+                if (!nbtPats.isEmpty()) {
+                    List<String> lowerNbtPats = new ArrayList<>();
+                    for (String np : nbtPats) lowerNbtPats.add(np.toLowerCase());
+                    categoryNbtPatterns.put(key, lowerNbtPats);
+                }
+
+                if (config.contains("categories." + key + ".title")) {
+                    categoryTitles.put(key, config.getString("categories." + key + ".title"));
+                }
+                if (config.contains("categories." + key + ".subtitle")) {
+                    categorySubtitles.put(key, config.getString("categories." + key + ".subtitle"));
+                }
+                categoryNotificationRadius.put(key, config.getDouble("categories." + key + ".notification-radius", 15.0));
 
                 if (config.getConfigurationSection("categories." + key + ".display-names") != null) {
                     for (String itemKey : config.getConfigurationSection("categories." + key + ".display-names").getKeys(false)) {

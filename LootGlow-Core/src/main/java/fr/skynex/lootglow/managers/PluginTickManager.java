@@ -14,6 +14,7 @@ public class PluginTickManager {
     private BukkitTask globalSyncTask;
     private BukkitTask particleAnimationTask;
     private BukkitTask magnetTask;
+    private BukkitTask unifiedTickTask;
     private long globalSyncTick = 0;
 
     public PluginTickManager(LootGlow plugin) {
@@ -56,28 +57,34 @@ public class PluginTickManager {
         cancelTasks();
 
         if (syncRunnable != null) {
-            globalSyncTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            globalSyncTask = FoliaScheduler.runTimer(plugin, () -> {
                 incrementGlobalSyncTick();
                 syncRunnable.run();
             }, 1L, 1L);
         }
 
         if (particleRunnable != null) {
-            particleAnimationTask = Bukkit.getScheduler().runTaskTimer(plugin, particleRunnable, 2L, 2L);
+            particleAnimationTask = FoliaScheduler.runTimer(plugin, particleRunnable, 2L, 2L);
         }
 
         if (magnetRunnable != null) {
-            magnetTask = Bukkit.getScheduler().runTaskTimer(plugin, magnetRunnable, 5L, 5L);
+            magnetTask = FoliaScheduler.runTimer(plugin, magnetRunnable, 5L, 5L);
         }
     }
 
     public void startUnifiedTickTask(Runnable syncRunnable, Runnable bounceRunnable, Runnable aspirationRunnable,
                                      Runnable magnetRunnable, java.util.function.Consumer<Float> farmAnimConsumer,
                                      java.util.function.Consumer<Float> beamAnimConsumer) {
-        FoliaScheduler.runTimer(plugin, new Runnable() {
+        if (unifiedTickTask != null) {
+            unifiedTickTask.cancel();
+            unifiedTickTask = null;
+        }
+
+        unifiedTickTask = FoliaScheduler.runTimer(plugin, new Runnable() {
             private int unifiedTick = 0;
             private float beamAngle = 0f;
             private float farmAngle = 0f;
+            private static final float TWO_PI = (float) (Math.PI * 2);
 
             @Override
             public void run() {
@@ -92,9 +99,9 @@ public class PluginTickManager {
                 // --- Every 2 ticks ---
                 if (unifiedTick % 2 == 0) {
                     if (magnetRunnable != null) magnetRunnable.run();
-                    farmAngle += 0.1f;
+                    farmAngle = (farmAngle + 0.1f) % TWO_PI;
                     if (farmAnimConsumer != null) farmAnimConsumer.accept(farmAngle);
-                    beamAngle += 0.1f;
+                    beamAngle = (beamAngle + 0.1f) % TWO_PI;
                     if (beamAnimConsumer != null) beamAnimConsumer.accept(beamAngle);
                 }
             }
@@ -102,6 +109,10 @@ public class PluginTickManager {
     }
 
     public void cancelTasks() {
+        if (unifiedTickTask != null) {
+            unifiedTickTask.cancel();
+            unifiedTickTask = null;
+        }
         if (globalSyncTask != null) {
             globalSyncTask.cancel();
             globalSyncTask = null;

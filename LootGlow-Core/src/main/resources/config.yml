@@ -9,6 +9,11 @@ settings:
   # Default Minecraft is 300 seconds (5 minutes)
   despawn-time: 300
   
+  # Minimum pickup delay (in ticks) for mob & MythicMobs drops.
+  # Gives items time to pop and land on the ground before nearby players can pick them up.
+  # Default is 20 (1 second). Set to 0 to disable.
+  mob-drop-pickup-delay: 20
+  
   # Global glow setting for items without a category
   default-glow: true
   
@@ -271,6 +276,16 @@ categories:
     particle: "FLAME"
     sound: "BLOCK_AMETHYST_BLOCK_CHIME"
     light-level: 15
+    # Optional RPG drop Title & Subtitle notification broadcast
+    title: "<gradient:gold:yellow>⭐ DROP LÉGENDAIRE ⭐</gradient>"
+    subtitle: "<gray>Un objet d'exception est tombé au sol !</gray>"
+    notification-radius: 15.0
+    # Optional dynamic Lore & NBT patterns matching
+    lore-patterns:
+      - "legendary"
+      - "légendaire"
+    nbt-patterns:
+      - "tier_legendary"
     items:
       - "NETHERITE_INGOT"
       - "NETHERITE_SCRAP"

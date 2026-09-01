@@ -104,14 +104,12 @@ public class ItemPhysicsService {
             double visualYOffset = baseWeight + (isBlockItem ? (rpgBlockScale / 2.0) : 0.0);
             if (visual != null && visual.isValid() && visual.getItemStack() != null) {
                 Material vMat = visual.getItemStack().getType();
-                if (vMat == bagMaterial && groupLeaders.containsKey(itemUuid)) {
-                    visualYOffset = bagMaterial == Material.PLAYER_HEAD ? 0.40 : 0.20;
-                } else if (vMat == Material.PLAYER_HEAD) {
-                    visualYOffset += 0.15;
-                } else if (vMat == Material.CHEST || vMat == Material.TRAPPED_CHEST || vMat == Material.ENDER_CHEST) {
-                    visualYOffset += 0.20;
+                if (vMat == Material.PLAYER_HEAD) {
+                    visualYOffset = 0.15;
                 } else if (vMat == Material.BUNDLE) {
-                    visualYOffset += 0.15;
+                    visualYOffset = 0.32;
+                } else if (vMat == Material.CHEST || vMat == Material.TRAPPED_CHEST || vMat == Material.ENDER_CHEST) {
+                    visualYOffset = 0.20;
                 }
             }
             Entity representative = (visual != null) ? (Entity) visual : (Entity) label;

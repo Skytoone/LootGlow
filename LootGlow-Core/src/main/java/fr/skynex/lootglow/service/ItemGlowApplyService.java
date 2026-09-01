@@ -74,6 +74,14 @@ public class ItemGlowApplyService {
         if (!plugin.isWorldAllowed(item.getWorld().getName())) return;
         if (plugin.isInBlockedRegion(item.getLocation())) return;
 
+        // Apply configurable pickup delay for mob/MythicMobs drops so items land properly before being picked up
+        if (item.getThrower() == null) {
+            int mobPickupDelay = plugin.getConfig().getInt("settings.mob-drop-pickup-delay", 20);
+            if (mobPickupDelay > 0 && item.getPickupDelay() < mobPickupDelay) {
+                item.setPickupDelay(mobPickupDelay);
+            }
+        }
+
         ItemStack stack = item.getItemStack();
         String customId = plugin.getInternalId(stack);
         String matName = stack.getType().name();
@@ -132,42 +140,88 @@ public class ItemGlowApplyService {
                 }
 
                 if (category == null && item.getItemStack().hasItemMeta()) {
-                    Component displayName = item.getItemStack().getItemMeta().displayName();
-                    if (displayName != null) {
-                        TextColor nameColor = displayName.color();
+                    org.bukkit.inventory.meta.ItemMeta meta = item.getItemStack().getItemMeta();
 
-                        if (nameColor == null) {
-                            String legacyName = LegacyComponentSerializer.legacySection().serialize(displayName);
-                            if (legacyName.contains("§")) {
-                                int index = legacyName.indexOf("§");
-                                if (index != -1 && index + 1 < legacyName.length()) {
-                                    char code = legacyName.charAt(index + 1);
-                                    switch (code) {
-                                        case '0' -> nameColor = NamedTextColor.BLACK;
-                                        case '1' -> nameColor = NamedTextColor.DARK_BLUE;
-                                        case '2' -> nameColor = NamedTextColor.DARK_GREEN;
-                                        case '3' -> nameColor = NamedTextColor.DARK_AQUA;
-                                        case '4' -> nameColor = NamedTextColor.DARK_RED;
-                                        case '5' -> nameColor = NamedTextColor.DARK_PURPLE;
-                                        case '6' -> nameColor = NamedTextColor.GOLD;
-                                        case '7' -> nameColor = NamedTextColor.GRAY;
-                                        case '8' -> nameColor = NamedTextColor.DARK_GRAY;
-                                        case '9' -> nameColor = NamedTextColor.BLUE;
-                                        case 'a' -> nameColor = NamedTextColor.GREEN;
-                                        case 'b' -> nameColor = NamedTextColor.AQUA;
-                                        case 'c' -> nameColor = NamedTextColor.RED;
-                                        case 'd' -> nameColor = NamedTextColor.LIGHT_PURPLE;
-                                        case 'e' -> nameColor = NamedTextColor.YELLOW;
-                                        case 'f' -> nameColor = NamedTextColor.WHITE;
+                    // 1) Lore Pattern matching
+                    if (meta.hasLore() && !plugin.getConfigManager().getCategoryLorePatterns().isEmpty()) {
+                        List<String> loreLines = meta.getLore();
+                        if (loreLines != null) {
+                            for (Map.Entry<String, List<String>> entry : plugin.getConfigManager().getCategoryLorePatterns().entrySet()) {
+                                String catName = entry.getKey();
+                                for (String pattern : entry.getValue()) {
+                                    for (String line : loreLines) {
+                                        if (line != null && line.toLowerCase().contains(pattern)) {
+                                            category = catName;
+                                            NamedTextColor catColor = plugin.getConfigManager().getCategoryColors().get(catName);
+                                            if (catColor != null) color = catColor;
+                                            break;
+                                        }
+                                    }
+                                    if (category != null) break;
+                                }
+                                if (category != null) break;
+                            }
+                        }
+                    }
+
+                    // 2) NBT / PDC Pattern matching
+                    if (category == null && !plugin.getConfigManager().getCategoryNbtPatterns().isEmpty()) {
+                        PersistentDataContainer metaPdc = meta.getPersistentDataContainer();
+                        for (Map.Entry<String, List<String>> entry : plugin.getConfigManager().getCategoryNbtPatterns().entrySet()) {
+                            String catName = entry.getKey();
+                            for (String pattern : entry.getValue()) {
+                                for (NamespacedKey pdcKey : metaPdc.getKeys()) {
+                                    if (pdcKey.toString().toLowerCase().contains(pattern) || pdcKey.getKey().toLowerCase().contains(pattern)) {
+                                        category = catName;
+                                        NamedTextColor catColor = plugin.getConfigManager().getCategoryColors().get(catName);
+                                        if (catColor != null) color = catColor;
+                                        break;
+                                    }
+                                }
+                                if (category != null) break;
+                            }
+                            if (category != null) break;
+                        }
+                    }
+
+                    if (category == null) {
+                        Component displayName = meta.displayName();
+                        if (displayName != null) {
+                            TextColor nameColor = displayName.color();
+
+                            if (nameColor == null) {
+                                String legacyName = LegacyComponentSerializer.legacySection().serialize(displayName);
+                                if (legacyName.contains("§")) {
+                                    int index = legacyName.indexOf("§");
+                                    if (index != -1 && index + 1 < legacyName.length()) {
+                                        char code = legacyName.charAt(index + 1);
+                                        switch (code) {
+                                            case '0' -> nameColor = NamedTextColor.BLACK;
+                                            case '1' -> nameColor = NamedTextColor.DARK_BLUE;
+                                            case '2' -> nameColor = NamedTextColor.DARK_GREEN;
+                                            case '3' -> nameColor = NamedTextColor.DARK_AQUA;
+                                            case '4' -> nameColor = NamedTextColor.DARK_RED;
+                                            case '5' -> nameColor = NamedTextColor.DARK_PURPLE;
+                                            case '6' -> nameColor = NamedTextColor.GOLD;
+                                            case '7' -> nameColor = NamedTextColor.GRAY;
+                                            case '8' -> nameColor = NamedTextColor.DARK_GRAY;
+                                            case '9' -> nameColor = NamedTextColor.BLUE;
+                                            case 'a' -> nameColor = NamedTextColor.GREEN;
+                                            case 'b' -> nameColor = NamedTextColor.AQUA;
+                                            case 'c' -> nameColor = NamedTextColor.RED;
+                                            case 'd' -> nameColor = NamedTextColor.LIGHT_PURPLE;
+                                            case 'e' -> nameColor = NamedTextColor.YELLOW;
+                                            case 'f' -> nameColor = NamedTextColor.WHITE;
+                                        }
                                     }
                                 }
                             }
-                        }
 
-                        if (nameColor != null) {
-                            NamedTextColor nearest = NamedTextColor.nearestTo(nameColor);
-                            if (!nearest.equals(NamedTextColor.WHITE)) {
-                                color = nearest;
+                            if (nameColor != null) {
+                                NamedTextColor nearest = NamedTextColor.nearestTo(nameColor);
+                                if (!nearest.equals(NamedTextColor.WHITE)) {
+                                    color = nearest;
+                                }
                             }
                         }
                     }
@@ -237,8 +291,26 @@ public class ItemGlowApplyService {
             }
         }
 
-        if (playAnimation && sound != null) {
-            item.getWorld().playSound(item.getLocation(), sound, 1.0f, 1.0f);
+        if (playAnimation) {
+            if (sound != null) {
+                item.getWorld().playSound(item.getLocation(), sound, 1.0f, 1.0f);
+            }
+
+            // Title & Subtitle RPG drop notification broadcast
+            if (finalCategory != null) {
+                String titleStr = plugin.getConfigManager().getCategoryTitles().get(finalCategory);
+                String subTitleStr = plugin.getConfigManager().getCategorySubtitles().get(finalCategory);
+                if (titleStr != null || subTitleStr != null) {
+                    net.kyori.adventure.text.minimessage.MiniMessage mm = net.kyori.adventure.text.minimessage.MiniMessage.miniMessage();
+                    Component mainTitle = titleStr != null ? mm.deserialize(titleStr) : Component.empty();
+                    Component subTitle = subTitleStr != null ? mm.deserialize(subTitleStr) : Component.empty();
+                    net.kyori.adventure.title.Title titleObj = net.kyori.adventure.title.Title.title(mainTitle, subTitle);
+                    double radius = plugin.getConfigManager().getCategoryNotificationRadius().getOrDefault(finalCategory, 15.0);
+
+                    item.getWorld().getNearbyPlayers(item.getLocation(), radius).forEach(p -> p.showTitle(titleObj));
+                }
+            }
+
             if (finalColor.equals(NamedTextColor.GOLD)) {
                 item.getWorld().getNearbyPlayers(item.getLocation(), 15)
                         .forEach(p -> plugin.sendMessage(p, "legendary-found"));

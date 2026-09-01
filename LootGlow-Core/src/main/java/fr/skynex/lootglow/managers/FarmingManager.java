@@ -126,8 +126,15 @@ public class FarmingManager {
         }
     }
 
+    private org.bukkit.scheduler.BukkitTask farmingTask;
+
     public void startFarmingTask(boolean isEnabled, boolean farmingEnabled, Set<Material> farmingCrops, double farmingViewDistance, Map<UUID, Location> lastFarmingScanLocations) {
-        FoliaScheduler.runTimer(plugin, () -> {
+        if (farmingTask != null) {
+            farmingTask.cancel();
+            farmingTask = null;
+        }
+
+        farmingTask = FoliaScheduler.runTimer(plugin, () -> {
             if (!isEnabled || !farmingEnabled)
                 return;
 

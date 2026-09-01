@@ -1657,6 +1657,7 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
         getServer().getPluginManager().registerEvents(new ItemListener(this), this);
         getServer().getPluginManager().registerEvents(new fr.skynex.lootglow.listeners.FarmingListener(this), this);
         getServer().getPluginManager().registerEvents(new fr.skynex.lootglow.listeners.LootContainerListener(this), this);
+        getServer().getPluginManager().registerEvents(new fr.skynex.lootglow.listeners.FishingListener(this), this);
         if (useMythic) {
             try {
                 getServer().getPluginManager().registerEvents(new fr.skynex.lootglow.listeners.MythicListener(this), this);

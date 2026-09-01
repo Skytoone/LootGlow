@@ -69,6 +69,8 @@ public class ParticleAnimationManager {
         }
     }
 
+    private org.bukkit.scheduler.BukkitTask particleTask;
+
     public void startParticleTask(boolean isEnabled,
                                   boolean particlesEnabled,
                                   double lodPartDistSq,
@@ -82,7 +84,12 @@ public class ParticleAnimationManager {
                                   String particleAnimType,
                                   int particlesFrequency) {
 
-        FoliaScheduler.runTimer(plugin, () -> {
+        if (particleTask != null) {
+            particleTask.cancel();
+            particleTask = null;
+        }
+
+        particleTask = FoliaScheduler.runTimer(plugin, () -> {
             if (!isEnabled || !particlesEnabled) return;
 
             particleTick++;

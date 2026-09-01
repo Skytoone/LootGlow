@@ -2,7 +2,7 @@
 
 <div align="center">
 
-[![Plugin Version](https://img.shields.io/badge/Version-1.6.2--beta1-FFD700?style=for-the-badge&logo=minecraft)](https://www.spigotmc.org/resources/134648)
+[![Plugin Version](https://img.shields.io/badge/Version-1.6.3--beta1-FFD700?style=for-the-badge&logo=minecraft)](https://www.spigotmc.org/resources/134648)
 [![Java Version](https://img.shields.io/badge/Java-21-ED8B00?style=for-the-badge&logo=openjdk)](https://www.oracle.com/java/)
 [![Platform](https://img.shields.io/badge/Platform-Paper%20%7C%20Spigot%20%7C%20Folia-005B9A?style=for-the-badge)](https://papermc.io/)
 [![License](https://img.shields.io/badge/License-GPLv3-4CAF50?style=for-the-badge)](https://www.gnu.org/licenses/gpl-3.0.html)
@@ -139,7 +139,7 @@ LootGlow exposes a clean, stable API through the `LootGlow-API` module, publishe
     <dependency>
         <groupId>com.github.Skytoone</groupId>
         <artifactId>LootGlow-API</artifactId>
-        <version>1.6.2-beta1</version>
+        <version>1.6.3-beta1</version>
         <scope>provided</scope>
     </dependency>
 </dependencies>
@@ -152,7 +152,7 @@ repositories {
 }
 
 dependencies {
-    compileOnly 'com.github.Skytoone:LootGlow-API:1.6.2-beta1'
+    compileOnly 'com.github.Skytoone:LootGlow-API:1.6.3-beta1'
 }
 ```
 
@@ -395,7 +395,7 @@ cd LootGlow
 mvn clean package
 ```
 
-The compiled plugin JAR will be available at `LootGlow-Core/target/LootGlow-1.6.2-beta1.jar`.
+The compiled plugin JAR will be available at `target/LootGlow-1.6.3-beta1.jar`.
 
 ### Project Structure
 ```

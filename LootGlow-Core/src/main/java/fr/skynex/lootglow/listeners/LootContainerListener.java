@@ -51,6 +51,21 @@ public class LootContainerListener implements Listener {
             java.util.HashMap<Integer, ItemStack> leftovers = player.getInventory().addItem(toAdd);
             
             if (leftovers.isEmpty()) {
+                // Fire custom API pickup event
+                String category = plugin.getTrackedItemManager().getItemCategoriesCache().get(itemUuid);
+                fr.skynex.lootglow.api.events.LootGlowItemPickupEvent apiEvent =
+                        new fr.skynex.lootglow.api.events.LootGlowItemPickupEvent(player, item, toAdd, category);
+                org.bukkit.Bukkit.getPluginManager().callEvent(apiEvent);
+                if (apiEvent.isCancelled()) {
+                    event.setCancelled(true);
+                    return;
+                }
+
+                // Increment loot stats
+                if (plugin.getDatabaseManager() != null) {
+                    plugin.getDatabaseManager().incrementLootStat(player.getUniqueId(), category != null ? category : "DEFAULT", toAdd.getAmount());
+                }
+
                 // Remove from members list first so we know the new state
                 members.remove(slot);
 

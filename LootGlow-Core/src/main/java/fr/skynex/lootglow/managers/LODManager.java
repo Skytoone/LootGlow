@@ -44,6 +44,8 @@ public class LODManager {
         return dist * dist;
     }
 
+    private org.bukkit.scheduler.BukkitTask lodTask;
+
     public void startLODTask(boolean isEnabled,
                              boolean lodEnabled,
                              double lodBeamDistSq,
@@ -63,7 +65,12 @@ public class LODManager {
                              int lodInterval,
                              Set<UUID> globallyVisibleEntities) {
 
-        FoliaScheduler.runTimer(plugin, () -> {
+        if (lodTask != null) {
+            lodTask.cancel();
+            lodTask = null;
+        }
+
+        lodTask = FoliaScheduler.runTimer(plugin, () -> {
             if (!isEnabled || !lodEnabled) return;
 
             Set<UUID> newGloballyVisible = new HashSet<>();

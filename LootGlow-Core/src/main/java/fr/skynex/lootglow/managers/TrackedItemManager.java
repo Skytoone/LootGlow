@@ -144,8 +144,15 @@ public class TrackedItemManager {
         }
     }
 
+    private org.bukkit.scheduler.BukkitTask gcTask;
+
     public void startGarbageCollectorTask(boolean isEnabled, Map<UUID, Item> activeItems) {
-        fr.skynex.lootglow.util.FoliaScheduler.runTimer(plugin, () -> {
+        if (gcTask != null) {
+            gcTask.cancel();
+            gcTask = null;
+        }
+
+        gcTask = fr.skynex.lootglow.util.FoliaScheduler.runTimer(plugin, () -> {
             if (!isEnabled)
                 return;
 

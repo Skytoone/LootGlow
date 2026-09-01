@@ -158,12 +158,20 @@ public class RPGDropManager {
     }
 
     public void tickAspiration(boolean aspirationEnabled, double aspirationSpeed) {
-        if (!aspirationEnabled) return;
+        if (!aspirationEnabled || flyingVisuals.isEmpty()) return;
 
         Iterator<Map.Entry<UUID, VisualAnimation>> it = flyingVisuals.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<UUID, VisualAnimation> entry = it.next();
             VisualAnimation anim = entry.getValue();
+
+            if (anim.display == null || !anim.display.isValid() || anim.target == null || !anim.target.isOnline() || anim.ticks > 20) {
+                if (anim.display != null && anim.display.isValid()) {
+                    FoliaScheduler.removeEntity(plugin, anim.display);
+                }
+                it.remove();
+                continue;
+            }
 
             FoliaScheduler.runAtEntity(plugin, anim.display, () -> {
                 if (!anim.target.isOnline() || !anim.display.isValid()) {

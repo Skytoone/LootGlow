@@ -62,23 +62,29 @@ public class GroupContainerManager {
     public void transferLeaderVisuals(UUID oldLeader, UUID newLeader) {
         if (oldLeader == null || newLeader == null) return;
         
+        groupLeaders.remove(oldLeader);
+        groupLeaders.add(newLeader);
+        groupedItems.remove(newLeader);
+
         List<UUID> members = groupMembers.remove(oldLeader);
         if (members != null) {
             groupMembers.put(newLeader, members);
         }
 
-        ItemDisplay visual = plugin.getVisualDisplayManager().getActiveItemVisuals().remove(oldLeader);
-        if (visual != null) {
-            plugin.getVisualDisplayManager().getActiveItemVisuals().put(newLeader, visual);
+        TrackedItemManager.TrackedItem tiOld = plugin.getTrackedItemManager().getTrackedItems().remove(oldLeader);
+        if (tiOld != null) {
+            plugin.getTrackedItemManager().getTrackedItems().put(newLeader, tiOld);
         }
 
-        TrackedItemManager.TrackedItem tiOld = plugin.getTrackedItemManager().getTrackedItem(oldLeader);
-        if (tiOld != null) {
-            TrackedItemManager.TrackedItem tiNew = plugin.getTrackedItemManager().getOrCreateTrackedItem(newLeader);
-            tiNew.visual = tiOld.visual;
-            tiNew.label = tiOld.label;
-            tiNew.beam = tiOld.beam;
-            tiNew.shadow = tiOld.shadow;
+        Long spawnTime = plugin.getItemSpawnTimes().remove(oldLeader);
+        if (spawnTime != null) {
+            plugin.getItemSpawnTimes().put(newLeader, spawnTime);
+        }
+
+        // Instantly refresh hologram label for the new leader
+        Item newLeaderItem = plugin.getActiveItems().get(newLeader);
+        if (newLeaderItem != null && newLeaderItem.isValid()) {
+            plugin.refreshHologram(newLeaderItem);
         }
     }
 

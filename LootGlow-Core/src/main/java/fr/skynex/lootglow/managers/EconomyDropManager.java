@@ -18,6 +18,9 @@ public class EconomyDropManager {
     private final List<NamespacedKey> economyKeys = new ArrayList<>();
     private final Map<UUID, Double> itemMoneyAmounts = new ConcurrentHashMap<>();
 
+    private Object vaultEconomy = null;
+    private boolean vaultAttempted = false;
+
     public EconomyDropManager(LootGlow plugin) {
         this.plugin = plugin;
     }
@@ -28,6 +31,39 @@ public class EconomyDropManager {
 
     public Map<UUID, Double> getItemMoneyAmounts() {
         return itemMoneyAmounts;
+    }
+
+    public boolean isVaultAvailable() {
+        setupVault();
+        return vaultEconomy != null;
+    }
+
+    private void setupVault() {
+        if (vaultAttempted) return;
+        vaultAttempted = true;
+        if (org.bukkit.Bukkit.getPluginManager().getPlugin("Vault") == null) return;
+        try {
+            Class<?> ecoClass = Class.forName("net.milkbowl.vault.economy.Economy");
+            org.bukkit.plugin.RegisteredServiceProvider<?> rsp = plugin.getServer().getServicesManager().getRegistration(ecoClass);
+            if (rsp != null) {
+                vaultEconomy = rsp.getProvider();
+                plugin.getLogger().info("Vault Economy integration enabled successfully.");
+            }
+        } catch (Throwable t) {
+            plugin.getLogger().warning("Could not hook Vault Economy: " + t.getMessage());
+        }
+    }
+
+    public String formatCurrency(double amount, String formatPattern, String prefix) {
+        setupVault();
+        if (vaultEconomy != null) {
+            try {
+                java.lang.reflect.Method formatMethod = vaultEconomy.getClass().getMethod("format", double.class);
+                return (String) formatMethod.invoke(vaultEconomy, amount);
+            } catch (Throwable ignored) {}
+        }
+        java.text.DecimalFormat df = new java.text.DecimalFormat(formatPattern != null ? formatPattern : "#,##0.00");
+        return (prefix != null ? prefix : "$") + df.format(amount);
     }
 
     public void clearAll() {

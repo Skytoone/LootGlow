@@ -125,6 +125,21 @@ public class ItemListener implements Listener {
                 }
             }
 
+            // Custom API event firing
+            String category = plugin.getTrackedItemManager().getItemCategoriesCache().get(event.getItem().getUniqueId());
+            fr.skynex.lootglow.api.events.LootGlowItemPickupEvent apiEvent =
+                    new fr.skynex.lootglow.api.events.LootGlowItemPickupEvent(player, event.getItem(), event.getItem().getItemStack(), category);
+            Bukkit.getPluginManager().callEvent(apiEvent);
+            if (apiEvent.isCancelled()) {
+                event.setCancelled(true);
+                return;
+            }
+
+            // Record loot statistics in SQLite DB
+            if (plugin.getDatabaseManager() != null) {
+                plugin.getDatabaseManager().incrementLootStat(player.getUniqueId(), category != null ? category : "DEFAULT", event.getItem().getItemStack().getAmount());
+            }
+
             // Player pickup: play aspiration animation then remove glow
             plugin.playAspirationAnimation(event.getItem(), player);
             plugin.removeGlow(event.getItem());
