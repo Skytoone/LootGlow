@@ -82,15 +82,17 @@ LootGlow auto-detects and integrates with the following plugins at runtime — n
 
 | Plugin | Integration |
 |---|---|
-| **ItemsAdder** | Reads custom item IDs for category matching |
-| **Oraxen** | Reads custom item IDs for category matching |
-| **Nexo** | Reads custom item IDs for category matching |
-| **MythicMobs** | Reads MythicMobs item type for category matching |
-| **MMOItems** | Reads MMOItems type/ID via PDC for category matching |
+| **ItemsAdder** | Reads custom item IDs (PDC `id`, `item_id`, `namespace_id`, `namespace:name`) |
+| **Oraxen** | Reads custom item IDs (PDC `id`, `item_id`, `oraxen_id`) |
+| **Nexo** | Reads custom item IDs (PDC `id`, `item_id`, `nexo_id`) |
+| **MythicMobs** | Reads MythicMobs item type (PDC `item_type`, `type`, `id`) |
+| **MMOItems** | Reads MMOItems type/ID via PDC + reflection fallback |
 | **EcoItems** | Reads EcoItems ID via PDC for category matching |
 | **MythicDrops** | Reads tier tag for category matching |
 | **AdvancedItems** | Reads custom item ID |
 | **ItemEdit** | Reads item ID tag |
+| **ExecutableItems** | Reads custom item ID (PDC `executableitems:id`) |
+| **ExecutableBlocks** | Reads block ID (PDC `executableblocks:id`) |
 | **WorldGuard** | Custom `lootglow-farming` region flag + blocked regions |
 | **PlaceholderAPI** | Available in hologram text templates |
 | **ProtocolLib** | Packet-based entity visibility (RPG drop hiding) |
@@ -398,28 +400,76 @@ The compiled plugin JAR will be available at `LootGlow-Core/target/LootGlow-1.6.
 ### Project Structure
 ```
 LootGlow/
-├── LootGlow-API/           # Public API module (events, interface, hook)
+├── LootGlow-API/                               # Public API module
 │   └── src/main/java/fr/skynex/lootglow/api/
 │       ├── LootGlowAPI.java                    # Main API interface
-│       ├── util/LootGlowHook.java              # Safe API accessor
+│       ├── util/LootGlowHook.java              # Safe null-safe API accessor
 │       └── events/
 │           ├── LootGlowItemSpawnEvent.java
 │           ├── LootGlowMagnetPickupEvent.java
 │           └── LootGlowContainerOpenEvent.java
-└── LootGlow-Core/          # Plugin implementation module
+└── LootGlow-Core/                              # Plugin implementation module
     └── src/main/java/fr/skynex/lootglow/
         ├── LootGlow.java                       # Main plugin class & API impl
         ├── ConfigUpdater.java                  # Auto config migration
-        ├── integration/WorldGuardHook.java
+        ├── config/
+        │   ├── LootGlowConfigManager.java      # Category, world filter & crop config parsing
+        │   └── ConfigParser.java
+        ├── commands/
+        │   └── LootGlowCommandManager.java
+        ├── database/
+        │   └── DatabaseManager.java
+        ├── integration/
+        │   ├── WorldGuardHook.java             # WorldGuard flag & region checks
+        │   └── IntegrationManager.java
         ├── listeners/
         │   ├── ItemListener.java
         │   ├── FarmingListener.java
         │   ├── LootContainerListener.java
         │   └── MythicListener.java
+        ├── managers/
+        │   ├── TrackedItemManager.java         # Entity tracking, GC, spatial queries
+        │   ├── VisualSpawner.java              # Glow entity spawning & despawning
+        │   ├── VisualDisplayManager.java       # ItemDisplay creation & head textures
+        │   ├── PluginTickManager.java          # Unified tick scheduler
+        │   ├── ParticleAnimationManager.java   # Particles, pop & bounce animations
+        │   ├── FarmingManager.java             # Crop scanning & highlighting
+        │   ├── BeamManager.java                # Beacon beam animations
+        │   ├── GlowTeamManager.java            # Scoreboard glow team management
+        │   ├── GlowManager.java                # Per-player glow color overrides
+        │   ├── LootProtectionManager.java      # PDC-backed loot protection & ownership
+        │   ├── LootWorldManager.java           # World filtering
+        │   ├── LODManager.java                 # Level-of-Detail visibility system
+        │   ├── ItemMagnetManager.java          # VIP item magnet auto-pickup
+        │   ├── GroupContainerManager.java      # Loot container GUI
+        │   ├── RPGDropManager.java             # RPG drop shadow & visibility hiding
+        │   ├── EconomyDropManager.java         # Economy drop label
+        │   ├── HologramManager.java            # Hologram lifecycle
+        │   ├── HologramRenderer.java           # Hologram rendering
+        │   ├── OcclusionManager.java           # Line-of-sight raycast checks
+        │   ├── SurfaceAlignmentManager.java    # Item surface/floor alignment
+        │   ├── PlayerSettingsManager.java      # Per-player toggle settings
+        │   ├── VisibilityPacketManager.java    # Packet provider (ProtocolLib/packetevents)
+        │   └── VanillaItemVisibilityManager.java
+        ├── service/
+        │   ├── ItemGlowApplyService.java       # Glow effect application pipeline
+        │   ├── HologramService.java            # Hologram label creation & refresh
+        │   ├── HologramTickService.java        # Hologram per-tick updater
+        │   ├── ItemPhysicsService.java         # Display entity position physics
+        │   ├── ItemGroupingService.java        # Item grouping & merging
+        │   ├── ItemVisualSpawnService.java     # ItemDisplay entity spawning
+        │   ├── ItemRotationService.java        # Item rotation animation
+        │   ├── BeamTickService.java            # Beam pulsing animation
+        │   ├── EntityVisibilityService.java    # LOD-based show/hide logic
+        │   ├── LightService.java               # Dynamic light block management
+        │   ├── MessageService.java             # Configurable message system
+        │   └── PluginDisableService.java       # Clean shutdown & entity removal
         ├── packets/                            # ProtocolLib / packetevents support
         └── util/
             ├── FoliaScheduler.java             # Folia-compatible scheduler wrapper
-            └── UpdateChecker.java
+            ├── UpdateChecker.java              # Spigot update checker & semver compare
+            ├── CustomItemIdentifier.java       # Multi-engine custom item detection
+            └── ItemNameFormatter.java
 ```
 
 ---
