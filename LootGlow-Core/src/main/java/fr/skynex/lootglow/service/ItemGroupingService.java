@@ -206,7 +206,7 @@ public class ItemGroupingService {
                             if (bagCustomModelData != 0) {
                                 org.bukkit.inventory.meta.ItemMeta meta = bag.getItemMeta();
                                 if (meta != null) {
-                                    meta.setCustomModelData(bagCustomModelData);
+                                    meta.getCustomModelDataComponent().setFloats(java.util.List.of((float) bagCustomModelData));
                                     bag.setItemMeta(meta);
                                 }
                             }

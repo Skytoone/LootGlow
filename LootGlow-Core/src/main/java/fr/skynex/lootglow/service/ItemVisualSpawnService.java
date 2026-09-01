@@ -111,7 +111,7 @@ public class ItemVisualSpawnService {
                 if (bagCustomModelData != 0) {
                     org.bukkit.inventory.meta.ItemMeta bMeta = bag.getItemMeta();
                     if (bMeta != null) {
-                        bMeta.setCustomModelData(bagCustomModelData);
+                        bMeta.getCustomModelDataComponent().setFloats(java.util.List.of((float) bagCustomModelData));
                         bag.setItemMeta(bMeta);
                     }
                 }
