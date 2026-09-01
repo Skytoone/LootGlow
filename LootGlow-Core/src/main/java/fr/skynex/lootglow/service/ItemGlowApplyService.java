@@ -299,6 +299,13 @@ public class ItemGlowApplyService {
                 item.getWorld().playSound(item.getLocation(), sound, 1.0f, 1.0f);
             }
 
+            if (plugin.getRarityManager() != null && plugin.getParticleAnimationManager() != null) {
+                fr.skynex.lootglow.managers.RarityManager.ItemRarity rarity = plugin.getRarityManager().detectRarity(item.getItemStack());
+                if (rarity == fr.skynex.lootglow.managers.RarityManager.ItemRarity.LEGENDARY || rarity == fr.skynex.lootglow.managers.RarityManager.ItemRarity.MYTHIC) {
+                    plugin.getParticleAnimationManager().triggerParabolaDropAnimation(item, rarity);
+                }
+            }
+
             // Title & Subtitle RPG drop notification broadcast
             if (finalCategory != null) {
                 String titleStr = plugin.getConfigManager().getCategoryTitles().get(finalCategory);

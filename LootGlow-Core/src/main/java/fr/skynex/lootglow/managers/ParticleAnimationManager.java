@@ -60,6 +60,27 @@ public class ParticleAnimationManager {
         item.getWorld().spawnParticle(Particle.FIREWORK, item.getLocation(), 15, 0.2, 0.2, 0.2, 0.05);
     }
 
+    public void triggerParabolaDropAnimation(Item item, fr.skynex.lootglow.managers.RarityManager.ItemRarity rarity) {
+        if (item == null || !item.isValid()) return;
+        double angle = Math.random() * Math.PI * 2;
+        double speed = 0.2 + Math.random() * 0.15;
+        double vx = Math.cos(angle) * speed;
+        double vz = Math.sin(angle) * speed;
+        double vy = 0.35 + (rarity == fr.skynex.lootglow.managers.RarityManager.ItemRarity.MYTHIC || rarity == fr.skynex.lootglow.managers.RarityManager.ItemRarity.LEGENDARY ? 0.25 : 0.1);
+
+        item.setVelocity(new org.bukkit.util.Vector(vx, vy, vz));
+
+        Particle part = switch (rarity) {
+            case MYTHIC -> Particle.TOTEM_OF_UNDYING;
+            case LEGENDARY -> Particle.FLAME;
+            case EPIC -> Particle.DRAGON_BREATH;
+            case RARE -> Particle.SOUL_FIRE_FLAME;
+            default -> Particle.END_ROD;
+        };
+
+        item.getWorld().spawnParticle(part, item.getLocation(), 20, 0.2, 0.2, 0.2, 0.05);
+    }
+
     public void setBouncingEnabled(Item item, boolean bouncing, Set<UUID> recentlyBounced) {
         if (item == null || !item.isValid() || recentlyBounced == null) return;
         if (!bouncing) {
@@ -158,8 +179,55 @@ public class ParticleAnimationManager {
                         default -> p.spawnParticle(particle, xCoord, yCoord, zCoord, 1, 0.1, 0.1, 0.1, 0.02, data);
                     }
                 }
+
+                // Actionbar Loot Compass Indicator for rare items
+                if (particleTick % 2 == 0 && plugin.getRarityManager() != null) {
+                    double closestDistSq = 900.0; // 30 blocks radius
+                    CachedItemLoc rarestItem = null;
+                    for (CachedItemLoc ci : worldItems) {
+                        double dx = px - ci.x();
+                        double dy = py - ci.y();
+                        double dz = pz - ci.z();
+                        double distSq = dx * dx + dy * dy + dz * dz;
+                        if (distSq < closestDistSq) {
+                            Item itemObj = activeItems.get(ci.uuid());
+                            if (itemObj != null && itemObj.isValid()) {
+                                fr.skynex.lootglow.managers.RarityManager.ItemRarity rarity = plugin.getRarityManager().detectRarity(itemObj.getItemStack());
+                                if (rarity == fr.skynex.lootglow.managers.RarityManager.ItemRarity.LEGENDARY || rarity == fr.skynex.lootglow.managers.RarityManager.ItemRarity.MYTHIC) {
+                                    closestDistSq = distSq;
+                                    rarestItem = ci;
+                                }
+                            }
+                        }
+                    }
+
+                    if (rarestItem != null) {
+                        Location targetLoc = new Location(pWorld, rarestItem.x(), rarestItem.y(), rarestItem.z());
+                        String arrow = getDirectionalArrow(p, targetLoc);
+                        int distance = (int) Math.sqrt(closestDistSq);
+                        p.sendActionBar(net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(
+                                "<gold><b>★ Item d'Élite à proximité</b> <yellow>(" + arrow + " " + distance + "m)</yellow></gold>"
+                        ));
+                    }
+                }
             }
         }, 20L, (long) particlesFrequency);
+    }
+
+    private String getDirectionalArrow(Player p, Location targetLoc) {
+        Location pLoc = p.getLocation();
+        double yaw = pLoc.getYaw();
+        double angle = Math.toDegrees(Math.atan2(targetLoc.getZ() - pLoc.getZ(), targetLoc.getX() - pLoc.getX())) - 90;
+        double diff = (angle - yaw + 360) % 360;
+
+        if (diff >= 337.5 || diff < 22.5) return "↑";
+        if (diff >= 22.5 && diff < 67.5) return "↗";
+        if (diff >= 67.5 && diff < 112.5) return "→";
+        if (diff >= 112.5 && diff < 157.5) return "↘";
+        if (diff >= 157.5 && diff < 202.5) return "↓";
+        if (diff >= 202.5 && diff < 247.5) return "↙";
+        if (diff >= 247.5 && diff < 292.5) return "←";
+        return "↖";
     }
 
     public enum AnimType {

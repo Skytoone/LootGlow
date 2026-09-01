@@ -35,6 +35,10 @@ public class IntegrationManager {
     }
 
     public void checkIntegrations() {
+        if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
+            new LootGlowExpansion(plugin).register();
+            plugin.getLogger().info("Hooked into PlaceholderAPI & registered LootGlowExpansion!");
+        }
         if (Bukkit.getPluginManager().isPluginEnabled("MythicMobs")) {
             mythicMobsHooked = true;
             plugin.getLogger().info("Hooked into MythicMobs!");

@@ -71,7 +71,9 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
     private fr.skynex.lootglow.service.ItemGlowApplyService itemGlowApplyService;
     private fr.skynex.lootglow.service.ItemPhysicsService itemPhysicsService;
     private fr.skynex.lootglow.managers.PluginLifecycleManager pluginLifecycleManager;
+    private fr.skynex.lootglow.managers.RarityManager rarityManager;
 
+    public fr.skynex.lootglow.managers.RarityManager getRarityManager() { return rarityManager; }
     public fr.skynex.lootglow.managers.PluginLifecycleManager getPluginLifecycleManager() { return pluginLifecycleManager; }
 
     public DatabaseManager getDatabaseManager() { return databaseManager; }
@@ -958,6 +960,7 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
         this.itemNameFormatter = new fr.skynex.lootglow.util.ItemNameFormatter();
         this.lootWorldManager = new fr.skynex.lootglow.managers.LootWorldManager(this);
         this.vanillaItemVisibilityManager = new fr.skynex.lootglow.managers.VanillaItemVisibilityManager(this);
+        this.rarityManager = new fr.skynex.lootglow.managers.RarityManager(this);
         this.hologramTickService = new fr.skynex.lootglow.service.HologramTickService(this);
         this.beamTickService = new fr.skynex.lootglow.service.BeamTickService(this);
         this.itemRotationService = new fr.skynex.lootglow.service.ItemRotationService(this);

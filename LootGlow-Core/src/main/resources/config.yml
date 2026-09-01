@@ -2,6 +2,9 @@
 # |                         LootGlow Config                           |
 # +-------------------------------------------------------------------+
 
+# =====================================================================
+# SECTION 1: GLOBAL SETTINGS & FEATURE TOGGLES
+# =====================================================================
 settings:
   enabled: true
   only-player-drops: false
@@ -103,7 +106,7 @@ settings:
     enabled: true
     distance: 5.0 # Max distance to attract items
     permission: "lootglow.magnet"
-    categories-enabled: ["legendary", "epic", "rare"] # Which categories are attracted
+    categories-enabled: ["mythic", "legendary", "epic", "rare"] # Which categories are attracted
     # If false, magnet will NOT attract items that belong to a loot group
     enable-for-groups: false
     
@@ -150,7 +153,6 @@ settings:
       - BEETROOTS
       - NETHER_WART
       - COCOA
-      - NETHER_WART
 
   # RPG Drops (Lay items flat on the ground)
   rpg-drops:
@@ -197,6 +199,7 @@ settings:
     width: 0.05
     # Which categories should have a beam?
     enabled-categories:
+      - "mythic"
       - "legendary"
       - "epic"
     # Animate the beam (rotation)
@@ -252,12 +255,83 @@ settings:
       force: false
       # Maximum distance to right-click
       range: 3.0
-      # Allow right-click pickup on grouped items (false = force GUI opening on groups)
+      # Allow right-click pickup on grouped items (force GUI opening on groups if false)
       enable-for-groups: false
 
+# =====================================================================
+# SECTION 2: ITEM RARITY SYSTEM & HOLOGRAM BANNERS
+# =====================================================================
+rarities:
+  enabled: true
+  # Also inspect the item display name for rarity keywords (in addition to lore)
+  check-display-name: true
+  # Fallback to Minecraft's native item rarity system (ItemMeta#getRarity) if available
+  use-vanilla-rarity: true
+
+  mythic:
+    banner: "<gradient:#FF0055:#FF8800><b>✧ MYTHIQUE ✧</b></gradient>"
+    keywords:
+      - "MYTHIC"
+      - "MYTHIQUE"
+      - "✧"
+    materials:
+      - "NETHER_STAR"
+      - "DRAGON_EGG"
+      - "ENCHANTED_GOLDEN_APPLE"
+      - "BEACON"
+
+  legendary:
+    banner: "<gold><b>★ LÉGENDAIRE ★</b></gold>"
+    keywords:
+      - "LEGENDARY"
+      - "LÉGENDAIRE"
+      - "★"
+    materials:
+      - "NETHERITE_SWORD"
+      - "NETHERITE_CHESTPLATE"
+      - "NETHERITE_INGOT"
+      - "TOTEM_OF_UNDYING"
+      - "ELYTRA"
+
+  epic:
+    banner: "<light_purple><b>✦ ÉPIQUE ✦</b></light_purple>"
+    keywords:
+      - "EPIC"
+      - "ÉPIQUE"
+    materials:
+      - "DIAMOND_SWORD"
+      - "DIAMOND_CHESTPLATE"
+      - "DIAMOND_BLOCK"
+      - "HEART_OF_THE_SEA"
+
+  rare:
+    banner: "<blue><b>✦ RARE ✦</b></blue>"
+    keywords:
+      - "RARE"
+    materials:
+      - "DIAMOND"
+      - "GOLDEN_APPLE"
+      - "EMERALD_BLOCK"
+
+  uncommon:
+    banner: "<green>✦ ATYPIQUE ✦</green>"
+    keywords:
+      - "UNCOMMON"
+      - "ATYPIQUE"
+    materials:
+      - "IRON_INGOT"
+      - "GOLD_INGOT"
+
+  common:
+    banner: "<gray>COMMUN</gray>"
+    keywords: []
+    materials: []
+
+# =====================================================================
+# SECTION 3: ITEM CATEGORIES & VISUAL STYLING
+# =====================================================================
 default-color: "WHITE"
 
-# categories configuration
 # You can use Material names (DIAMOND) 
 # OR Custom IDs from various plugins using the prefixes below:
 # - ORAXEN:itemID
@@ -270,6 +344,25 @@ default-color: "WHITE"
 # - ECOITEMS:itemID
 # - MYTHICDROPS:tierID
 categories:
+  mythic:
+    color: "DARK_RED"
+    glow: true
+    particle: "SOUL_FIRE_FLAME"
+    sound: "UI_TOAST_CHALLENGE_COMPLETE"
+    light-level: 15
+    title: "<gradient:#FF0055:#FF8800>✧ DROP MYTHIQUE ✧</gradient>"
+    subtitle: "<gray>Un trésor mythique vient d'apparaître !</gray>"
+    notification-radius: 20.0
+    lore-patterns:
+      - "mythic"
+      - "mythique"
+    nbt-patterns:
+      - "tier_mythic"
+    items:
+      - "NETHER_STAR"
+      - "DRAGON_EGG"
+      - "BEACON"
+
   legendary:
     color: "GOLD"
     glow: true
@@ -291,7 +384,6 @@ categories:
       - "NETHERITE_SCRAP"
       - "ENCHANTED_GOLDEN_APPLE"
       - "ELYTRA"
-      - "NETHER_STAR"
       - "TOTEM_OF_UNDYING"
       # --- Custom Items Examples ---
       - "ORAXEN:legendary_sword"
@@ -301,38 +393,66 @@ categories:
     display-names:
       "NETHERITE_INGOT": "<gradient:red:gold>Lingot Divin</gradient>"
       "MYTHIC:Excalibur": "<gradient:gold:white>Excalibur</gradient>"
+
   epic:
     color: "LIGHT_PURPLE"
     glow: true
     particle: "WITCH_PELLETS"
     sound: "BLOCK_AMETHYST_BLOCK_STEP"
+    title: "<gradient:light_purple:purple>✦ DROP ÉPIQUE ✦</gradient>"
+    subtitle: "<gray>Un objet rare et puissant gît au sol.</gray>"
+    notification-radius: 12.0
+    lore-patterns:
+      - "epic"
+      - "épique"
     items:
       - "DIAMOND"
       - "DIAMOND_BLOCK"
-      - "DRAGON_EGG"
       - "DRAGON_BREATH"
       - "EXPERIENCE_BOTTLE"
       # --- Custom Items Examples ---
       - "ORAXEN:mithril_ingot"
       - "ITEMSADDER:amethyst_cluster_custom"
       - "NEXO:silver_coin"
+
   rare:
     color: "AQUA"
     glow: true
     particle: "END_ROD"
     sound: "ENTITY_EXPERIENCE_ORB_PICKUP"
+    title: "<gradient:aqua:blue>✦ DROP RARE ✦</gradient>"
+    subtitle: "<gray>Un objet de valeur est tombé.</gray>"
+    notification-radius: 10.0
+    lore-patterns:
+      - "rare"
     items:
       - "EMERALD"
       - "EMERALD_BLOCK"
       - "GOLD_INGOT"
       - "GOLD_BLOCK"
       - "GOLDEN_APPLE"
+
   uncommon:
     color: "GREEN"
     glow: true
     particle: "VILLAGER_HAPPY"
+    lore-patterns:
+      - "uncommon"
+      - "atypique"
     items:
       - "IRON_INGOT"
       - "IRON_BLOCK"
       - "LAPIS_LAZULI"
       - "AMETHYST_SHARD"
+
+  common:
+    color: "GRAY"
+    glow: false
+    particle: ""
+    items:
+      - "STONE"
+      - "COBBLESTONE"
+      - "DIRT"
+      - "OAK_LOG"
+      - "WOODEN_SWORD"
+

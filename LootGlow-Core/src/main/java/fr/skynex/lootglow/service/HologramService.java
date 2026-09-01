@@ -88,6 +88,14 @@ public class HologramService {
 
         Component result = baseName;
 
+        if (plugin.getRarityManager() != null) {
+            fr.skynex.lootglow.managers.RarityManager.ItemRarity rarity = plugin.getRarityManager().detectRarity(item.getItemStack());
+            Component rarityHeader = plugin.getRarityManager().getRarityHeaderComponent(rarity);
+            if (rarityHeader != null) {
+                result = rarityHeader.append(Component.newline()).append(result);
+            }
+        }
+
         if (holoShowAmount && item.getItemStack().getAmount() > 1) {
             String amountText = rawAmountFormat.replace("<amount>", String.valueOf(item.getItemStack().getAmount()));
             result = result.append(miniMessage.deserialize(amountText));
@@ -101,15 +109,24 @@ public class HologramService {
                 if (remaining > 0) {
                     if (plugin.getLootProtectionManager() != null) {
                         UUID ownerUuid = plugin.getLootProtectionManager().getLootOwner(item);
+                        String ownerName = "Joueur";
                         if (ownerUuid != null) {
                             Player ownerPlayer = Bukkit.getPlayer(ownerUuid);
-                            String ownerName = ownerPlayer != null ? ownerPlayer.getName() : null;
-                            if (ownerName != null) {
-                                String ownerMsg = rawOwnerFormat.replace("<owner>", ownerName);
-                                result = result.append(miniMessage.deserialize(ownerMsg));
-                            }
+                            if (ownerPlayer != null) ownerName = ownerPlayer.getName();
+                        }
+                        String progressBar = buildProgressBar(remaining, protectionDuration);
+                        Component protComp = miniMessage.deserialize("<gold>🔒 Protégé <yellow>" + progressBar + "</yellow> (" + remaining + "s)</gold>");
+                        result = result.append(Component.newline()).append(protComp);
+                        if (rawOwnerFormat != null && !rawOwnerFormat.isEmpty()) {
+                            result = result.append(miniMessage.deserialize(rawOwnerFormat.replace("<owner>", ownerName)));
                         }
                     }
+                } else if (remaining >= -3) {
+                    if (remaining == 0) {
+                        item.getWorld().playSound(item.getLocation(), org.bukkit.Sound.BLOCK_CHEST_OPEN, 0.4f, 1.3f);
+                    }
+                    Component protComp = miniMessage.deserialize("<green>🔓 Libéré</green>");
+                    result = result.append(Component.newline()).append(protComp);
                 }
             }
         }
@@ -296,5 +313,12 @@ public class HologramService {
 
         if (lastHoloState != null) lastHoloState.remove(uuid);
         plugin.updateHologram(item, color);
+    }
+
+    private String buildProgressBar(long remaining, long totalDuration) {
+        if (totalDuration <= 0) return "[████████]";
+        int totalBars = 8;
+        int filled = (int) Math.max(0, Math.min(totalBars, (double) remaining / totalDuration * totalBars));
+        return "[" + "█".repeat(filled) + "░".repeat(totalBars - filled) + "]";
     }
 }
