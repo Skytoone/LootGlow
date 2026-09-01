@@ -17,12 +17,23 @@ help-header: "<gold>--- <yellow>LootGlow Help</yellow> ---</gold>"
 help-reload: "<yellow>/lg reload <gray>- <white>Reload the plugin configuration"
 help-toggle: "<yellow>/lg toggle <gray>- <white>Toggle item visuals for yourself"
 help-magnet: "<yellow>/lg magnet <gray>- <white>Toggle item magnet for yourself"
+help-stats: "<yellow>/lg stats <gray>- <white>View your loot statistics"
+help-top: "<yellow>/lg top [category] <gray>- <white>View the top looters leaderboard"
 
 toggle-on: "<prefix><green>Item visuals have been enabled for you.</green>"
 toggle-off: "<prefix><red>Item visuals have been disabled for you.</red>"
 
 magnet-on: "<prefix><green>Item magnet has been enabled for you.</green>"
 magnet-off: "<prefix><red>Item magnet has been disabled for you.</red>"
+
+# Statistics & Leaderboards
+stats-header: "<gold>--- <yellow>LootGlow Stats</yellow> ---</gold>"
+stats-empty: "<prefix><gray>No loot statistics recorded yet.</gray>"
+stats-line: "<gray>• <white><category></white>: <green><count> items</green></gray>"
+
+top-header: "<gold>--- <yellow>Top Looters (<category>)</yellow> ---</gold>"
+top-empty: "<prefix><gray>No looters in the leaderboard yet.</gray>"
+top-line: "<gold>#<rank></gold> <white><name></white> <gray>-</gray> <green><count> loots</green>"
 
 # Hologram Format
 # Use <amount> for the quantity
@@ -45,3 +56,4 @@ legendary-found: "<prefix><gradient:#FFD700:#FFAA00><bold>LEGENDARY!</bold></gra
 # Pickup Protection
 cannot-pickup: "<prefix><red>This item belongs to <white><owner></white>! Try again in <white><time>s</white>.</red>"
 inventory-full: "<prefix><red>Your inventory is full!</red>"
+

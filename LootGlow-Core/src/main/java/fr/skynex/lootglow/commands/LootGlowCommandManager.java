@@ -75,26 +75,37 @@ public class LootGlowCommandManager implements CommandExecutor, TabCompleter {
                 return true;
             } else if (args[0].equalsIgnoreCase("stats") && sender instanceof Player p) {
                 plugin.getDatabaseManager().getPlayerLootStats(p.getUniqueId(), stats -> {
-                    sender.sendMessage("§e=== §6LootGlow Stats §e===");
+                    plugin.sendMessage(p, "stats-header");
                     if (stats.isEmpty()) {
-                        sender.sendMessage("§7Aucune statistique de loot enregistrée.");
+                        plugin.sendMessage(p, "stats-empty");
                     } else {
-                        stats.forEach((cat, count) -> sender.sendMessage("§8• §f" + cat + ": §a" + count + " items"));
+                        stats.forEach((cat, count) -> {
+                            Map<String, String> ph = new HashMap<>();
+                            ph.put("category", cat);
+                            ph.put("count", String.valueOf(count));
+                            plugin.sendMessage(p, "stats-line", ph);
+                        });
                     }
                 });
                 return true;
             } else if (args[0].equalsIgnoreCase("top")) {
                 String cat = args.length >= 2 ? args[1] : "ALL";
                 plugin.getDatabaseManager().getTopLooters(cat, 10, top -> {
-                    sender.sendMessage("§e=== §6Top Looters (" + cat.toUpperCase() + ") §e===");
+                    Map<String, String> headerPh = new HashMap<>();
+                    headerPh.put("category", cat.toUpperCase());
+                    plugin.sendMessage(sender, "top-header", headerPh);
                     if (top.isEmpty()) {
-                        sender.sendMessage("§7Aucun joueur dans le classement.");
+                        plugin.sendMessage(sender, "top-empty");
                     } else {
                         int rank = 1;
                         for (fr.skynex.lootglow.database.DatabaseManager.LooterStat stat : top) {
                             org.bukkit.OfflinePlayer op = org.bukkit.Bukkit.getOfflinePlayer(UUID.fromString(stat.uuid()));
                             String name = op.getName() != null ? op.getName() : stat.uuid().substring(0, 8);
-                            sender.sendMessage("§e#" + rank + " §f" + name + " §8- §a" + stat.count() + " loots");
+                            Map<String, String> ph = new HashMap<>();
+                            ph.put("rank", String.valueOf(rank));
+                            ph.put("name", name);
+                            ph.put("count", String.valueOf(stat.count()));
+                            plugin.sendMessage(sender, "top-line", ph);
                             rank++;
                         }
                     }
@@ -105,8 +116,8 @@ public class LootGlowCommandManager implements CommandExecutor, TabCompleter {
                 plugin.sendMessage(sender, "help-reload");
                 plugin.sendMessage(sender, "help-toggle");
                 plugin.sendMessage(sender, "help-magnet");
-                sender.sendMessage("§8• §e/lg stats §7- Affiche vos statistiques de loot");
-                sender.sendMessage("§8• §e/lg top [categorie] §7- Affiche le classement des meilleurs looteurs");
+                plugin.sendMessage(sender, "help-stats");
+                plugin.sendMessage(sender, "help-top");
                 return true;
             }
         }
@@ -114,8 +125,8 @@ public class LootGlowCommandManager implements CommandExecutor, TabCompleter {
         plugin.sendMessage(sender, "help-reload");
         plugin.sendMessage(sender, "help-toggle");
         plugin.sendMessage(sender, "help-magnet");
-        sender.sendMessage("§8• §e/lg stats §7- Affiche vos statistiques de loot");
-        sender.sendMessage("§8• §e/lg top [categorie] §7- Affiche le classement des meilleurs looteurs");
+        plugin.sendMessage(sender, "help-stats");
+        plugin.sendMessage(sender, "help-top");
         return true;
     }
 

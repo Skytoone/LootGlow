@@ -87,8 +87,8 @@ public class LODManager {
 
                 Set<UUID> inRangeItemUuids = new HashSet<>();
 
-                for (Entity ent : p.getNearbyEntities(maxLodRadius, maxLodRadius, maxLodRadius)) {
-                    if (!(ent instanceof Item item)) continue;
+                for (Entity ent : p.getWorld().getNearbyEntities(p.getLocation(), maxLodRadius, maxLodRadius, maxLodRadius, e -> e instanceof Item)) {
+                    Item item = (Item) ent;
                     UUID uuid = item.getUniqueId();
                     if (!activeItems.containsKey(uuid)) continue;
                     inRangeItemUuids.add(uuid);
@@ -125,7 +125,7 @@ public class LODManager {
                 }
 
                 Set<UUID> worldItems = itemsByWorld.get(worldName);
-                if (worldItems != null) {
+                if (worldItems != null && !worldItems.isEmpty() && !visibleSet.isEmpty()) {
                     for (UUID uuid : worldItems) {
                         if (inRangeItemUuids.contains(uuid)) continue;
                         TextDisplay label = activeLabels.get(uuid);

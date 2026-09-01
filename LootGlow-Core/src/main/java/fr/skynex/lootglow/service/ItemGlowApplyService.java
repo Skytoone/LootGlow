@@ -144,17 +144,20 @@ public class ItemGlowApplyService {
 
                     // 1) Lore Pattern matching
                     if (meta.hasLore() && !plugin.getConfigManager().getCategoryLorePatterns().isEmpty()) {
-                        List<String> loreLines = meta.getLore();
+                        List<Component> loreLines = meta.lore();
                         if (loreLines != null) {
                             for (Map.Entry<String, List<String>> entry : plugin.getConfigManager().getCategoryLorePatterns().entrySet()) {
                                 String catName = entry.getKey();
                                 for (String pattern : entry.getValue()) {
-                                    for (String line : loreLines) {
-                                        if (line != null && line.toLowerCase().contains(pattern)) {
-                                            category = catName;
-                                            NamedTextColor catColor = plugin.getConfigManager().getCategoryColors().get(catName);
-                                            if (catColor != null) color = catColor;
-                                            break;
+                                    for (Component lineComp : loreLines) {
+                                        if (lineComp != null) {
+                                            String line = LegacyComponentSerializer.legacySection().serialize(lineComp);
+                                            if (line.toLowerCase().contains(pattern)) {
+                                                category = catName;
+                                                NamedTextColor catColor = plugin.getConfigManager().getCategoryColors().get(catName);
+                                                if (catColor != null) color = catColor;
+                                                break;
+                                            }
                                         }
                                     }
                                     if (category != null) break;

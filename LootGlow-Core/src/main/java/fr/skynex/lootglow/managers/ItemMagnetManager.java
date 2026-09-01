@@ -86,8 +86,9 @@ public class ItemMagnetManager {
 
             double px = p.getX(), py = p.getY() + 1.0, pz = p.getZ();
 
-            for (Entity ent : p.getNearbyEntities(dist, dist, dist)) {
-                if (!(ent instanceof Item item) || !item.isValid() || item.getPickupDelay() > 0) continue;
+            for (Entity ent : p.getWorld().getNearbyEntities(p.getLocation(), dist, dist, dist, e -> e instanceof Item)) {
+                Item item = (Item) ent;
+                if (!item.isValid() || item.getPickupDelay() > 0) continue;
 
                 UUID itemUuid = item.getUniqueId();
                 if (!magnetEnableForGroups && (groupLeaders.containsKey(itemUuid) || groupMembers.containsKey(itemUuid) || groupedItems.contains(itemUuid)))

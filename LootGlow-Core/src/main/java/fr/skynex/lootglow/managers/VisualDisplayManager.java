@@ -1,15 +1,15 @@
 package fr.skynex.lootglow.managers;
 
+import com.destroystokyo.paper.profile.PlayerProfile;
+import com.destroystokyo.paper.profile.ProfileProperty;
 import fr.skynex.lootglow.LootGlow;
+import fr.skynex.lootglow.model.TrackedItem;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
-import org.bukkit.entity.Item;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.SkullMeta;
-import org.bukkit.profile.PlayerProfile;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -50,21 +50,18 @@ public class VisualDisplayManager {
             if (base64Value != null && !base64Value.isEmpty()) {
                 UUID id = UUID.nameUUIDFromBytes(base64Value.getBytes(StandardCharsets.UTF_8));
                 try {
-                    PlayerProfile profile = Bukkit.createPlayerProfile(id, "LootBag");
+                    PlayerProfile profile = Bukkit.createProfile(id, "LootBag");
+                    profile.setProperty(new ProfileProperty("textures", base64Value));
+                    meta.setPlayerProfile(profile);
+                } catch (Throwable t1) {
                     try {
+                        Object profile = Bukkit.class.getMethod("createPlayerProfile", UUID.class).invoke(null, id);
                         Class<?> propClass = Class.forName("org.bukkit.profile.ProfileProperty");
                         Object prop = propClass.getConstructor(String.class, String.class).newInstance("textures", base64Value);
                         profile.getClass().getMethod("setProperty", propClass).invoke(profile, prop);
-                        meta.setOwnerProfile(profile);
-                    } catch (Throwable t1) {
-                        try {
-                            Class<?> propClass = Class.forName("com.destroystokyo.paper.profile.ProfileProperty");
-                            Object prop = propClass.getConstructor(String.class, String.class).newInstance("textures", base64Value);
-                            profile.getClass().getMethod("setProperty", propClass).invoke(profile, prop);
-                            meta.setOwnerProfile(profile);
-                        } catch (Throwable ignored) {}
-                    }
-                } catch (Throwable ignored) {}
+                        meta.getClass().getMethod("setOwnerProfile", profile.getClass().getInterfaces()[0]).invoke(meta, profile);
+                    } catch (Throwable ignored) {}
+                }
             }
             head.setItemMeta(meta);
         } catch (Exception e) {
@@ -91,7 +88,7 @@ public class VisualDisplayManager {
         if (meta != null) {
             Player p = Bukkit.getPlayer(ownerUuid);
             if (p != null) {
-                meta.setOwnerProfile(p.getPlayerProfile());
+                meta.setPlayerProfile(p.getPlayerProfile());
             } else {
                 meta.setOwningPlayer(Bukkit.getOfflinePlayer(ownerUuid));
             }
@@ -108,9 +105,9 @@ public class VisualDisplayManager {
         }
     }
 
-    public void clearVisualsForPlayer(Player player, Map<UUID, LootGlow.TrackedItem> trackedItems) {
+    public void clearVisualsForPlayer(Player player, Map<UUID, TrackedItem> trackedItems) {
         if (player == null || trackedItems == null) return;
-        for (LootGlow.TrackedItem ti : trackedItems.values()) {
+        for (TrackedItem ti : trackedItems.values()) {
             if (ti.label != null && ti.label.isValid())
                 player.hideEntity(plugin, ti.label);
             if (ti.beam != null && ti.beam.isValid()) {

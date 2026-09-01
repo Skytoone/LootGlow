@@ -19,6 +19,7 @@ import java.util.UUID;
 public class BeamTickService {
 
     private final LootGlow plugin;
+    private final org.joml.Quaternionf reusableRot = new org.joml.Quaternionf();
 
     public BeamTickService(LootGlow plugin) {
         this.plugin = plugin;
@@ -36,7 +37,7 @@ public class BeamTickService {
 
         if (!beamsEnabled || !beamsAnimate) return;
 
-        org.joml.Quaternionf rot = new org.joml.Quaternionf().rotationY(angle);
+        reusableRot.rotationY(angle);
         float scalePulse = (float) (1.0 + Math.sin(angle * 2) * 0.15);
         int tick = (int) (angle * 20);
 
@@ -52,7 +53,7 @@ public class BeamTickService {
             FoliaScheduler.runAtEntity(plugin, beam, () -> {
                 if (!beam.isValid()) return;
                 Transformation trans = beam.getTransformation();
-                if (shouldAnimate) trans.getLeftRotation().set(rot);
+                if (shouldAnimate) trans.getLeftRotation().set(reusableRot);
 
                 float bH = (config != null) ? config.height : beamHeight;
                 float bW = (config != null) ? config.width : beamWidth;
@@ -67,7 +68,7 @@ public class BeamTickService {
                 for (Entity pass : beam.getPassengers()) {
                     if (pass instanceof BlockDisplay bd && bd.isValid()) {
                         Transformation cTrans = bd.getTransformation();
-                        cTrans.getLeftRotation().set(rot);
+                        cTrans.getLeftRotation().set(reusableRot);
                         float cWidth = beamWidth * 0.4f * scalePulse;
                         cTrans.getScale().set(cWidth, beamHeight, cWidth);
                         cTrans.getTranslation().set(-cWidth / 2, 0, -cWidth / 2);
@@ -85,7 +86,8 @@ public class BeamTickService {
                     double heightOffset = (angle * 5) % beamHeight;
                     FoliaScheduler.runAtEntity(plugin, beam, () -> {
                         if (beam.isValid()) {
-                            Location beamLoc = beam.getLocation().add(0, heightOffset, 0);
+                            Location beamLoc = beam.getLocation();
+                            beamLoc.setY(beamLoc.getY() + heightOffset);
                             beam.getWorld().spawnParticle(part, beamLoc, 1, 0.05, 0.05, 0.05, 0.01);
                         }
                     });

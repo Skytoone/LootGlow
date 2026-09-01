@@ -1,7 +1,7 @@
 package fr.skynex.lootglow.service;
 
 import fr.skynex.lootglow.LootGlow;
-import fr.skynex.lootglow.LootGlow.TrackedItem;
+import fr.skynex.lootglow.model.TrackedItem;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Item;

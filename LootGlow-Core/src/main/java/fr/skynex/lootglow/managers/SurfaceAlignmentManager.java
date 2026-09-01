@@ -46,6 +46,10 @@ public class SurfaceAlignmentManager {
         this.plugin = plugin;
     }
 
+    public LootGlow getPlugin() {
+        return plugin;
+    }
+
     public Map<UUID, SurfaceState> getSurfaceStates() {
         return surfaceStates;
     }

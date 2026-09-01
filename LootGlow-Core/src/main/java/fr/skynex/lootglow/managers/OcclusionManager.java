@@ -1,6 +1,5 @@
 package fr.skynex.lootglow.managers;
 
-import fr.skynex.lootglow.LootGlow;
 import org.bukkit.Location;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
@@ -11,10 +10,7 @@ import org.bukkit.util.Vector;
  */
 public class OcclusionManager {
 
-    private final LootGlow plugin;
-
-    public OcclusionManager(LootGlow plugin) {
-        this.plugin = plugin;
+    public OcclusionManager() {
     }
 
     public boolean hasLineOfSight(Player player, Item item, double maxDistance) {

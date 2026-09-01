@@ -11,11 +11,12 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class VanillaItemVisibilityManager {
 
-    private final LootGlow plugin;
     private final Set<Integer> hiddenVanillaItems = ConcurrentHashMap.newKeySet();
 
+    public VanillaItemVisibilityManager() {
+    }
+
     public VanillaItemVisibilityManager(LootGlow plugin) {
-        this.plugin = plugin;
     }
 
     public Set<Integer> getHiddenVanillaItems() {

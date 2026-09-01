@@ -1,5 +1,7 @@
 package fr.skynex.lootglow.api;
 
+import fr.skynex.lootglow.api.util.LootGlowItemBuilder;
+import org.bukkit.Chunk;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Particle;
@@ -7,16 +9,29 @@ import org.bukkit.Sound;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
  * Official LootGlow API interface for controlling item glows, holograms, loot protection, particles, and VIP magnet effects.
  */
 public interface LootGlowAPI {
+
+    /**
+     * Creates a new LootGlowItemBuilder for fluent spawning and styling of item drops.
+     *
+     * @param location Target world location
+     * @param itemStack Item stack to drop
+     * @return LootGlowItemBuilder instance
+     */
+    static LootGlowItemBuilder builder(@NotNull Location location, @NotNull ItemStack itemStack) {
+        return new LootGlowItemBuilder(location, itemStack);
+    }
 
     /**
      * Overrides the glowing color of a specific dropped item entity.
@@ -262,4 +277,66 @@ public interface LootGlowAPI {
      */
     @NotNull
     List<Item> getNearbyGlowingItems(@NotNull Location location, double radius);
+
+    /**
+     * Spawns a dropped item entity at the location with optional LootGlow category assignment.
+     *
+     * @param location Target spawn location
+     * @param itemStack Item stack to spawn
+     * @param category Optional category name or null for automatic classification
+     * @return Spawned Item entity
+     */
+    @NotNull
+    Item spawnGlowItem(@NotNull Location location, @NotNull ItemStack itemStack, @Nullable String category);
+
+    /**
+     * Forces a visual refresh of all LootGlow elements (glow, holograms, beams) of an item for a specific player.
+     *
+     * @param item Dropped item entity
+     * @param player Target player
+     */
+    void refreshVisuals(@NotNull Item item, @NotNull Player player);
+
+    /**
+     * Checks if a dropped item entity is actively tracked by LootGlow.
+     *
+     * @param item Dropped item entity
+     * @return True if tracked
+     */
+    boolean isTracked(@NotNull Item item);
+
+    /**
+     * Retrieves all active tracked glowing dropped items in a specific world chunk.
+     *
+     * @param chunk Target chunk
+     * @return List of active tracked Item entities
+     */
+    @NotNull
+    List<Item> getTrackedItemsInChunk(@NotNull Chunk chunk);
+
+    /**
+     * Adds an additional allowed player UUID to an item's loot protection whitelist (shared loot).
+     *
+     * @param item Dropped item entity
+     * @param playerUuid UUID of player allowed to pick up the item
+     */
+    void addLootSharer(@NotNull Item item, @NotNull UUID playerUuid);
+
+    /**
+     * Removes a player UUID from an item's loot protection whitelist.
+     *
+     * @param item Dropped item entity
+     * @param playerUuid UUID of player to remove
+     */
+    void removeLootSharer(@NotNull Item item, @NotNull UUID playerUuid);
+
+    /**
+     * Gets all UUIDs of players allowed to pick up a protected item (including the primary owner and shared players).
+     *
+     * @param item Dropped item entity
+     * @return Set of allowed player UUIDs
+     */
+    @NotNull
+    Set<UUID> getLootSharers(@NotNull Item item);
 }
+

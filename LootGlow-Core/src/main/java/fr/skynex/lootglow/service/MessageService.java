@@ -22,8 +22,8 @@ public class MessageService {
     private String rawPrefix = "";
     private String rawAmountFormat = " <gray>(x<amount>)</gray>";
     private String rawTimerFormat = " <gray>(<time>s)</gray>";
-    private String rawOwnerFormat = "<newline><gray>Propriété de</gray> <white><owner></white>";
-    private String rawBundleFormat = "<gradient:gold:white>[Sac de Butin]</gradient> <gray>(x<count> objets)</gray>";
+    private String rawOwnerFormat = "<newline><gray>Owned by</gray> <white><owner></white>";
+    private String rawBundleFormat = "<gradient:gold:white>[Loot Bag]</gradient> <gray>(x<count> items)</gray>";
 
     public MessageService(LootGlow plugin) {
         this.plugin = plugin;
@@ -48,9 +48,9 @@ public class MessageService {
         this.rawAmountFormat = messagesConfig.getString("item-amount-format", " <gray>(x<amount>)</gray>");
         this.rawTimerFormat = messagesConfig.getString("item-timer-format", " <gray>(<time>s)</gray>");
         this.rawOwnerFormat = messagesConfig.getString("owner-format",
-                "<newline><gray>Propriété de</gray> <white><owner></white>");
+                "<newline><gray>Owned by</gray> <white><owner></white>");
         this.rawBundleFormat = messagesConfig.getString("bundle-format",
-                "<gradient:gold:white>[Sac de Butin]</gradient> <gray>(x<count> objets)</gray>");
+                "<gradient:gold:white>[Loot Bag]</gradient> <gray>(x<count> items)</gray>");
 
         timerComponentCache.clear();
         for (int i = 0; i <= 305; i++) {

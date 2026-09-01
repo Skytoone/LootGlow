@@ -1,7 +1,7 @@
 package fr.skynex.lootglow.service;
 
 import fr.skynex.lootglow.LootGlow;
-import fr.skynex.lootglow.LootGlow.TrackedItem;
+import fr.skynex.lootglow.model.TrackedItem;
 import fr.skynex.lootglow.managers.SurfaceAlignmentManager.SurfaceState;
 import fr.skynex.lootglow.util.FoliaScheduler;
 import org.bukkit.Location;
@@ -14,7 +14,6 @@ import org.bukkit.entity.TextDisplay;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -68,13 +67,16 @@ public class ItemPhysicsService {
             org.bukkit.entity.Display shadow = ti.shadow;
 
             Location itemLoc = item.getLocation();
+            double itemX = itemLoc.getX();
+            double itemY = itemLoc.getY();
+            double itemZ = itemLoc.getZ();
 
             SurfaceState state = plugin.getSurfaceAlignmentManager() != null ? plugin.getSurfaceAlignmentManager().getSurfaceStates().get(itemUuid) : null;
             boolean itemActuallyMoved = true;
             if (state != null) {
-                double dx = state.lastItemX - itemLoc.getX();
-                double dy = state.lastItemY - itemLoc.getY();
-                double dz = state.lastItemZ - itemLoc.getZ();
+                double dx = state.lastItemX - itemX;
+                double dy = state.lastItemY - itemY;
+                double dz = state.lastItemZ - itemZ;
                 double distSq = dx * dx + dy * dy + dz * dz;
                 if (distSq > 0.0001) {
                     if (plugin.getSurfaceAlignmentManager() != null) {
@@ -95,12 +97,13 @@ public class ItemPhysicsService {
                 }
             }
 
-            double targetSurfaceY = state != null ? state.y : itemLoc.getY();
+            double targetSurfaceY = state != null ? state.y : itemY;
             Float yaw = state != null ? state.yaw : null;
             Float pitch = state != null ? state.pitch : null;
 
             double baseWeight = 0.02;
-            boolean isBlockItem = plugin.isUprightItem(item.getItemStack().getType());
+            Material itemMat = item.getItemStack().getType();
+            boolean isBlockItem = plugin.isUprightItem(itemMat);
             double visualYOffset = baseWeight + (isBlockItem ? (rpgBlockScale / 2.0) : 0.0);
             if (visual != null && visual.isValid() && visual.getItemStack() != null) {
                 Material vMat = visual.getItemStack().getType();
@@ -117,16 +120,15 @@ public class ItemPhysicsService {
             boolean moved = false;
             if (itemActuallyMoved && representative != null && representative.isValid()) {
                 Location repLoc = representative.getLocation();
-                double dx = itemLoc.getX() - repLoc.getX();
+                double dx = itemX - repLoc.getX();
                 double dy = (targetSurfaceY + visualYOffset) - repLoc.getY();
-                double dz = itemLoc.getZ() - repLoc.getZ();
+                double dz = itemZ - repLoc.getZ();
                 moved = (dx * dx + dy * dy + dz * dz) > 0.0001;
             }
 
             if (moved) {
                 if (visual != null && visual.isValid()) {
-                    Location teleportLoc = itemLoc.clone();
-                    teleportLoc.setY(targetSurfaceY + visualYOffset);
+                    Location teleportLoc = new Location(itemLoc.getWorld(), itemX, targetSurfaceY + visualYOffset, itemZ);
                     if (yaw != null) teleportLoc.setYaw(yaw);
                     if (pitch != null) teleportLoc.setPitch(pitch);
                     FoliaScheduler.runAtEntity(plugin, visual, () -> {
@@ -138,8 +140,7 @@ public class ItemPhysicsService {
                 }
 
                 if (label != null && label.isValid()) {
-                    Location labelLoc = itemLoc.clone();
-                    labelLoc.setY(targetSurfaceY + visualYOffset + holoOffset);
+                    Location labelLoc = new Location(itemLoc.getWorld(), itemX, targetSurfaceY + visualYOffset + holoOffset, itemZ);
                     FoliaScheduler.runAtEntity(plugin, label, () -> {
                         if (label.isValid()) {
                             label.setTeleportDuration(1);
@@ -152,8 +153,7 @@ public class ItemPhysicsService {
             // Always sync beam and shadow if item moved
             if (itemActuallyMoved) {
                 if (beam != null && beam.isValid()) {
-                    Location beamTarget = itemLoc.clone();
-                    beamTarget.setY(targetSurfaceY + baseWeight);
+                    Location beamTarget = new Location(itemLoc.getWorld(), itemX, targetSurfaceY + baseWeight, itemZ);
                     FoliaScheduler.runAtEntity(plugin, beam, () -> {
                         if (beam.isValid() && beam.getLocation().distanceSquared(beamTarget) > 0.0001) {
                             beam.setTeleportDuration(1);
@@ -164,18 +164,18 @@ public class ItemPhysicsService {
 
                 if (shadow != null && shadow.isValid()) {
                     if (item.isOnGround()) {
-                        double height = itemLoc.getY() - targetSurfaceY;
+                        double height = itemY - targetSurfaceY;
                         float radiusFactor = (float) Math.max(0.4, 1.0 - (height * 0.3));
                         float baseRadius = shadowScale * 0.8f;
-                        if (item.getItemStack().getType().isBlock())
+                        boolean isBlock = itemMat.isBlock();
+                        if (isBlock)
                             baseRadius *= 1.4f;
 
-                        float scale = item.getItemStack().getType().isBlock() ? rpgBlockScale : rpgItemScale;
+                        float scale = isBlock ? rpgBlockScale : rpgItemScale;
                         float targetRadius = baseRadius * radiusFactor * (scale / 0.8f);
                         float targetStrength = (float) Math.max(0.2, 1.0 - (height * 0.5));
 
-                        Location shadowTarget = itemLoc.clone();
-                        shadowTarget.setY(targetSurfaceY);
+                        Location shadowTarget = new Location(itemLoc.getWorld(), itemX, targetSurfaceY, itemZ);
                         FoliaScheduler.runAtEntity(plugin, shadow, () -> {
                             if (shadow.isValid()) {
                                 shadow.setShadowRadius(targetRadius);

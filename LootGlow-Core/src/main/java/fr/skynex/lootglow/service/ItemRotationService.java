@@ -1,18 +1,19 @@
 package fr.skynex.lootglow.service;
 
 import fr.skynex.lootglow.LootGlow;
-import org.bukkit.Material;
 
 /**
  * Manages RPG item rotation math and display transformation updates.
  */
 public class ItemRotationService {
 
-    private final LootGlow plugin;
     private float rpgRotation = 0f;
 
+    public ItemRotationService() {
+    }
+
     public ItemRotationService(LootGlow plugin) {
-        this.plugin = plugin;
+        this();
     }
 
     public float getRpgRotation() {

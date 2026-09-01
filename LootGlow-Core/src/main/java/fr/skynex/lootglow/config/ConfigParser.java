@@ -13,11 +13,9 @@ import org.bukkit.Sound;
  */
 public class ConfigParser {
 
-    private final LootGlow plugin;
+    public ConfigParser() {}
 
-    public ConfigParser(LootGlow plugin) {
-        this.plugin = plugin;
-    }
+    public ConfigParser(LootGlow plugin) {}
 
     public NamedTextColor parseNamedColor(String input) {
         if (input == null || input.trim().isEmpty()) return NamedTextColor.WHITE;
@@ -56,6 +54,26 @@ public class ConfigParser {
         return null;
     }
 
+    private static final java.util.Map<String, Color> BUKKIT_COLORS = java.util.Map.ofEntries(
+            java.util.Map.entry("WHITE", Color.WHITE),
+            java.util.Map.entry("SILVER", Color.SILVER),
+            java.util.Map.entry("GRAY", Color.GRAY),
+            java.util.Map.entry("BLACK", Color.BLACK),
+            java.util.Map.entry("RED", Color.RED),
+            java.util.Map.entry("MAROON", Color.MAROON),
+            java.util.Map.entry("YELLOW", Color.YELLOW),
+            java.util.Map.entry("OLIVE", Color.OLIVE),
+            java.util.Map.entry("LIME", Color.LIME),
+            java.util.Map.entry("GREEN", Color.GREEN),
+            java.util.Map.entry("AQUA", Color.AQUA),
+            java.util.Map.entry("TEAL", Color.TEAL),
+            java.util.Map.entry("BLUE", Color.BLUE),
+            java.util.Map.entry("NAVY", Color.NAVY),
+            java.util.Map.entry("FUCHSIA", Color.FUCHSIA),
+            java.util.Map.entry("PURPLE", Color.PURPLE),
+            java.util.Map.entry("ORANGE", Color.ORANGE)
+    );
+
     public Color parseColor(String input) {
         if (input == null || input.trim().isEmpty()) return Color.WHITE;
         String trimmed = input.trim();
@@ -74,12 +92,8 @@ public class ConfigParser {
             }
         } catch (Exception ignored) {}
 
-        try {
-            java.lang.reflect.Field field = Color.class.getField(trimmed.toUpperCase());
-            if (field.getType().equals(Color.class)) {
-                return (Color) field.get(null);
-            }
-        } catch (Exception ignored) {}
+        Color predefined = BUKKIT_COLORS.get(trimmed.toUpperCase());
+        if (predefined != null) return predefined;
 
         return Color.WHITE;
     }

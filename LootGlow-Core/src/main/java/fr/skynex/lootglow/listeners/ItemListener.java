@@ -149,8 +149,15 @@ public class ItemListener implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onDespawn(ItemDespawnEvent event) {
+        fr.skynex.lootglow.api.events.LootGlowItemExpireEvent apiEvent =
+                new fr.skynex.lootglow.api.events.LootGlowItemExpireEvent(event.getEntity());
+        Bukkit.getPluginManager().callEvent(apiEvent);
+        if (apiEvent.isCancelled()) {
+            event.setCancelled(true);
+            return;
+        }
         plugin.removeGlow(event.getEntity());
     }
 
@@ -442,6 +449,9 @@ public class ItemListener implements Listener {
         plugin.getHiddenVisuals().remove(uuid);
         plugin.getDisabledMagnets().remove(uuid);
         plugin.getLastFarmingScanLocations().remove(uuid);
+        if (plugin.getVisibilityPacketManager() != null) {
+            plugin.getVisibilityPacketManager().removePlayer(uuid);
+        }
     }
 
     @EventHandler

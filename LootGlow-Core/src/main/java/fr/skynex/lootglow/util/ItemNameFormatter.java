@@ -1,9 +1,7 @@
 package fr.skynex.lootglow.util;
 
-import fr.skynex.lootglow.LootGlow;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
@@ -12,11 +10,9 @@ import org.bukkit.inventory.meta.ItemMeta;
  */
 public class ItemNameFormatter {
 
-    private final LootGlow plugin;
     private final MiniMessage miniMessage = MiniMessage.miniMessage();
 
-    public ItemNameFormatter(LootGlow plugin) {
-        this.plugin = plugin;
+    public ItemNameFormatter() {
     }
 
     public Component getItemName(ItemStack itemStack) {

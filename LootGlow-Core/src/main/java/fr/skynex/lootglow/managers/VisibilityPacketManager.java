@@ -23,8 +23,14 @@ public class VisibilityPacketManager {
         return visibleEntitiesPerPlayer;
     }
 
+    public void removePlayer(UUID playerUuid) {
+        if (playerUuid != null) {
+            visibleEntitiesPerPlayer.remove(playerUuid);
+        }
+    }
+
     public void cleanVisibleSet(UUID entityUuid) {
-        if (entityUuid == null) return;
+        if (entityUuid == null || visibleEntitiesPerPlayer.isEmpty()) return;
         for (Set<UUID> visibleSet : visibleEntitiesPerPlayer.values()) {
             if (visibleSet != null) {
                 visibleSet.remove(entityUuid);

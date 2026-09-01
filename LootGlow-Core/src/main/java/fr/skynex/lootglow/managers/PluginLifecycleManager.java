@@ -1,0 +1,114 @@
+package fr.skynex.lootglow.managers;
+
+import fr.skynex.lootglow.LootGlow;
+import fr.skynex.lootglow.listeners.FarmingListener;
+import fr.skynex.lootglow.listeners.FishingListener;
+import fr.skynex.lootglow.listeners.ItemListener;
+import fr.skynex.lootglow.listeners.LootContainerListener;
+import fr.skynex.lootglow.model.TrackedItem;
+import io.papermc.paper.command.brigadier.BasicCommand;
+import io.papermc.paper.command.brigadier.CommandSourceStack;
+import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
+
+import java.util.List;
+
+/**
+ * Handles plugin startup lifecycle steps: listener registration, command registration, and state resets.
+ */
+public class PluginLifecycleManager {
+
+    private final LootGlow plugin;
+
+    public PluginLifecycleManager(LootGlow plugin) {
+        this.plugin = plugin;
+    }
+
+    public void registerListeners(boolean useMythic) {
+        plugin.getServer().getPluginManager().registerEvents(new ItemListener(plugin), plugin);
+        plugin.getServer().getPluginManager().registerEvents(new FarmingListener(plugin), plugin);
+        plugin.getServer().getPluginManager().registerEvents(new LootContainerListener(plugin), plugin);
+        plugin.getServer().getPluginManager().registerEvents(new FishingListener(plugin), plugin);
+        if (useMythic) {
+            try {
+                plugin.getServer().getPluginManager().registerEvents(new fr.skynex.lootglow.listeners.MythicListener(plugin), plugin);
+            } catch (NoClassDefFoundError ignored) {}
+        }
+    }
+
+    public void registerCommands() {
+        plugin.getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
+            final var registrar = event.registrar();
+            registrar.register("lootglow", "Main command for LootGlow", List.of("lg", "glow", "loot"),
+                    new BasicCommand() {
+                        @Override
+                        public void execute(CommandSourceStack stack, String[] args) {
+                            plugin.onCommand(stack.getSender(), null, "lootglow", args);
+                        }
+
+                        @Override
+                        public java.util.Collection<String> suggest(CommandSourceStack stack, String[] args) {
+                            return plugin.onTabComplete(stack.getSender(), null, "lootglow", args);
+                        }
+                    });
+        });
+    }
+
+    public void resetStateOnReload() {
+        for (TrackedItem ti : plugin.getTrackedItems().values()) {
+            if (ti.label != null && ti.label.isValid()) ti.label.remove();
+            if (ti.beam != null && ti.beam.isValid()) {
+                ti.beam.getPassengers().forEach(e -> { if (e != null) e.remove(); });
+                ti.beam.remove();
+            }
+            if (ti.visual != null && ti.visual.isValid()) ti.visual.remove();
+            if (ti.shadow != null && ti.shadow.isValid()) ti.shadow.remove();
+        }
+        plugin.getTrackedItems().clear();
+        plugin.getActiveItems().clear();
+        plugin.getItemsByWorld().clear();
+        plugin.getEntityIdMap().clear();
+        plugin.getHiddenVanillaItems().clear();
+        plugin.getItemSpawnTimes().clear();
+        plugin.getGroupMembers().clear();
+        plugin.getItemCategories().clear();
+        plugin.getCategoryParticles().clear();
+        plugin.getCategorySounds().clear();
+        plugin.getCategoryNames().clear();
+        if (plugin.getConfigManager() != null) {
+            plugin.getConfigManager().getCategoryGlow().clear();
+            plugin.getConfigManager().getFilteredWorlds().clear();
+        }
+        plugin.getCategoryColors().clear();
+        plugin.getDisplayNameOverridesCache().clear();
+        plugin.getCategoryLights().clear();
+        plugin.getActiveLights().forEach((uuid, loc) -> {
+            for (Player p : Bukkit.getOnlinePlayers()) {
+                p.sendBlockChange(loc, loc.getBlock().getBlockData());
+            }
+        });
+        plugin.getActiveLights().clear();
+        plugin.getActiveCropSymbols().values().forEach(list -> list.forEach(d -> {
+            if (d != null && d.isValid())
+                d.remove();
+        }));
+        plugin.getActiveCropSymbols().clear();
+        plugin.getVisibleEntities().clear();
+        plugin.getCategoryDustOptions().clear();
+        if (plugin.getSurfaceAlignmentManager() != null) {
+            plugin.getSurfaceAlignmentManager().clearAll();
+        }
+        plugin.getLastFarmingScanLocations().clear();
+
+        plugin.getGloballyVisibleEntities().clear();
+        plugin.getGroupedItems().clear();
+        if (plugin.getGroupContainerManager() != null) {
+            plugin.getGroupContainerManager().getGroupLeaders().clear();
+        }
+        plugin.getOpenContainers().clear();
+        if (plugin.getBeamManager() != null) plugin.getBeamManager().getActiveBeamConfigs().clear();
+        plugin.getRecentlyBounced().clear();
+        plugin.getBounceCounts().clear();
+    }
+}

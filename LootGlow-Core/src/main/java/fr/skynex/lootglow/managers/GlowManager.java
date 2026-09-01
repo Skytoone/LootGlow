@@ -1,6 +1,5 @@
 package fr.skynex.lootglow.managers;
 
-import fr.skynex.lootglow.LootGlow;
 import org.bukkit.Color;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
@@ -14,12 +13,10 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class GlowManager {
 
-    private final LootGlow plugin;
     private final Map<UUID, Color> customGlowColors = new ConcurrentHashMap<>();
     private final Map<UUID, Map<UUID, Color>> playerSpecificGlowColors = new ConcurrentHashMap<>();
 
-    public GlowManager(LootGlow plugin) {
-        this.plugin = plugin;
+    public GlowManager() {
     }
 
     public Map<UUID, Color> getCustomGlowColors() {

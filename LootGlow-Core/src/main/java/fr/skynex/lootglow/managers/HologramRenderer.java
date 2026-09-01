@@ -4,8 +4,6 @@ import fr.skynex.lootglow.LootGlow;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.entity.Item;
-import org.bukkit.entity.Player;
-import org.bukkit.entity.TextDisplay;
 
 import java.util.Map;
 import java.util.UUID;
@@ -21,6 +19,10 @@ public class HologramRenderer {
 
     public HologramRenderer(LootGlow plugin) {
         this.plugin = plugin;
+    }
+
+    public LootGlow getPlugin() {
+        return plugin;
     }
 
     public Map<UUID, Component> getCustomHolograms() {

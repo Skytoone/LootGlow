@@ -2,7 +2,6 @@ package fr.skynex.lootglow.managers;
 
 import fr.skynex.lootglow.LootGlow;
 import fr.skynex.lootglow.util.FoliaScheduler;
-import org.bukkit.Bukkit;
 import org.bukkit.scheduler.BukkitTask;
 
 /**
@@ -72,9 +71,14 @@ public class PluginTickManager {
         }
     }
 
+    @FunctionalInterface
+    public interface FloatConsumer {
+        void accept(float value);
+    }
+
     public void startUnifiedTickTask(Runnable syncRunnable, Runnable bounceRunnable, Runnable aspirationRunnable,
-                                     Runnable magnetRunnable, java.util.function.Consumer<Float> farmAnimConsumer,
-                                     java.util.function.Consumer<Float> beamAnimConsumer) {
+            Runnable magnetRunnable, FloatConsumer farmAnimConsumer,
+            FloatConsumer beamAnimConsumer) {
         if (unifiedTickTask != null) {
             unifiedTickTask.cancel();
             unifiedTickTask = null;
@@ -89,20 +93,27 @@ public class PluginTickManager {
             @Override
             public void run() {
                 unifiedTick++;
-                if (!plugin.isEnabled()) return;
+                if (!plugin.isEnabled())
+                    return;
 
                 // --- Every tick (1L) ---
-                if (syncRunnable != null) syncRunnable.run();
-                if (bounceRunnable != null) bounceRunnable.run();
-                if (aspirationRunnable != null) aspirationRunnable.run();
+                if (syncRunnable != null)
+                    syncRunnable.run();
+                if (bounceRunnable != null)
+                    bounceRunnable.run();
+                if (aspirationRunnable != null)
+                    aspirationRunnable.run();
 
                 // --- Every 2 ticks ---
                 if (unifiedTick % 2 == 0) {
-                    if (magnetRunnable != null) magnetRunnable.run();
+                    if (magnetRunnable != null)
+                        magnetRunnable.run();
                     farmAngle = (farmAngle + 0.1f) % TWO_PI;
-                    if (farmAnimConsumer != null) farmAnimConsumer.accept(farmAngle);
+                    if (farmAnimConsumer != null)
+                        farmAnimConsumer.accept(farmAngle);
                     beamAngle = (beamAngle + 0.1f) % TWO_PI;
-                    if (beamAnimConsumer != null) beamAnimConsumer.accept(beamAngle);
+                    if (beamAnimConsumer != null)
+                        beamAnimConsumer.accept(beamAngle);
                 }
             }
         }, 1L, 1L);

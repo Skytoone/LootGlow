@@ -29,6 +29,7 @@ public class FarmingManager {
 
     private final LootGlow plugin;
     private final Map<Block, CropSymbol> activeCropSymbols = new HashMap<>();
+    private final org.joml.Quaternionf reusableRot = new org.joml.Quaternionf();
 
     public FarmingManager(LootGlow plugin) {
         this.plugin = plugin;
@@ -98,7 +99,7 @@ public class FarmingManager {
     public void tickFarmingAnimation(float angle, boolean farmingEnabled, boolean farmingAnimation, Set<UUID> globallyVisibleEntities) {
         if (!farmingEnabled || !farmingAnimation) return;
 
-        org.joml.Quaternionf rot = new org.joml.Quaternionf().rotationY(angle);
+        reusableRot.rotationY(angle);
 
         for (List<BlockDisplay> parts : activeCropSymbols.values()) {
             if (parts.size() < 2) continue;
@@ -110,14 +111,14 @@ public class FarmingManager {
             FoliaScheduler.runAtEntity(plugin, bar, () -> {
                 if (!bar.isValid()) return;
                 Transformation bT = bar.getTransformation();
-                bT.getLeftRotation().set(rot);
+                bT.getLeftRotation().set(reusableRot);
                 bar.setTransformation(bT);
                 bar.setInterpolationDuration(2);
                 bar.setInterpolationDelay(0);
 
                 if (dot != null && dot.isValid()) {
                     Transformation dT = dot.getTransformation();
-                    dT.getLeftRotation().set(rot);
+                    dT.getLeftRotation().set(reusableRot);
                     dot.setTransformation(dT);
                     dot.setInterpolationDuration(2);
                     dot.setInterpolationDelay(0);

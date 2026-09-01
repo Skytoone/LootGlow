@@ -3,13 +3,8 @@ package fr.skynex.lootglow.managers;
 import fr.skynex.lootglow.LootGlow;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Item;
-import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
-
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Manages Bukkit Scoreboard teams for item glowing colors.

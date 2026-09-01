@@ -12,6 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class PlayerSettingsManager {
 
+    @SuppressWarnings("unused")
     private final LootGlow plugin;
     private final Map<UUID, Boolean> disabledPlayers = new ConcurrentHashMap<>();
 
