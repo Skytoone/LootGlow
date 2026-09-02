@@ -5,7 +5,6 @@ import me.clip.placeholderapi.PlaceholderAPI;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Display;
@@ -14,7 +13,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.TextDisplay;
 import org.bukkit.util.Transformation;
 
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -25,7 +23,6 @@ import java.util.UUID;
 public class HologramService {
 
     private final LootGlow plugin;
-    private final MiniMessage miniMessage = MiniMessage.miniMessage();
 
     public HologramService(LootGlow plugin) {
         this.plugin = plugin;

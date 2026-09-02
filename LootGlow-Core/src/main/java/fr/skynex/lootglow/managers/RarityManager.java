@@ -2,7 +2,6 @@ package fr.skynex.lootglow.managers;
 
 import fr.skynex.lootglow.LootGlow;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
@@ -16,7 +15,6 @@ import java.util.List;
 public class RarityManager {
 
     private final LootGlow plugin;
-    private final MiniMessage miniMessage = MiniMessage.miniMessage();
     private static final PlainTextComponentSerializer PLAIN_SERIALIZER = PlainTextComponentSerializer.plainText();
     private final java.util.Map<ItemRarity, Component> rarityHeaderCache = new java.util.EnumMap<>(ItemRarity.class);
 

@@ -100,13 +100,24 @@ public interface LootGlowAPI {
     void setBeaconBeam(@NotNull Item item, boolean enabled, @Nullable Color color);
 
     /**
-     * Grants temporary owner-only loot protection for an item drop.
+     * Grants owner-only loot protection for an item drop.
+     * Pass -1 as durationSeconds for permanent/infinite protection until despawn or pickup.
      *
      * @param item Dropped item entity
      * @param ownerUuid UUID of the player allowed to pick up the item
-     * @param durationSeconds Duration of protection in seconds
+     * @param durationSeconds Duration of protection in seconds (-1 for permanent)
      */
     void setLootProtection(@NotNull Item item, @NotNull UUID ownerUuid, long durationSeconds);
+
+    /**
+     * Grants permanent owner-only loot protection for an item drop until it despawns or is picked up.
+     *
+     * @param item Dropped item entity
+     * @param ownerUuid UUID of the player allowed to pick up the item
+     */
+    default void setPermanentLootProtection(@NotNull Item item, @NotNull UUID ownerUuid) {
+        setLootProtection(item, ownerUuid, -1L);
+    }
 
     /**
      * Checks if a dropped item currently has active loot protection.

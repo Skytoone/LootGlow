@@ -3,7 +3,6 @@ package fr.skynex.lootglow.service;
 import fr.skynex.lootglow.LootGlow;
 import fr.skynex.lootglow.managers.BeamManager;
 import fr.skynex.lootglow.util.FoliaScheduler;
-import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Entity;

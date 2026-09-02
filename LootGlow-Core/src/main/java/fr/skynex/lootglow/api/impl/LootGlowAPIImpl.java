@@ -8,7 +8,6 @@ import fr.skynex.lootglow.api.events.LootGlowGlowColorChangeEvent;
 import fr.skynex.lootglow.api.events.LootGlowPlayerToggleVisualsEvent;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Color;
@@ -43,10 +42,12 @@ public class LootGlowAPIImpl implements LootGlowAPI {
 
     @Override
     public void setGlowColor(@NotNull Item item, @NotNull Color color) {
-        if (item == null || !item.isValid() || color == null) return;
+        if (item == null || !item.isValid() || color == null)
+            return;
         LootGlowGlowColorChangeEvent event = new LootGlowGlowColorChangeEvent(item, color, null);
         Bukkit.getPluginManager().callEvent(event);
-        if (event.isCancelled()) return;
+        if (event.isCancelled())
+            return;
         Color finalColor = event.getNewColor() != null ? event.getNewColor() : color;
         if (plugin.getGlowManager() != null) {
             plugin.getGlowManager().setGlowColor(item, finalColor);
@@ -56,10 +57,12 @@ public class LootGlowAPIImpl implements LootGlowAPI {
 
     @Override
     public void setGlowColor(@NotNull Item item, @NotNull Color color, @NotNull Player player) {
-        if (item == null || !item.isValid() || color == null || player == null || !player.isOnline()) return;
+        if (item == null || !item.isValid() || color == null || player == null || !player.isOnline())
+            return;
         LootGlowGlowColorChangeEvent event = new LootGlowGlowColorChangeEvent(item, color, player);
         Bukkit.getPluginManager().callEvent(event);
-        if (event.isCancelled()) return;
+        if (event.isCancelled())
+            return;
         Color finalColor = event.getNewColor() != null ? event.getNewColor() : color;
         if (plugin.getGlowManager() != null) {
             plugin.getGlowManager().setGlowColor(item, finalColor, player);
@@ -69,7 +72,8 @@ public class LootGlowAPIImpl implements LootGlowAPI {
 
     @Override
     public void resetGlowColor(@NotNull Item item) {
-        if (item == null || !item.isValid()) return;
+        if (item == null || !item.isValid())
+            return;
         if (plugin.getGlowManager() != null) {
             plugin.getGlowManager().resetGlowColor(item);
         }
@@ -78,13 +82,15 @@ public class LootGlowAPIImpl implements LootGlowAPI {
 
     @Override
     public void resetGlowColor(@NotNull Item item, @NotNull Player player) {
-        if (item == null || !item.isValid() || player == null || !player.isOnline()) return;
+        if (item == null || !item.isValid() || player == null || !player.isOnline())
+            return;
         item.setGlowing(true);
     }
 
     @Override
     public void setCustomHologram(@NotNull Item item, @Nullable String text) {
-        if (item == null || !item.isValid()) return;
+        if (item == null || !item.isValid())
+            return;
         TextDisplay display = plugin.getActiveLabels().get(item.getUniqueId());
         if (display != null && display.isValid()) {
             if (text == null || text.isEmpty()) {
@@ -97,7 +103,8 @@ public class LootGlowAPIImpl implements LootGlowAPI {
 
     @Override
     public void setCustomHologram(@NotNull Item item, @Nullable String text, @NotNull Player player) {
-        if (item == null || !item.isValid() || player == null || !player.isOnline()) return;
+        if (item == null || !item.isValid() || player == null || !player.isOnline())
+            return;
         setCustomHologram(item, text);
     }
 
@@ -108,17 +115,22 @@ public class LootGlowAPIImpl implements LootGlowAPI {
 
     @Override
     public void setBeaconBeam(@NotNull Item item, boolean enabled, @Nullable Color color) {
-        if (item == null || !item.isValid()) return;
+        if (item == null || !item.isValid())
+            return;
         LootGlowBeamToggleEvent event = new LootGlowBeamToggleEvent(item, enabled, color);
         Bukkit.getPluginManager().callEvent(event);
-        if (event.isCancelled()) return;
+        if (event.isCancelled())
+            return;
         boolean finalEnabled = event.isEnabled();
         Color finalColor = event.getBeamColor();
         if (!finalEnabled) {
             BlockDisplay beam = plugin.getActiveBeams().remove(item.getUniqueId());
-            if (beam != null && beam.isValid()) beam.remove();
+            if (beam != null && beam.isValid())
+                beam.remove();
         } else {
-            NamedTextColor textColor = finalColor != null ? NamedTextColor.nearestTo(net.kyori.adventure.text.format.TextColor.color(finalColor.asRGB())) : NamedTextColor.WHITE;
+            NamedTextColor textColor = finalColor != null
+                    ? NamedTextColor.nearestTo(net.kyori.adventure.text.format.TextColor.color(finalColor.asRGB()))
+                    : NamedTextColor.WHITE;
             plugin.spawnBeam(item, null, textColor);
         }
     }
@@ -132,12 +144,15 @@ public class LootGlowAPIImpl implements LootGlowAPI {
 
     @Override
     public boolean isLootProtected(@NotNull Item item) {
-        return plugin.getLootProtectionManager() != null ? plugin.getLootProtectionManager().isLootProtected(item) : false;
+        return plugin.getLootProtectionManager() != null ? plugin.getLootProtectionManager().isLootProtected(item)
+                : false;
     }
 
     @Override
     public boolean isPlayerAllowedToPickup(@NotNull Player player, @NotNull Item item) {
-        return plugin.getLootProtectionManager() != null ? plugin.getLootProtectionManager().isPlayerAllowedToPickup(player, item) : true;
+        return plugin.getLootProtectionManager() != null
+                ? plugin.getLootProtectionManager().isPlayerAllowedToPickup(player, item)
+                : true;
     }
 
     @Override
@@ -171,7 +186,8 @@ public class LootGlowAPIImpl implements LootGlowAPI {
 
     @Override
     public void setVisualsHidden(@NotNull Player player, boolean hidden) {
-        if (player == null) return;
+        if (player == null)
+            return;
         boolean previous = plugin.getHiddenVisuals().contains(player.getUniqueId());
         if (hidden) {
             plugin.getHiddenVisuals().add(player.getUniqueId());
@@ -185,7 +201,8 @@ public class LootGlowAPIImpl implements LootGlowAPI {
 
     @Override
     public boolean hasLineOfSight(@NotNull Player player, @NotNull Item item, double maxDistance) {
-        return plugin.getOcclusionManager() != null && plugin.getOcclusionManager().hasLineOfSight(player, item, maxDistance);
+        return plugin.getOcclusionManager() != null
+                && plugin.getOcclusionManager().hasLineOfSight(player, item, maxDistance);
     }
 
     @Override
@@ -197,19 +214,22 @@ public class LootGlowAPIImpl implements LootGlowAPI {
 
     @Override
     public void setParticleEffect(@NotNull Item item, @Nullable Particle particle) {
-        if (item == null || !item.isValid()) return;
+        if (item == null || !item.isValid())
+            return;
         plugin.getItemParticlesCache().put(item.getUniqueId(), particle);
     }
 
     @Override
     public void clearParticleEffect(@NotNull Item item) {
-        if (item == null || !item.isValid()) return;
+        if (item == null || !item.isValid())
+            return;
         plugin.getItemParticlesCache().remove(item.getUniqueId());
     }
 
     @Override
     public void setDropSound(@NotNull Item item, @Nullable Sound sound, float volume, float pitch) {
-        if (item == null || !item.isValid() || sound == null) return;
+        if (item == null || !item.isValid() || sound == null)
+            return;
         item.getWorld().playSound(item.getLocation(), sound, volume, pitch);
     }
 
@@ -241,10 +261,12 @@ public class LootGlowAPIImpl implements LootGlowAPI {
 
     @Override
     public void setItemCategory(@NotNull Item item, @NotNull String category) {
-        if (item == null || !item.isValid() || category == null) return;
+        if (item == null || !item.isValid() || category == null)
+            return;
         LootGlowCategoryAssignEvent event = new LootGlowCategoryAssignEvent(item, category);
         Bukkit.getPluginManager().callEvent(event);
-        if (event.isCancelled()) return;
+        if (event.isCancelled())
+            return;
         String finalCategory = event.getCategory() != null ? event.getCategory() : category;
         if (plugin.getTrackedItemManager() != null) {
             plugin.getTrackedItemManager().setItemCategory(item.getUniqueId(), finalCategory);
@@ -254,14 +276,19 @@ public class LootGlowAPIImpl implements LootGlowAPI {
     @Nullable
     @Override
     public String getItemCategory(@NotNull Item item) {
-        if (item == null) return null;
-        return plugin.getTrackedItemManager() != null ? plugin.getTrackedItemManager().getItemCategory(item.getUniqueId()) : null;
+        if (item == null)
+            return null;
+        return plugin.getTrackedItemManager() != null
+                ? plugin.getTrackedItemManager().getItemCategory(item.getUniqueId())
+                : null;
     }
 
     @NotNull
     @Override
     public List<Item> getNearbyGlowingItems(@NotNull Location location, double radius) {
-        return plugin.getTrackedItemManager() != null ? plugin.getTrackedItemManager().getNearbyGlowingItems(location, radius) : List.of();
+        return plugin.getTrackedItemManager() != null
+                ? plugin.getTrackedItemManager().getNearbyGlowingItems(location, radius)
+                : List.of();
     }
 
     @NotNull
@@ -279,12 +306,15 @@ public class LootGlowAPIImpl implements LootGlowAPI {
 
     @Override
     public void refreshVisuals(@NotNull Item item, @NotNull Player player) {
-        if (item == null || !item.isValid() || player == null || !player.isOnline()) return;
+        if (item == null || !item.isValid() || player == null || !player.isOnline())
+            return;
         if (plugin.getEntityVisibilityService() != null && plugin.getTrackedItemManager() != null) {
             plugin.getEntityVisibilityService().refreshGlowForPlayer(
                     player,
                     !isVisualsHidden(player),
-                    plugin.getVanillaItemVisibilityManager() != null ? plugin.getVanillaItemVisibilityManager().getHiddenVanillaItems() : Set.of(),
+                    plugin.getVanillaItemVisibilityManager() != null
+                            ? plugin.getVanillaItemVisibilityManager().getHiddenVanillaItems()
+                            : Set.of(),
                     plugin.getTrackedItemManager().getEntityIdMap(),
                     plugin.getVisibleEntities(),
                     plugin.getFarmingViewDistance(),
@@ -292,20 +322,21 @@ public class LootGlowAPIImpl implements LootGlowAPI {
                     plugin.getGroupedItems(),
                     plugin.getLodHoloDistSq(),
                     plugin.getLodBeamDistSq(),
-                    plugin.getActiveCropSymbols()
-            );
+                    plugin.getActiveCropSymbols());
         }
     }
 
     @Override
     public boolean isTracked(@NotNull Item item) {
-        return item != null && plugin.getTrackedItemManager() != null && plugin.getTrackedItemManager().getActiveItems().containsKey(item.getUniqueId());
+        return item != null && plugin.getTrackedItemManager() != null
+                && plugin.getTrackedItemManager().getActiveItems().containsKey(item.getUniqueId());
     }
 
     @NotNull
     @Override
     public List<Item> getTrackedItemsInChunk(@NotNull Chunk chunk) {
-        if (chunk == null || plugin.getTrackedItemManager() == null) return List.of();
+        if (chunk == null || plugin.getTrackedItemManager() == null)
+            return List.of();
         List<Item> result = new ArrayList<>();
         for (Item item : plugin.getTrackedItemManager().getActiveItems().values()) {
             if (item != null && item.isValid() && item.getLocation().getChunk().equals(chunk)) {
@@ -332,20 +363,23 @@ public class LootGlowAPIImpl implements LootGlowAPI {
     @NotNull
     @Override
     public Set<UUID> getLootSharers(@NotNull Item item) {
-        return plugin.getLootProtectionManager() != null ? plugin.getLootProtectionManager().getLootSharers(item) : Set.of();
+        return plugin.getLootProtectionManager() != null ? plugin.getLootProtectionManager().getLootSharers(item)
+                : Set.of();
     }
 
     @NotNull
     @Override
     public String detectItemRarity(@NotNull ItemStack itemStack) {
-        if (itemStack == null || plugin.getRarityManager() == null) return "COMMON";
+        if (itemStack == null || plugin.getRarityManager() == null)
+            return "COMMON";
         return plugin.getRarityManager().detectRarity(itemStack).name();
     }
 
     @NotNull
     @Override
     public String detectItemRarity(@NotNull Item item) {
-        if (item == null || !item.isValid()) return "COMMON";
+        if (item == null || !item.isValid())
+            return "COMMON";
         return detectItemRarity(item.getItemStack());
     }
 }

@@ -3,7 +3,6 @@ package fr.skynex.lootglow.managers;
 import fr.skynex.lootglow.LootGlow;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Color;
-import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.entity.Item;
 
@@ -38,7 +37,7 @@ public class GroundAuraManager {
         if (list == null || list.isEmpty()) {
             list = List.of("mythic", "legendary", "epic");
         }
-        this.enabledCategories = list.stream().map(String::toLowerCase).collect(java.util.stream.Collectors.toSet());
+        this.enabledCategories = list.stream().map(s -> s.toLowerCase(java.util.Locale.ROOT)).collect(java.util.stream.Collectors.toSet());
 
         this.radius = plugin.getConfig().getDouble("settings.wow-effects.ground-auras.radius", 0.7);
         this.particleCount = plugin.getConfig().getInt("settings.wow-effects.ground-auras.particle-count", 12);

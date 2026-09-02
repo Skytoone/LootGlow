@@ -1,7 +1,6 @@
 package fr.skynex.lootglow.util;
 
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
@@ -9,8 +8,6 @@ import org.bukkit.inventory.meta.ItemMeta;
  * Utility for formatting item display names and hologram components via MiniMessage and Legacy Adventure serializers.
  */
 public class ItemNameFormatter {
-
-    private final MiniMessage miniMessage = MiniMessage.miniMessage();
 
     public ItemNameFormatter() {
     }

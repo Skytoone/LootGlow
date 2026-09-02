@@ -14,7 +14,6 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class LootProtectionManager {
 
-    private final LootGlow plugin;
     private final org.bukkit.NamespacedKey ownerKey;
     private final org.bukkit.NamespacedKey protectUntilKey;
     private final Map<UUID, UUID> lootOwners = new ConcurrentHashMap<>();
@@ -22,7 +21,6 @@ public class LootProtectionManager {
     private final Map<UUID, Set<UUID>> lootSharers = new ConcurrentHashMap<>();
 
     public LootProtectionManager(LootGlow plugin) {
-        this.plugin = plugin;
         this.ownerKey = new org.bukkit.NamespacedKey(plugin, "owner");
         this.protectUntilKey = new org.bukkit.NamespacedKey(plugin, "protect_until");
     }
@@ -63,7 +61,7 @@ public class LootProtectionManager {
         if (item == null || ownerUuid == null || !item.isValid()) return;
         UUID uuid = item.getUniqueId();
         lootOwners.put(uuid, ownerUuid);
-        long protectUntil = System.currentTimeMillis() + (durationSeconds * 1000L);
+        long protectUntil = durationSeconds < 0 ? -1L : System.currentTimeMillis() + (durationSeconds * 1000L);
         protectionExpiry.put(uuid, protectUntil);
 
         item.setOwner(ownerUuid);
@@ -75,12 +73,12 @@ public class LootProtectionManager {
     public boolean isLootProtected(Item item) {
         if (item == null || !item.isValid()) return false;
         Long expiry = protectionExpiry.get(item.getUniqueId());
-        if (expiry != null && System.currentTimeMillis() <= expiry) {
-            return true;
+        if (expiry != null) {
+            return expiry < 0 || System.currentTimeMillis() <= expiry;
         }
         org.bukkit.persistence.PersistentDataContainer pdc = item.getPersistentDataContainer();
         Long protectUntil = pdc.get(protectUntilKey, org.bukkit.persistence.PersistentDataType.LONG);
-        return protectUntil != null && protectUntil > System.currentTimeMillis();
+        return protectUntil != null && (protectUntil < 0 || protectUntil > System.currentTimeMillis());
     }
 
     public boolean isPlayerAllowedToPickup(Player player, Item item) {

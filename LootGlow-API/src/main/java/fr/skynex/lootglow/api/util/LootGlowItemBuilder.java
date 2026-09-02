@@ -88,6 +88,12 @@ public class LootGlowItemBuilder {
         return this;
     }
 
+    public LootGlowItemBuilder permanentProtection(@NotNull UUID ownerUuid) {
+        this.protectionOwner = ownerUuid;
+        this.protectionDurationSeconds = -1;
+        return this;
+    }
+
     public LootGlowItemBuilder bouncing(boolean bouncing) {
         this.bouncing = bouncing;
         return this;
@@ -134,7 +140,7 @@ public class LootGlowItemBuilder {
         if (particle != null) {
             api.setParticleEffect(spawnedItem, particle);
         }
-        if (protectionOwner != null && protectionDurationSeconds > 0) {
+        if (protectionOwner != null && protectionDurationSeconds != 0) {
             api.setLootProtection(spawnedItem, protectionOwner, protectionDurationSeconds);
         }
         if (bouncing != null) {
