@@ -82,6 +82,12 @@ public class LootGlowItemBuilder {
         return this;
     }
 
+    public LootGlowItemBuilder protection(@NotNull UUID ownerUuid) {
+        this.protectionOwner = ownerUuid;
+        this.protectionDurationSeconds = -1;
+        return this;
+    }
+
     public LootGlowItemBuilder protection(@NotNull UUID ownerUuid, long durationSeconds) {
         this.protectionOwner = ownerUuid;
         this.protectionDurationSeconds = durationSeconds;

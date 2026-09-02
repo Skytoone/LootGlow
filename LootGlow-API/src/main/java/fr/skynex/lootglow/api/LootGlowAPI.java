@@ -115,6 +115,16 @@ public interface LootGlowAPI {
      * @param item Dropped item entity
      * @param ownerUuid UUID of the player allowed to pick up the item
      */
+    default void setLootProtection(@NotNull Item item, @NotNull UUID ownerUuid) {
+        setLootProtection(item, ownerUuid, -1L);
+    }
+
+    /**
+     * Grants permanent owner-only loot protection for an item drop until it despawns or is picked up.
+     *
+     * @param item Dropped item entity
+     * @param ownerUuid UUID of the player allowed to pick up the item
+     */
     default void setPermanentLootProtection(@NotNull Item item, @NotNull UUID ownerUuid) {
         setLootProtection(item, ownerUuid, -1L);
     }
