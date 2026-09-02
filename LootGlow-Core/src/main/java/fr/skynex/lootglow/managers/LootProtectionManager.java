@@ -61,7 +61,9 @@ public class LootProtectionManager {
         if (item == null || ownerUuid == null || !item.isValid()) return;
         UUID uuid = item.getUniqueId();
         lootOwners.put(uuid, ownerUuid);
-        long protectUntil = durationSeconds < 0 ? -1L : System.currentTimeMillis() + (durationSeconds * 1000L);
+        long protectUntil = (durationSeconds < 0 || durationSeconds >= Long.MAX_VALUE / 1000L) 
+                ? -1L 
+                : System.currentTimeMillis() + (durationSeconds * 1000L);
         protectionExpiry.put(uuid, protectUntil);
 
         item.setOwner(ownerUuid);
