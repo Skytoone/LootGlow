@@ -101,7 +101,7 @@ public class ItemPhysicsService {
             Float yaw = state != null ? state.yaw : null;
             Float pitch = state != null ? state.pitch : null;
 
-            double baseWeight = 0.02;
+            double baseWeight = 0.08;
             Material itemMat = item.getItemStack().getType();
             boolean isBlockItem = plugin.isUprightItem(itemMat);
             double visualYOffset = baseWeight + (isBlockItem ? (rpgBlockScale / 2.0) : 0.0);

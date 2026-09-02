@@ -227,7 +227,13 @@ public class LootGlowConfigManager {
 
         // RPG Drops
         this.rpgDropsEnabled = config.getBoolean("settings.rpg-drops.enabled", true);
-        this.rpgEnabledCategories = config.getStringList("settings.rpg-drops.enabled-categories");
+        List<String> rawRpgCats = config.getStringList("settings.rpg-drops.enabled-categories");
+        this.rpgEnabledCategories = new ArrayList<>();
+        if (rawRpgCats != null) {
+            for (String c : rawRpgCats) {
+                if (c != null && !c.isBlank()) this.rpgEnabledCategories.add(c.toLowerCase());
+            }
+        }
         this.rpgRotation = (float) Math.toRadians(config.getDouble("settings.rpg-drops.rotation-angle", 90.0));
         this.rpgItemScale = (float) config.getDouble("settings.rpg-drops.item-scale", 0.6);
         this.rpgBlockScale = (float) config.getDouble("settings.rpg-drops.block-scale", 0.8);
@@ -271,7 +277,13 @@ public class LootGlowConfigManager {
         this.beamsEnabled = config.getBoolean("settings.beams.enabled", true);
         this.beamHeight = (float) config.getDouble("settings.beams.height", 10.0);
         this.beamWidth = (float) config.getDouble("settings.beams.width", 0.05);
-        this.beamCategories = config.getStringList("settings.beams.enabled-categories");
+        List<String> rawBeamCats = config.getStringList("settings.beams.enabled-categories");
+        this.beamCategories = new ArrayList<>();
+        if (rawBeamCats != null) {
+            for (String c : rawBeamCats) {
+                if (c != null && !c.isBlank()) this.beamCategories.add(c.toLowerCase());
+            }
+        }
         this.beamsAnimate = config.getBoolean("settings.beams.animate", true);
         this.beamsUseCategoryColor = config.getBoolean("settings.beams.use-category-color", true);
 

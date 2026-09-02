@@ -139,7 +139,7 @@ public class ItemVisualSpawnService {
                 }
 
                 float rotX = (isCustom || isUpright) ? 0f : rpgRotation;
-                float transY = isCustom ? 0.1f : 0.02f;
+                float transY = isCustom ? 0.1f : 0.08f;
                 if (mat == Material.TRIDENT) {
                     transY += 0.35f;
                 } else if (mat == Material.SHIELD) {
