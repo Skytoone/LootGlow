@@ -48,7 +48,7 @@ public class HologramService {
                 String formatted = economyFormat
                         .replace("<prefix>", economyPrefix)
                         .replace("<amount>", String.format("%.2f", amount));
-                name = miniMessage.deserialize(formatted);
+                name = fr.skynex.lootglow.util.ColorUtil.parse(formatted);
             }
         }
 
@@ -103,7 +103,7 @@ public class HologramService {
 
         if (holoShowAmount && item.getItemStack().getAmount() > 1) {
             String amountText = rawAmountFormat.replace("<amount>", String.valueOf(item.getItemStack().getAmount()));
-            result = result.append(miniMessage.deserialize(amountText));
+            result = result.append(fr.skynex.lootglow.util.ColorUtil.parse(amountText));
         }
 
         if (protectionEnabled) {
@@ -120,17 +120,17 @@ public class HologramService {
                             if (ownerPlayer != null) ownerName = ownerPlayer.getName();
                         }
                         String progressBar = buildProgressBar(remaining, protectionDuration);
-                        Component protComp = miniMessage.deserialize("<gold>🔒 Protégé <yellow>" + progressBar + "</yellow> (" + remaining + "s)</gold>");
+                        Component protComp = fr.skynex.lootglow.util.ColorUtil.parse("<gold>🔒 Protégé <yellow>" + progressBar + "</yellow> (" + remaining + "s)</gold>");
                         result = result.append(Component.newline()).append(protComp);
                         if (rawOwnerFormat != null && !rawOwnerFormat.isEmpty()) {
-                            result = result.append(miniMessage.deserialize(rawOwnerFormat.replace("<owner>", ownerName)));
+                            result = result.append(fr.skynex.lootglow.util.ColorUtil.parse(rawOwnerFormat.replace("<owner>", ownerName)));
                         }
                     }
                 } else if (remaining >= -3) {
                     if (remaining == 0) {
                         item.getWorld().playSound(item.getLocation(), org.bukkit.Sound.BLOCK_CHEST_OPEN, 0.4f, 1.3f);
                     }
-                    Component protComp = miniMessage.deserialize("<green>🔓 Libéré</green>");
+                    Component protComp = fr.skynex.lootglow.util.ColorUtil.parse("<green>🔓 Libéré</green>");
                     result = result.append(Component.newline()).append(protComp);
                 }
             }
@@ -148,7 +148,7 @@ public class HologramService {
             int remaining = Math.max(0, (6000 - item.getTicksLived()) / 20);
             Component timerComp = timerComponentCache.get(remaining);
             if (timerComp == null) {
-                timerComp = miniMessage.deserialize(plugin.getMessageService() != null ? plugin.getMessageService().getRawTimerFormat().replace("<time>", String.valueOf(remaining)) : "");
+                timerComp = fr.skynex.lootglow.util.ColorUtil.parse(plugin.getMessageService() != null ? plugin.getMessageService().getRawTimerFormat().replace("<time>", String.valueOf(remaining)) : "");
             }
             if (timerComp != null) {
                 if (holoTimerNewLine) {

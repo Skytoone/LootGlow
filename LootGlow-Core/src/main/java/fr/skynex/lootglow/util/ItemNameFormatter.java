@@ -27,7 +27,6 @@ public class ItemNameFormatter {
     }
 
     public Component parseMiniMessage(String text) {
-        if (text == null || text.isEmpty()) return Component.empty();
-        return miniMessage.deserialize(text);
+        return ColorUtil.parse(text);
     }
 }

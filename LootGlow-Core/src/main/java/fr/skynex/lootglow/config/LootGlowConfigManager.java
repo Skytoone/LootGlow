@@ -100,6 +100,11 @@ public class LootGlowConfigManager {
     private boolean hardLockEnabled = true;
     private String bypassPermission = "lootglow.bypass.lock";
 
+    private boolean bobbingEnabled = true;
+    private double bobbingAmplitude = 0.05;
+    private double bobbingSpeed = 0.08;
+    private int lightColumnHeight = 3;
+
     // Beams
     private boolean beamsEnabled = true;
     private float beamHeight = 10.0f;
@@ -198,7 +203,11 @@ public class LootGlowConfigManager {
 
         this.shadowsEnabled = config.getBoolean("settings.rpg-drops.shadows.enabled", true);
         this.shadowScale = (float) config.getDouble("settings.rpg-drops.shadows.scale", 0.4);
+        this.bobbingEnabled = config.getBoolean("settings.rpg-drops.bobbing.enabled", true);
+        this.bobbingAmplitude = config.getDouble("settings.rpg-drops.bobbing.amplitude", 0.05);
+        this.bobbingSpeed = config.getDouble("settings.rpg-drops.bobbing.speed", 0.08);
         this.lightingEnabled = config.getBoolean("settings.lighting.enabled", true);
+        this.lightColumnHeight = config.getInt("settings.lighting.column-height", 3);
         for (int i = 0; i <= 15; i++) {
             try {
                 Light lightData = (Light) Material.LIGHT.createBlockData();
@@ -401,6 +410,11 @@ public class LootGlowConfigManager {
     public boolean isHardLockEnabled() { return hardLockEnabled; }
     public String getBypassPermission() { return bypassPermission; }
 
+    public boolean isBobbingEnabled() { return bobbingEnabled; }
+    public double getBobbingAmplitude() { return bobbingAmplitude; }
+    public double getBobbingSpeed() { return bobbingSpeed; }
+    public int getLightColumnHeight() { return lightColumnHeight; }
+
     public boolean isBeamsEnabled() { return beamsEnabled; }
     public float getBeamHeight() { return beamHeight; }
     public float getBeamWidth() { return beamWidth; }
@@ -540,7 +554,7 @@ public class LootGlowConfigManager {
                     for (String itemKey : config.getConfigurationSection("categories." + key + ".display-names").getKeys(false)) {
                         String raw = config.getString("categories." + key + ".display-names." + itemKey);
                         if (raw != null)
-                            displayNameOverridesCache.put(itemKey.toUpperCase(), miniMessage.deserialize(raw));
+                            displayNameOverridesCache.put(itemKey.toUpperCase(), fr.skynex.lootglow.util.ColorUtil.parse(raw));
                     }
                 }
 

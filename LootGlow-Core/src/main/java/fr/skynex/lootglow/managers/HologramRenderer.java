@@ -31,7 +31,7 @@ public class HologramRenderer {
 
     public void setCustomHologram(Item item, String text, MiniMessage miniMessage) {
         if (item == null || text == null || !item.isValid()) return;
-        customHolograms.put(item.getUniqueId(), miniMessage.deserialize(text));
+        customHolograms.put(item.getUniqueId(), fr.skynex.lootglow.util.ColorUtil.parse(text));
     }
 
     public void clearAll() {

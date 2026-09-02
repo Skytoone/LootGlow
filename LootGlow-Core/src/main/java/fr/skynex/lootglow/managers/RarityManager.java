@@ -171,9 +171,9 @@ public class RarityManager {
             String rarityKey = r.name().toLowerCase();
             String customBanner = getConfigString(rarityKey + ".banner");
             if (customBanner != null && !customBanner.isBlank()) {
-                return miniMessage.deserialize(customBanner);
+                return fr.skynex.lootglow.util.ColorUtil.parse(customBanner);
             }
-            return miniMessage.deserialize(r.getDefaultBanner());
+            return fr.skynex.lootglow.util.ColorUtil.parse(r.getDefaultBanner());
         });
     }
 

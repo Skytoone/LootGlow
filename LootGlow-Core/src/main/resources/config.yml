@@ -91,6 +91,8 @@ settings:
   lighting:
     enabled: true
     update-interval: 5 # Ticks between light updates
+    # Height of dynamic light column in blocks (illuminates caves & dark areas)
+    column-height: 3
     
   # Advanced Performance Settings
   performance:
@@ -179,6 +181,12 @@ settings:
       enabled: true
       # Grosseur de l'ombre (0.4 par défaut)
       scale: 0.4
+    # --- Floating Bobbing Levitation (RPG Animation) ---
+    # Gentle sine-wave vertical floating effect for ground items
+    bobbing:
+      enabled: true
+      amplitude: 0.05
+      speed: 0.08
     
   # Loot Protection Display (Show owner name for a few seconds)
   loot-protection:

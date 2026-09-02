@@ -90,7 +90,7 @@ public class LootGlowAPIImpl implements LootGlowAPI {
             if (text == null || text.isEmpty()) {
                 display.text(Component.empty());
             } else {
-                display.text(MiniMessage.miniMessage().deserialize(text));
+                display.text(fr.skynex.lootglow.util.ColorUtil.parse(text));
             }
         }
     }

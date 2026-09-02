@@ -154,7 +154,7 @@ public class ItemListener implements Listener {
                                 event.getItem().getItemStack().getType().name();
 
                         String formatted = format.replace("<category>", itemCat.toUpperCase()).replace("<item>", itemName);
-                        net.kyori.adventure.text.Component actionbarComp = net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(formatted);
+                        net.kyori.adventure.text.Component actionbarComp = fr.skynex.lootglow.util.ColorUtil.parse(formatted);
                         player.sendActionBar(actionbarComp);
 
                         String soundStr = plugin.getConfig().getString("settings.wow-effects.pickup-actionbar.sound", "UI_TOAST_CHALLENGE_COMPLETE");

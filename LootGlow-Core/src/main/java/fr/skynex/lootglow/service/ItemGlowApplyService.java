@@ -316,9 +316,8 @@ public class ItemGlowApplyService {
                 String titleStr = plugin.getConfigManager().getCategoryTitles().get(finalCategory);
                 String subTitleStr = plugin.getConfigManager().getCategorySubtitles().get(finalCategory);
                 if (titleStr != null || subTitleStr != null) {
-                    net.kyori.adventure.text.minimessage.MiniMessage mm = net.kyori.adventure.text.minimessage.MiniMessage.miniMessage();
-                    Component mainTitle = titleStr != null ? mm.deserialize(titleStr) : Component.empty();
-                    Component subTitle = subTitleStr != null ? mm.deserialize(subTitleStr) : Component.empty();
+                    Component mainTitle = titleStr != null ? fr.skynex.lootglow.util.ColorUtil.parse(titleStr) : Component.empty();
+                    Component subTitle = subTitleStr != null ? fr.skynex.lootglow.util.ColorUtil.parse(subTitleStr) : Component.empty();
                     net.kyori.adventure.title.Title titleObj = net.kyori.adventure.title.Title.title(mainTitle, subTitle);
                     double radius = plugin.getConfigManager().getCategoryNotificationRadius().getOrDefault(finalCategory, 15.0);
 

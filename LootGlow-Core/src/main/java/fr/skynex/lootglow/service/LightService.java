@@ -52,10 +52,14 @@ public class LightService {
                 if (ent == null || ent.isDead() || !ent.isValid()) {
                     Location loc = activeLights.get(uuid);
                     if (loc != null) {
-                        BlockData blockData = loc.getBlock().getBlockData();
-                        for (Player p : Bukkit.getOnlinePlayers()) {
-                            if (p.getWorld().equals(loc.getWorld())) {
-                                p.sendBlockChange(loc, blockData);
+                        int columnHeight = plugin.getLightColumnHeight();
+                        for (int h = 0; h < columnHeight; h++) {
+                            Location restoreLoc = loc.clone().add(0, h, 0);
+                            BlockData blockData = restoreLoc.getBlock().getBlockData();
+                            for (Player p : Bukkit.getOnlinePlayers()) {
+                                if (p.getWorld().equals(restoreLoc.getWorld())) {
+                                    p.sendBlockChange(restoreLoc, blockData);
+                                }
                             }
                         }
                     }
@@ -81,32 +85,48 @@ public class LightService {
 
                 if (oldLoc != null && oldLoc.equals(currentLoc)) continue;
 
+                int columnHeight = plugin.getLightColumnHeight();
                 if (oldLoc != null) {
-                    BlockData oldBlockData = oldLoc.getBlock().getBlockData();
-                    for (Player p : Bukkit.getOnlinePlayers()) {
-                        if (p.getWorld().equals(oldLoc.getWorld())) {
-                            p.sendBlockChange(oldLoc, oldBlockData);
+                    for (int h = 0; h < columnHeight; h++) {
+                        Location restoreLoc = oldLoc.clone().add(0, h, 0);
+                        BlockData oldBlockData = restoreLoc.getBlock().getBlockData();
+                        for (Player p : Bukkit.getOnlinePlayers()) {
+                            if (p.getWorld().equals(restoreLoc.getWorld())) {
+                                p.sendBlockChange(restoreLoc, oldBlockData);
+                            }
                         }
                     }
                 }
 
-                Material blockType = block.getType();
-                if (blockType.isAir() || blockType == Material.WATER) {
-                    Light lightData = cachedLightBlockData[Math.max(0, Math.min(lightLevel, 15))];
-                    if (lightData != null) {
-                        if (blockType == Material.WATER) {
-                            Light waterloggedLight = (Light) lightData.clone();
-                            waterloggedLight.setWaterlogged(true);
-                            lightData = waterloggedLight;
-                        }
-
-                        for (Player p : Bukkit.getOnlinePlayers()) {
-                            if (p.getWorld().equals(currentLoc.getWorld())) {
-                                p.sendBlockChange(currentLoc, lightData);
+                boolean placedAny = false;
+                for (int h = 0; h < columnHeight; h++) {
+                    Block targetBlock = block.getRelative(0, h, 0);
+                    Material blockType = targetBlock.getType();
+                    if (blockType.isAir() || blockType == Material.WATER) {
+                        int currentLevel = Math.max(1, lightLevel - (h * 2));
+                        Light lightData = cachedLightBlockData[Math.max(0, Math.min(currentLevel, 15))];
+                        if (lightData != null) {
+                            if (blockType == Material.WATER) {
+                                Light waterloggedLight = (Light) lightData.clone();
+                                waterloggedLight.setWaterlogged(true);
+                                lightData = waterloggedLight;
                             }
+
+                            Location targetLoc = targetBlock.getLocation();
+                            for (Player p : Bukkit.getOnlinePlayers()) {
+                                if (p.getWorld().equals(targetLoc.getWorld())) {
+                                    p.sendBlockChange(targetLoc, lightData);
+                                }
+                            }
+                            placedAny = true;
                         }
-                        activeLights.put(uuid, currentLoc);
+                    } else {
+                        break;
                     }
+                }
+
+                if (placedAny) {
+                    activeLights.put(uuid, currentLoc);
                 } else {
                     activeLights.remove(uuid);
                 }

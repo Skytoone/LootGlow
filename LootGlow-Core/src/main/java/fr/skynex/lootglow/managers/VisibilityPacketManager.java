@@ -59,5 +59,6 @@ public class VisibilityPacketManager {
 
     public void clearAll() {
         visibleEntitiesPerPlayer.clear();
+        plugin.getVisibleEntities().clear();
     }
 }

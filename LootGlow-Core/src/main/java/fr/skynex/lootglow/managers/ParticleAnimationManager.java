@@ -255,7 +255,7 @@ public class ParticleAnimationManager {
                         Location targetLoc = rarestItem.getLocation();
                         String arrow = getDirectionalArrow(p, targetLoc);
                         int distance = (int) Math.sqrt(closestDistSq);
-                        p.sendActionBar(net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(
+                        p.sendActionBar(fr.skynex.lootglow.util.ColorUtil.parse(
                                 "<gold><b>★ Item d'Élite à proximité</b> <yellow>(" + arrow + " " + distance + "m)</yellow></gold>"
                         ));
                     }

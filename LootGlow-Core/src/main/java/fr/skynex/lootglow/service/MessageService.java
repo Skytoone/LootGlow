@@ -54,7 +54,7 @@ public class MessageService {
 
         timerComponentCache.clear();
         for (int i = 0; i <= 305; i++) {
-            timerComponentCache.put(i, miniMessage.deserialize(rawTimerFormat.replace("<time>", String.valueOf(i))));
+            timerComponentCache.put(i, fr.skynex.lootglow.util.ColorUtil.parse(rawTimerFormat.replace("<time>", String.valueOf(i))));
         }
     }
 
@@ -81,6 +81,6 @@ public class MessageService {
             }
         }
         String fullMsg = msg.replace("<prefix>", rawPrefix);
-        sender.sendMessage(miniMessage.deserialize(fullMsg));
+        sender.sendMessage(fr.skynex.lootglow.util.ColorUtil.parse(fullMsg));
     }
 }

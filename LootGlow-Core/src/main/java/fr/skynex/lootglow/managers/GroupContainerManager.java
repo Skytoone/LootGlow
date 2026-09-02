@@ -130,7 +130,7 @@ public class GroupContainerManager {
             int size = ((members.size() / 9) + 1) * 9;
             if (size > 54) size = 54;
 
-            Inventory gui = Bukkit.createInventory(null, size, miniMessage.deserialize(containerTitle));
+            Inventory gui = Bukkit.createInventory(null, size, fr.skynex.lootglow.util.ColorUtil.parse(containerTitle));
             for (int i = 0; i < Math.min(members.size(), 54); i++) {
                 Item item = plugin.getTrackedItemManager().getActiveItems().get(members.get(i));
                 if (item != null && item.isValid()) {

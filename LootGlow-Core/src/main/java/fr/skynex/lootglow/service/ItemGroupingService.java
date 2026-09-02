@@ -293,7 +293,7 @@ public class ItemGroupingService {
                 net.kyori.adventure.text.Component newContent;
                 if (isGroupLeader) {
                     int count = groupLeaders.get(uuid);
-                    newContent = miniMessage.deserialize(rawBundleFormat.replace("<count>", String.valueOf(count)));
+                    newContent = fr.skynex.lootglow.util.ColorUtil.parse(rawBundleFormat.replace("<count>", String.valueOf(count)));
                 } else if (!isGrouped) {
                     net.kyori.adventure.text.format.NamedTextColor color = itemCategories.get(ti.category);
                     if (color == null)

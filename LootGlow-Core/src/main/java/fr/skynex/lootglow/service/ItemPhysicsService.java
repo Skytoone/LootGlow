@@ -96,7 +96,14 @@ public class ItemPhysicsService {
                 }
             }
 
+            double bobbingOffset = 0.0;
+            if (plugin.isBobbingEnabled() && item.isOnGround()) {
+                double phase = (globalSyncTick + (itemUuid.getLeastSignificantBits() & 0xFF)) * plugin.getBobbingSpeed();
+                bobbingOffset = Math.sin(phase) * plugin.getBobbingAmplitude();
+            }
+
             double targetSurfaceY = state != null ? state.y : itemY;
+            double targetVisualY = targetSurfaceY + bobbingOffset;
             Float yaw = state != null ? state.yaw : null;
             Float pitch = state != null ? state.pitch : null;
 
@@ -128,9 +135,9 @@ public class ItemPhysicsService {
             Entity representative = (visual != null) ? (Entity) visual : (Entity) label;
 
             boolean moved = false;
-            if (itemActuallyMoved && representative != null && representative.isValid()) {
+            if ((itemActuallyMoved || bobbingOffset != 0.0) && representative != null && representative.isValid()) {
                 double dx = itemX - representative.getX();
-                double dy = (targetSurfaceY + visualYOffset) - representative.getY();
+                double dy = (targetVisualY + visualYOffset) - representative.getY();
                 double dz = itemZ - representative.getZ();
                 moved = (dx * dx + dy * dy + dz * dz) > 0.0001;
             }
@@ -141,6 +148,7 @@ public class ItemPhysicsService {
 
             final boolean finalMoved = moved;
             final boolean finalItemActuallyMoved = itemActuallyMoved;
+            final double finalTargetVisualY = targetVisualY;
             final double finalTargetSurfaceY = targetSurfaceY;
             final double finalVisualYOffset = visualYOffset;
             final Material finalItemMat = itemMat;
@@ -153,7 +161,7 @@ public class ItemPhysicsService {
                 if (finalMoved) {
                     itemLoc = item.getLocation();
                     if (visual != null && visual.isValid()) {
-                        itemLoc.setY(finalTargetSurfaceY + finalVisualYOffset);
+                        itemLoc.setY(finalTargetVisualY + finalVisualYOffset);
                         if (yaw != null) itemLoc.setYaw(yaw);
                         if (pitch != null) itemLoc.setPitch(pitch);
                         visual.setTeleportDuration(1);
@@ -162,7 +170,7 @@ public class ItemPhysicsService {
 
                     if (label != null && label.isValid()) {
                         if (itemLoc == null) itemLoc = item.getLocation();
-                        itemLoc.setY(finalTargetSurfaceY + finalVisualYOffset + holoOffset);
+                        itemLoc.setY(finalTargetVisualY + finalVisualYOffset + holoOffset);
                         label.setTeleportDuration(1);
                         label.teleport(itemLoc);
                     }

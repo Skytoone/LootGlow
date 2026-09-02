@@ -205,6 +205,22 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
         return configManager != null ? configManager.isGroupingEnabled() : false;
     }
 
+    public boolean isBobbingEnabled() {
+        return configManager != null ? configManager.isBobbingEnabled() : true;
+    }
+
+    public double getBobbingAmplitude() {
+        return configManager != null ? configManager.getBobbingAmplitude() : 0.05;
+    }
+
+    public double getBobbingSpeed() {
+        return configManager != null ? configManager.getBobbingSpeed() : 0.08;
+    }
+
+    public int getLightColumnHeight() {
+        return configManager != null ? configManager.getLightColumnHeight() : 3;
+    }
+
     public NamespacedKey getSourceMobKey() {
         return sourceMobKey;
     }
