@@ -20,18 +20,18 @@ public class VisibilityPacketManager {
     }
 
     public Map<UUID, Set<UUID>> getVisibleEntitiesPerPlayer() {
-        return visibleEntitiesPerPlayer;
+        return plugin.getVisibleEntities();
     }
 
     public void removePlayer(UUID playerUuid) {
         if (playerUuid != null) {
-            visibleEntitiesPerPlayer.remove(playerUuid);
+            plugin.getVisibleEntities().remove(playerUuid);
         }
     }
 
     public void cleanVisibleSet(UUID entityUuid) {
-        if (entityUuid == null || visibleEntitiesPerPlayer.isEmpty()) return;
-        for (Set<UUID> visibleSet : visibleEntitiesPerPlayer.values()) {
+        if (entityUuid == null) return;
+        for (Set<UUID> visibleSet : plugin.getVisibleEntities().values()) {
             if (visibleSet != null) {
                 visibleSet.remove(entityUuid);
             }

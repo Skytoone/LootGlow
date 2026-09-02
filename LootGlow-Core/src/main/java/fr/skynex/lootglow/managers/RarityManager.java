@@ -17,6 +17,8 @@ public class RarityManager {
 
     private final LootGlow plugin;
     private final MiniMessage miniMessage = MiniMessage.miniMessage();
+    private static final PlainTextComponentSerializer PLAIN_SERIALIZER = PlainTextComponentSerializer.plainText();
+    private final java.util.Map<ItemRarity, Component> rarityHeaderCache = new java.util.EnumMap<>(ItemRarity.class);
 
     public enum ItemRarity {
         COMMON("Commun", "<gray>COMMUN</gray>"),
@@ -47,6 +49,10 @@ public class RarityManager {
         this.plugin = plugin;
     }
 
+    public void clearCache() {
+        rarityHeaderCache.clear();
+    }
+
     public ItemRarity detectRarity(ItemStack itemStack) {
         if (itemStack == null || itemStack.getType().isAir()) return ItemRarity.COMMON;
 
@@ -62,7 +68,7 @@ public class RarityManager {
             if (checkDisplayName && meta.hasDisplayName()) {
                 Component nameComp = meta.displayName();
                 if (nameComp != null) {
-                    String nameText = PlainTextComponentSerializer.plainText().serialize(nameComp).toUpperCase();
+                    String nameText = PLAIN_SERIALIZER.serialize(nameComp).toUpperCase();
                     ItemRarity matched = matchKeywords(nameText);
                     if (matched != null) return matched;
                 }
@@ -73,7 +79,7 @@ public class RarityManager {
                 List<Component> lore = meta.lore();
                 if (lore != null) {
                     for (Component lineComp : lore) {
-                        String lineText = PlainTextComponentSerializer.plainText().serialize(lineComp).toUpperCase();
+                        String lineText = PLAIN_SERIALIZER.serialize(lineComp).toUpperCase();
                         ItemRarity matched = matchKeywords(lineText);
                         if (matched != null) return matched;
                     }
@@ -161,13 +167,14 @@ public class RarityManager {
     public Component getRarityHeaderComponent(ItemRarity rarity) {
         if (rarity == ItemRarity.COMMON) return null;
 
-        String rarityKey = rarity.name().toLowerCase();
-        String customBanner = getConfigString(rarityKey + ".banner");
-        if (customBanner != null && !customBanner.isBlank()) {
-            return miniMessage.deserialize(customBanner);
-        }
-
-        return miniMessage.deserialize(rarity.getDefaultBanner());
+        return rarityHeaderCache.computeIfAbsent(rarity, r -> {
+            String rarityKey = r.name().toLowerCase();
+            String customBanner = getConfigString(rarityKey + ".banner");
+            if (customBanner != null && !customBanner.isBlank()) {
+                return miniMessage.deserialize(customBanner);
+            }
+            return miniMessage.deserialize(r.getDefaultBanner());
+        });
     }
 
     private boolean getConfigBoolean(String subKey, boolean def) {

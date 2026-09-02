@@ -89,7 +89,12 @@ public class HologramService {
         Component result = baseName;
 
         if (plugin.getRarityManager() != null) {
-            fr.skynex.lootglow.managers.RarityManager.ItemRarity rarity = plugin.getRarityManager().detectRarity(item.getItemStack());
+            fr.skynex.lootglow.managers.TrackedItemManager.TrackedItem ti = plugin.getTrackedItemManager() != null ? plugin.getTrackedItemManager().getTrackedItem(item.getUniqueId()) : null;
+            fr.skynex.lootglow.managers.RarityManager.ItemRarity rarity = ti != null ? ti.rarity : null;
+            if (rarity == null) {
+                rarity = plugin.getRarityManager().detectRarity(item.getItemStack());
+                if (ti != null) ti.rarity = rarity;
+            }
             Component rarityHeader = plugin.getRarityManager().getRarityHeaderComponent(rarity);
             if (rarityHeader != null) {
                 result = rarityHeader.append(Component.newline()).append(result);
@@ -188,11 +193,12 @@ public class HologramService {
         TextDisplay display = activeLabels.get(uuid);
         if (display == null || !display.isValid()) {
             if (display != null) activeLabels.remove(uuid);
+            boolean seeThrough = plugin.getConfigManager() != null ? plugin.getConfigManager().isHoloSeeThrough() : plugin.getConfig().getBoolean("settings.holograms.see-through", false);
+            double viewDistance = plugin.getConfigManager() != null ? plugin.getConfigManager().getHoloViewDistance() : plugin.getConfig().getDouble("settings.holograms.view-distance", 48.0);
+            boolean background = plugin.getConfigManager() != null ? plugin.getConfigManager().isHoloBackground() : plugin.getConfig().getBoolean("settings.holograms.background", false);
+            double offset = plugin.getConfigManager() != null ? plugin.getConfigManager().getHoloOffset() : plugin.getConfig().getDouble("settings.holograms.offset", 0.6);
             spawnHologram(item, color, holoEnabled, itemCategoriesCache, holoHideUncategorized,
-                    activeLabels, plugin.getConfig().getBoolean("settings.holograms.see-through", false),
-                    plugin.getConfig().getDouble("settings.holograms.view-distance", 48.0),
-                    plugin.getConfig().getBoolean("settings.holograms.background", false),
-                    plugin.getConfig().getDouble("settings.holograms.offset", 0.6),
+                    activeLabels, seeThrough, viewDistance, background, offset,
                     baseNameCache, displayNameOverridesCache, itemMoneyAmounts, economyFormat, economyPrefix,
                     holoShowAmount, rawAmountFormat, protectionEnabled, protectionDuration, itemSpawnTimes,
                     rawOwnerFormat, usePapi, holoShowTimer, timerComponentCache, holoTimerNewLine,
@@ -293,7 +299,7 @@ public class HologramService {
 
             if (p.getLocation().distanceSquared(item.getLocation()) <= lodHoloDistSq) {
                 p.showEntity(plugin, label);
-                visibleEntities.computeIfAbsent(pUuid, k -> new HashSet<>()).add(label.getUniqueId());
+                visibleEntities.computeIfAbsent(pUuid, k -> java.util.concurrent.ConcurrentHashMap.newKeySet()).add(label.getUniqueId());
             }
         }
     }

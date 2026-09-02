@@ -21,9 +21,17 @@ import java.util.UUID;
 public class ItemGroupingService {
 
     private final LootGlow plugin;
+    private org.bukkit.scheduler.BukkitTask groupingTask;
 
     public ItemGroupingService(LootGlow plugin) {
         this.plugin = plugin;
+    }
+
+    public void stopGroupingTask() {
+        if (groupingTask != null) {
+            groupingTask.cancel();
+            groupingTask = null;
+        }
     }
 
     /**
@@ -145,7 +153,8 @@ public class ItemGroupingService {
                                   Map<String, net.kyori.adventure.text.format.NamedTextColor> itemCategories,
                                   net.kyori.adventure.text.format.NamedTextColor defaultColor,
                                   net.kyori.adventure.text.minimessage.MiniMessage miniMessage) {
-        fr.skynex.lootglow.util.FoliaScheduler.runTimer(plugin, () -> {
+        stopGroupingTask();
+        groupingTask = fr.skynex.lootglow.util.FoliaScheduler.runTimer(plugin, () -> {
             if (!isEnabled || !groupingEnabled)
                 return;
 
@@ -154,7 +163,7 @@ public class ItemGroupingService {
             boolean byCategory = plugin.getConfig().getBoolean("settings.grouping.group-by-category", true);
 
             double radiusSq = radius * radius;
-            double holoDistSq = Math.pow(plugin.getConfig().getDouble("settings.performance.lod.hologram-distance", 24.0), 2);
+            double holoDistSq = plugin.getLodManager() != null ? plugin.getLodManager().getLodHoloDistanceSquared() : 576.0;
 
             groupedItems.clear();
             groupLeaders.clear();

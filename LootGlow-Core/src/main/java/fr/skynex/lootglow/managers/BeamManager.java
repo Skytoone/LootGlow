@@ -132,7 +132,7 @@ public class BeamManager {
             if (!hiddenVisuals.contains(p.getUniqueId()) && p.getWorld().equals(item.getWorld())) {
                 if (p.getLocation().distanceSquared(item.getLocation()) < lodBeamDistSq) {
                     p.showEntity(plugin, beam);
-                    visibleEntities.computeIfAbsent(p.getUniqueId(), k -> new HashSet<>()).add(beam.getUniqueId());
+                    visibleEntities.computeIfAbsent(p.getUniqueId(), k -> java.util.concurrent.ConcurrentHashMap.newKeySet()).add(beam.getUniqueId());
                 }
             }
         }

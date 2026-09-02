@@ -29,7 +29,6 @@ public class FarmingManager {
 
     private final LootGlow plugin;
     private final Map<Block, CropSymbol> activeCropSymbols = new HashMap<>();
-    private final org.joml.Quaternionf reusableRot = new org.joml.Quaternionf();
 
     public FarmingManager(LootGlow plugin) {
         this.plugin = plugin;
@@ -99,7 +98,7 @@ public class FarmingManager {
     public void tickFarmingAnimation(float angle, boolean farmingEnabled, boolean farmingAnimation, Set<UUID> globallyVisibleEntities) {
         if (!farmingEnabled || !farmingAnimation) return;
 
-        reusableRot.rotationY(angle);
+        final org.joml.Quaternionf rot = new org.joml.Quaternionf().rotationY(angle);
 
         for (List<BlockDisplay> parts : activeCropSymbols.values()) {
             if (parts.size() < 2) continue;
@@ -111,14 +110,14 @@ public class FarmingManager {
             FoliaScheduler.runAtEntity(plugin, bar, () -> {
                 if (!bar.isValid()) return;
                 Transformation bT = bar.getTransformation();
-                bT.getLeftRotation().set(reusableRot);
+                bT.getLeftRotation().set(rot);
                 bar.setTransformation(bT);
                 bar.setInterpolationDuration(2);
                 bar.setInterpolationDelay(0);
 
                 if (dot != null && dot.isValid()) {
                     Transformation dT = dot.getTransformation();
-                    dT.getLeftRotation().set(reusableRot);
+                    dT.getLeftRotation().set(rot);
                     dot.setTransformation(dT);
                     dot.setInterpolationDuration(2);
                     dot.setInterpolationDelay(0);
@@ -206,6 +205,10 @@ public class FarmingManager {
     }
 
     public void clearAll() {
+        if (farmingTask != null) {
+            farmingTask.cancel();
+            farmingTask = null;
+        }
         activeCropSymbols.values().forEach(cs -> cs.forEach(bd -> {
             if (bd.isValid()) bd.remove();
         }));

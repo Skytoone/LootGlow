@@ -25,7 +25,7 @@ public class RPGDropManager {
         public ItemDisplay display;
         public Player target;
         public double scale = 1.0;
-        public int ticks = 0;
+        public volatile int ticks = 0;
 
         public VisualAnimation(ItemDisplay display, Player target) {
             this.display = display;
@@ -82,7 +82,7 @@ public class RPGDropManager {
             if (!plugin.getHiddenVisuals().contains(p.getUniqueId()) && p.getWorld().equals(item.getWorld())) {
                 if (p.getLocation().distanceSquared(item.getLocation()) < plugin.getLodHoloDistSq()) {
                     p.showEntity(plugin, shadow);
-                    plugin.getVisibleEntities().computeIfAbsent(p.getUniqueId(), k -> new HashSet<>()).add(shadow.getUniqueId());
+                    plugin.getVisibleEntities().computeIfAbsent(p.getUniqueId(), k -> java.util.concurrent.ConcurrentHashMap.newKeySet()).add(shadow.getUniqueId());
                 }
             }
         }

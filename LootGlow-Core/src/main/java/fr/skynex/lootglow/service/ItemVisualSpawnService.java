@@ -176,7 +176,7 @@ public class ItemVisualSpawnService {
         for (Player p : Bukkit.getOnlinePlayers()) {
             if (!hiddenVisuals.contains(p.getUniqueId()) && p.getWorld().equals(item.getWorld())) {
                 p.showEntity(plugin, display);
-                visibleEntities.computeIfAbsent(p.getUniqueId(), k -> new HashSet<>()).add(display.getUniqueId());
+                visibleEntities.computeIfAbsent(p.getUniqueId(), k -> java.util.concurrent.ConcurrentHashMap.newKeySet()).add(display.getUniqueId());
             }
         }
     }

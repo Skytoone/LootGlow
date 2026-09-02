@@ -236,6 +236,9 @@ public class ItemGlowApplyService {
             itemCategoriesCache.put(item.getUniqueId(), category);
 
             Particle part = categoryParticles.get(customId != null ? customId : matName);
+            if (part == null && category != null) {
+                part = categoryParticles.get(category);
+            }
             if (part == null) {
                 String partStr = plugin.getConfig().getString("categories." + category + ".particle");
                 if (partStr != null) {
@@ -247,6 +250,7 @@ public class ItemGlowApplyService {
             }
 
             if (part != null) {
+                categoryParticles.put(category, part);
                 itemParticlesCache.put(item.getUniqueId(), part);
             }
         }
@@ -260,7 +264,7 @@ public class ItemGlowApplyService {
 
         entityIdMap.put(item.getEntityId(), item.getUniqueId());
         activeItems.put(item.getUniqueId(), item);
-        itemsByWorld.computeIfAbsent(item.getWorld().getName(), k -> new HashSet<>()).add(item.getUniqueId());
+        itemsByWorld.computeIfAbsent(item.getWorld().getName(), k -> java.util.concurrent.ConcurrentHashMap.newKeySet()).add(item.getUniqueId());
 
         boolean isRpgDrop = rpgDropsEnabled && (rpgEnabledCategories.isEmpty()
                 || (finalCategory != null && rpgEnabledCategories.contains(finalCategory.toLowerCase())));

@@ -19,7 +19,6 @@ import java.util.UUID;
 public class BeamTickService {
 
     private final LootGlow plugin;
-    private final org.joml.Quaternionf reusableRot = new org.joml.Quaternionf();
 
     public BeamTickService(LootGlow plugin) {
         this.plugin = plugin;
@@ -37,7 +36,7 @@ public class BeamTickService {
 
         if (!beamsEnabled || !beamsAnimate) return;
 
-        reusableRot.rotationY(angle);
+        org.joml.Quaternionf rot = new org.joml.Quaternionf().rotationY(angle);
         float scalePulse = (float) (1.0 + Math.sin(angle * 2) * 0.15);
         int tick = (int) (angle * 20);
 
@@ -53,7 +52,7 @@ public class BeamTickService {
             FoliaScheduler.runAtEntity(plugin, beam, () -> {
                 if (!beam.isValid()) return;
                 Transformation trans = beam.getTransformation();
-                if (shouldAnimate) trans.getLeftRotation().set(reusableRot);
+                if (shouldAnimate) trans.getLeftRotation().set(rot);
 
                 float bH = (config != null) ? config.height : beamHeight;
                 float bW = (config != null) ? config.width : beamWidth;
@@ -68,7 +67,7 @@ public class BeamTickService {
                 for (Entity pass : beam.getPassengers()) {
                     if (pass instanceof BlockDisplay bd && bd.isValid()) {
                         Transformation cTrans = bd.getTransformation();
-                        cTrans.getLeftRotation().set(reusableRot);
+                        cTrans.getLeftRotation().set(rot);
                         float cWidth = beamWidth * 0.4f * scalePulse;
                         cTrans.getScale().set(cWidth, beamHeight, cWidth);
                         cTrans.getTranslation().set(-cWidth / 2, 0, -cWidth / 2);
@@ -84,11 +83,22 @@ public class BeamTickService {
                 Particle part = itemParticlesCache.get(itemUuid);
                 if (part != null) {
                     double heightOffset = (angle * 5) % beamHeight;
+                    double maxDistSq = plugin.getConfigManager() != null ? plugin.getConfigManager().getLodPartDistSq() : 1024.0;
                     FoliaScheduler.runAtEntity(plugin, beam, () -> {
-                        if (beam.isValid()) {
-                            Location beamLoc = beam.getLocation();
-                            beamLoc.setY(beamLoc.getY() + heightOffset);
-                            beam.getWorld().spawnParticle(part, beamLoc, 1, 0.05, 0.05, 0.05, 0.01);
+                        if (!beam.isValid()) return;
+                        double bx = beam.getX();
+                        double by = beam.getY() + heightOffset;
+                        double bz = beam.getZ();
+                        org.bukkit.World world = beam.getWorld();
+
+                        for (org.bukkit.entity.Player p : org.bukkit.Bukkit.getOnlinePlayers()) {
+                            if (plugin.getHiddenVisuals().contains(p.getUniqueId()) || !p.getWorld().equals(world)) continue;
+                            double dx = p.getX() - bx;
+                            double dy = p.getY() - by;
+                            double dz = p.getZ() - bz;
+                            if ((dx * dx + dy * dy + dz * dz) <= maxDistSq) {
+                                p.spawnParticle(part, bx, by, bz, 1, 0.05, 0.05, 0.05, 0.01);
+                            }
                         }
                     });
                 }

@@ -106,13 +106,15 @@ public class ParticleAnimationManager {
             final double radius = r * 0.4;
             FoliaScheduler.runLater(plugin, () -> {
                 if (!item.isValid()) return;
-                Location center = item.getLocation();
+                double cx = item.getX();
+                double cy = item.getY() + 0.1;
+                double cz = item.getZ();
+                org.bukkit.World w = item.getWorld();
                 for (int i = 0; i < count; i++) {
                     double angle = (2 * Math.PI * i) / count;
-                    double x = center.getX() + radius * Math.cos(angle);
-                    double z = center.getZ() + radius * Math.sin(angle);
-                    Location pLoc = new Location(center.getWorld(), x, center.getY() + 0.1, z);
-                    center.getWorld().spawnParticle(Particle.DUST, pLoc, 1, 0, 0, 0, 0, dustOptions);
+                    double x = cx + radius * Math.cos(angle);
+                    double z = cz + radius * Math.sin(angle);
+                    w.spawnParticle(Particle.DUST, x, cy, z, 1, 0, 0, 0, 0, dustOptions);
                 }
             }, (r - 1) * 2L);
         }
@@ -161,45 +163,43 @@ public class ParticleAnimationManager {
             }
             double partDistSq = lodPartDistSq;
 
-            record CachedItemLoc(UUID uuid, double x, double y, double z, World world, Particle particle, String category, AnimType animType) {}
-            Map<World, java.util.List<CachedItemLoc>> itemsByWorldMap = new java.util.HashMap<>();
-            for (Map.Entry<UUID, Item> e : activeItems.entrySet()) {
-                Item item = e.getValue();
-                if (item == null || item.isDead() || !item.isValid()) continue;
-                Particle particle = itemParticlesCache.get(e.getKey());
-                if (particle == null) continue;
-                String category = itemCategoriesCache.get(e.getKey());
-                Location loc = item.getLocation();
-                String rawAnimType = (category != null)
-                        ? categoryAnimTypes.getOrDefault(category, particleAnimType)
-                        : particleAnimType;
-                AnimType animType = AnimType.fromString(rawAnimType);
-                CachedItemLoc cached = new CachedItemLoc(e.getKey(), loc.getX(), loc.getY(), loc.getZ(), item.getWorld(), particle, category, animType);
-                itemsByWorldMap.computeIfAbsent(item.getWorld(), w -> new java.util.ArrayList<>()).add(cached);
-            }
-
             for (Player p : Bukkit.getOnlinePlayers()) {
                 if (hiddenVisuals.contains(p.getUniqueId())) continue;
+
+                World pWorld = p.getWorld();
+                String worldName = pWorld.getName();
+                Set<UUID> worldItemUuids = plugin.getItemsByWorld().get(worldName);
+                if (worldItemUuids == null || worldItemUuids.isEmpty()) continue;
 
                 double px = p.getX();
                 double py = p.getY();
                 double pz = p.getZ();
-                World pWorld = p.getWorld();
 
-                java.util.List<CachedItemLoc> worldItems = itemsByWorldMap.get(pWorld);
-                if (worldItems == null || worldItems.isEmpty()) continue;
+                for (UUID uuid : worldItemUuids) {
+                    Item item = activeItems.get(uuid);
+                    if (item == null || item.isDead() || !item.isValid()) continue;
 
-                for (CachedItemLoc ci : worldItems) {
-                    double dx = px - ci.x();
-                    double dy = py - ci.y();
-                    double dz = pz - ci.z();
+                    Particle particle = itemParticlesCache.get(uuid);
+                    if (particle == null) continue;
+
+                    double ix = item.getX();
+                    double iy = item.getY();
+                    double iz = item.getZ();
+
+                    double dx = px - ix;
+                    double dy = py - iy;
+                    double dz = pz - iz;
                     if ((dx * dx + dy * dy + dz * dz) >= partDistSq) continue;
 
-                    Particle particle = ci.particle();
-                    String category = ci.category();
-                    double xCoord = ci.x();
-                    double yCoord = ci.y() + 0.2;
-                    double zCoord = ci.z();
+                    String category = itemCategoriesCache.get(uuid);
+                    String rawAnimType = (category != null)
+                            ? categoryAnimTypes.getOrDefault(category, particleAnimType)
+                            : particleAnimType;
+                    AnimType animType = AnimType.fromString(rawAnimType);
+
+                    double xCoord = ix;
+                    double yCoord = iy + 0.2;
+                    double zCoord = iz;
 
                     Object data = null;
                     if (particle.getDataType() == Particle.DustOptions.class) {
@@ -207,7 +207,7 @@ public class ParticleAnimationManager {
                                 : defaultDustOptions;
                     }
 
-                    switch (ci.animType()) {
+                    switch (animType) {
                         case CIRCLE -> {
                             double radius = 0.4;
                             double x = Math.cos(particleTick * 0.2) * radius;
@@ -228,26 +228,31 @@ public class ParticleAnimationManager {
                 // Actionbar Loot Compass Indicator for rare items
                 if (particleTick % 2 == 0 && plugin.getRarityManager() != null) {
                     double closestDistSq = 900.0; // 30 blocks radius
-                    CachedItemLoc rarestItem = null;
-                    for (CachedItemLoc ci : worldItems) {
-                        double dx = px - ci.x();
-                        double dy = py - ci.y();
-                        double dz = pz - ci.z();
+                    Item rarestItem = null;
+                    for (UUID u : worldItemUuids) {
+                        Item itemObj = activeItems.get(u);
+                        if (itemObj == null || !itemObj.isValid() || itemObj.isDead()) continue;
+
+                        double dx = px - itemObj.getX();
+                        double dy = py - itemObj.getY();
+                        double dz = pz - itemObj.getZ();
                         double distSq = dx * dx + dy * dy + dz * dz;
                         if (distSq < closestDistSq) {
-                            Item itemObj = activeItems.get(ci.uuid());
-                            if (itemObj != null && itemObj.isValid()) {
-                                fr.skynex.lootglow.managers.RarityManager.ItemRarity rarity = plugin.getRarityManager().detectRarity(itemObj.getItemStack());
-                                if (rarity == fr.skynex.lootglow.managers.RarityManager.ItemRarity.LEGENDARY || rarity == fr.skynex.lootglow.managers.RarityManager.ItemRarity.MYTHIC) {
-                                    closestDistSq = distSq;
-                                    rarestItem = ci;
-                                }
+                            fr.skynex.lootglow.managers.TrackedItemManager.TrackedItem ti = plugin.getTrackedItemManager().getTrackedItem(u);
+                            fr.skynex.lootglow.managers.RarityManager.ItemRarity rarity = ti != null ? ti.rarity : null;
+                            if (rarity == null) {
+                                rarity = plugin.getRarityManager().detectRarity(itemObj.getItemStack());
+                                if (ti != null) ti.rarity = rarity;
+                            }
+                            if (rarity == fr.skynex.lootglow.managers.RarityManager.ItemRarity.LEGENDARY || rarity == fr.skynex.lootglow.managers.RarityManager.ItemRarity.MYTHIC) {
+                                closestDistSq = distSq;
+                                rarestItem = itemObj;
                             }
                         }
                     }
 
                     if (rarestItem != null) {
-                        Location targetLoc = new Location(pWorld, rarestItem.x(), rarestItem.y(), rarestItem.z());
+                        Location targetLoc = rarestItem.getLocation();
                         String arrow = getDirectionalArrow(p, targetLoc);
                         int distance = (int) Math.sqrt(closestDistSq);
                         p.sendActionBar(net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(

@@ -66,10 +66,9 @@ public class ItemPhysicsService {
             BlockDisplay beam = ti.beam;
             org.bukkit.entity.Display shadow = ti.shadow;
 
-            Location itemLoc = item.getLocation();
-            double itemX = itemLoc.getX();
-            double itemY = itemLoc.getY();
-            double itemZ = itemLoc.getZ();
+            double itemX = item.getX();
+            double itemY = item.getY();
+            double itemZ = item.getZ();
 
             SurfaceState state = plugin.getSurfaceAlignmentManager() != null ? plugin.getSurfaceAlignmentManager().getSurfaceStates().get(itemUuid) : null;
             boolean itemActuallyMoved = true;
@@ -102,11 +101,22 @@ public class ItemPhysicsService {
             Float pitch = state != null ? state.pitch : null;
 
             double baseWeight = 0.08;
-            Material itemMat = item.getItemStack().getType();
-            boolean isBlockItem = plugin.isUprightItem(itemMat);
+            Material itemMat = ti.itemMaterial;
+            if (itemMat == null) {
+                itemMat = item.getItemStack().getType();
+                ti.itemMaterial = itemMat;
+            }
+            if (ti.isBlockItem == null) {
+                ti.isBlockItem = plugin.isUprightItem(itemMat);
+            }
+            boolean isBlockItem = ti.isBlockItem;
             double visualYOffset = baseWeight + (isBlockItem ? (rpgBlockScale / 2.0) : 0.0);
-            if (visual != null && visual.isValid() && visual.getItemStack() != null) {
-                Material vMat = visual.getItemStack().getType();
+            if (visual != null && visual.isValid()) {
+                Material vMat = ti.visualMaterial;
+                if (vMat == null && visual.getItemStack() != null) {
+                    vMat = visual.getItemStack().getType();
+                    ti.visualMaterial = vMat;
+                }
                 if (vMat == Material.PLAYER_HEAD) {
                     visualYOffset = 0.15;
                 } else if (vMat == Material.BUNDLE) {
@@ -119,115 +129,120 @@ public class ItemPhysicsService {
 
             boolean moved = false;
             if (itemActuallyMoved && representative != null && representative.isValid()) {
-                Location repLoc = representative.getLocation();
-                double dx = itemX - repLoc.getX();
-                double dy = (targetSurfaceY + visualYOffset) - repLoc.getY();
-                double dz = itemZ - repLoc.getZ();
+                double dx = itemX - representative.getX();
+                double dy = (targetSurfaceY + visualYOffset) - representative.getY();
+                double dz = itemZ - representative.getZ();
                 moved = (dx * dx + dy * dy + dz * dz) > 0.0001;
             }
 
-            if (moved) {
-                if (visual != null && visual.isValid()) {
-                    Location teleportLoc = new Location(itemLoc.getWorld(), itemX, targetSurfaceY + visualYOffset, itemZ);
-                    if (yaw != null) teleportLoc.setYaw(yaw);
-                    if (pitch != null) teleportLoc.setPitch(pitch);
-                    FoliaScheduler.runAtEntity(plugin, visual, () -> {
-                        if (visual.isValid()) {
-                            visual.setTeleportDuration(1);
-                            visual.teleport(teleportLoc);
-                        }
-                    });
-                }
-
-                if (label != null && label.isValid()) {
-                    Location labelLoc = new Location(itemLoc.getWorld(), itemX, targetSurfaceY + visualYOffset + holoOffset, itemZ);
-                    FoliaScheduler.runAtEntity(plugin, label, () -> {
-                        if (label.isValid()) {
-                            label.setTeleportDuration(1);
-                            label.teleport(labelLoc);
-                        }
-                    });
-                }
+            if (!moved && !itemActuallyMoved) {
+                continue;
             }
 
-            // Always sync beam and shadow if item moved
-            if (itemActuallyMoved) {
-                if (beam != null && beam.isValid()) {
-                    Location beamTarget = new Location(itemLoc.getWorld(), itemX, targetSurfaceY + baseWeight, itemZ);
-                    FoliaScheduler.runAtEntity(plugin, beam, () -> {
-                        if (beam.isValid() && beam.getLocation().distanceSquared(beamTarget) > 0.0001) {
+            final boolean finalMoved = moved;
+            final boolean finalItemActuallyMoved = itemActuallyMoved;
+            final double finalTargetSurfaceY = targetSurfaceY;
+            final double finalVisualYOffset = visualYOffset;
+            final Material finalItemMat = itemMat;
+
+            FoliaScheduler.runAtEntity(plugin, item, () -> {
+                if (!item.isValid()) return;
+
+                Location itemLoc = null;
+
+                if (finalMoved) {
+                    itemLoc = item.getLocation();
+                    if (visual != null && visual.isValid()) {
+                        itemLoc.setY(finalTargetSurfaceY + finalVisualYOffset);
+                        if (yaw != null) itemLoc.setYaw(yaw);
+                        if (pitch != null) itemLoc.setPitch(pitch);
+                        visual.setTeleportDuration(1);
+                        visual.teleport(itemLoc);
+                    }
+
+                    if (label != null && label.isValid()) {
+                        if (itemLoc == null) itemLoc = item.getLocation();
+                        itemLoc.setY(finalTargetSurfaceY + finalVisualYOffset + holoOffset);
+                        label.setTeleportDuration(1);
+                        label.teleport(itemLoc);
+                    }
+                }
+
+                if (finalItemActuallyMoved) {
+                    if (beam != null && beam.isValid()) {
+                        double targetBeamY = finalTargetSurfaceY + baseWeight;
+                        double bdx = itemX - beam.getX();
+                        double bdy = targetBeamY - beam.getY();
+                        double bdz = itemZ - beam.getZ();
+                        if ((bdx * bdx + bdy * bdy + bdz * bdz) > 0.0001) {
+                            if (itemLoc == null) itemLoc = item.getLocation();
+                            itemLoc.setY(targetBeamY);
                             beam.setTeleportDuration(1);
-                            beam.teleport(beamTarget);
+                            beam.teleport(itemLoc);
                         }
-                    });
-                }
+                    }
 
-                if (shadow != null && shadow.isValid()) {
-                    if (item.isOnGround()) {
-                        double height = itemY - targetSurfaceY;
-                        float radiusFactor = (float) Math.max(0.4, 1.0 - (height * 0.3));
-                        float baseRadius = shadowScale * 0.8f;
-                        boolean isBlock = itemMat.isBlock();
-                        if (isBlock)
-                            baseRadius *= 1.4f;
+                    if (shadow != null && shadow.isValid()) {
+                        if (item.isOnGround()) {
+                            double height = itemY - finalTargetSurfaceY;
+                            float radiusFactor = (float) Math.max(0.4, 1.0 - (height * 0.3));
+                            float baseRadius = shadowScale * 0.8f;
+                            boolean isBlock = finalItemMat.isBlock();
+                            if (isBlock) baseRadius *= 1.4f;
 
-                        float scale = isBlock ? rpgBlockScale : rpgItemScale;
-                        float targetRadius = baseRadius * radiusFactor * (scale / 0.8f);
-                        float targetStrength = (float) Math.max(0.2, 1.0 - (height * 0.5));
+                            float scale = isBlock ? rpgBlockScale : rpgItemScale;
+                            float targetRadius = baseRadius * radiusFactor * (scale / 0.8f);
+                            float targetStrength = (float) Math.max(0.2, 1.0 - (height * 0.5));
 
-                        Location shadowTarget = new Location(itemLoc.getWorld(), itemX, targetSurfaceY, itemZ);
-                        FoliaScheduler.runAtEntity(plugin, shadow, () -> {
-                            if (shadow.isValid()) {
-                                shadow.setShadowRadius(targetRadius);
-                                shadow.setShadowStrength(targetStrength);
-                                if (shadow.getLocation().distanceSquared(shadowTarget) > 0.0001) {
-                                    shadow.setTeleportDuration(1);
-                                    shadow.teleport(shadowTarget);
-                                }
+                            shadow.setShadowRadius(targetRadius);
+                            shadow.setShadowStrength(targetStrength);
+
+                            double sdx = itemX - shadow.getX();
+                            double sdy = finalTargetSurfaceY - shadow.getY();
+                            double sdz = itemZ - shadow.getZ();
+                            if ((sdx * sdx + sdy * sdy + sdz * sdz) > 0.0001) {
+                                if (itemLoc == null) itemLoc = item.getLocation();
+                                itemLoc.setY(finalTargetSurfaceY);
+                                shadow.setTeleportDuration(1);
+                                shadow.teleport(itemLoc);
                             }
-                        });
+                        }
                     }
-                }
-            }
 
-            // Physics: Water handling & animations
-            if (itemActuallyMoved && visual != null && visual.isValid()) {
-                Material mat = item.getItemStack().getType();
-                boolean isFish = plugin.isFishItem(mat);
-                boolean currentlyInWater = item.isInWater();
+                    if (visual != null && visual.isValid()) {
+                        if (ti.isFishItem == null) {
+                            ti.isFishItem = plugin.isFishItem(finalItemMat);
+                        }
+                        boolean isFish = ti.isFishItem;
+                        boolean currentlyInWater = item.isInWater();
 
-                if (currentlyInWater) {
-                    if (plugin.getSurfaceAlignmentManager() != null) {
-                        plugin.getSurfaceAlignmentManager().getWaterLogCache().add(itemUuid);
-                    }
-                    if (isFish) {
-                        FoliaScheduler.runAtEntity(plugin, visual, () -> {
-                            if (visual.isValid()) {
+                        if (currentlyInWater) {
+                            if (plugin.getSurfaceAlignmentManager() != null) {
+                                plugin.getSurfaceAlignmentManager().getWaterLogCache().add(itemUuid);
+                            }
+                            if (isFish) {
                                 Location vLoc = visual.getLocation();
                                 vLoc.setYaw(vLoc.getYaw() + 3.0f);
                                 visual.teleport(vLoc);
                             }
-                        });
-                    }
-                } else {
-                    boolean removed = plugin.getSurfaceAlignmentManager() != null && plugin.getSurfaceAlignmentManager().getWaterLogCache().remove(itemUuid);
-                    if (removed) {
-                        boolean isLeader = groupLeaders.containsKey(itemUuid);
-                        if (!isLeader) {
-                            boolean isCustom = plugin.isCustomItem(item.getItemStack());
-                            boolean isUpright = plugin.isUprightItem(mat);
-                            float targetRotX = (isCustom || isUpright) ? 0f : rpgRotation;
-                            FoliaScheduler.runAtEntity(plugin, visual, () -> {
-                                if (visual.isValid()) {
+                        } else {
+                            boolean removed = plugin.getSurfaceAlignmentManager() != null && plugin.getSurfaceAlignmentManager().getWaterLogCache().remove(itemUuid);
+                            if (removed) {
+                                boolean isLeader = groupLeaders.containsKey(itemUuid);
+                                if (!isLeader) {
+                                    if (ti.isCustomItem == null) {
+                                        ti.isCustomItem = plugin.isCustomItem(item.getItemStack());
+                                    }
+                                    float targetRotX = (ti.isCustomItem || isBlockItem) ? 0f : rpgRotation;
                                     org.bukkit.util.Transformation t = visual.getTransformation();
                                     t.getLeftRotation().set(new org.joml.Quaternionf().rotationX(targetRotX));
                                     visual.setTransformation(t);
                                 }
-                            });
+                            }
                         }
                     }
                 }
-            }
+            });
         }
 
         if (staleEntries != null) {

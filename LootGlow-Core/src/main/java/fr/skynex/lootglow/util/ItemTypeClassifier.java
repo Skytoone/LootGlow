@@ -41,9 +41,12 @@ public class ItemTypeClassifier {
     public static boolean isCustomItem(ItemStack stack) {
         if (stack == null || !stack.hasItemMeta()) return false;
         org.bukkit.persistence.PersistentDataContainer pdc = stack.getItemMeta().getPersistentDataContainer();
-        return pdc.getKeys().stream().anyMatch(key -> key.getNamespace().equalsIgnoreCase("oraxen") ||
-                key.getNamespace().equalsIgnoreCase("itemsadder") ||
-                key.getNamespace().equalsIgnoreCase("nexo") ||
-                key.getKey().equalsIgnoreCase("custom_item"));
+        for (org.bukkit.NamespacedKey key : pdc.getKeys()) {
+            String ns = key.getNamespace();
+            if (ns.equalsIgnoreCase("oraxen") || ns.equalsIgnoreCase("itemsadder") || ns.equalsIgnoreCase("nexo") || key.getKey().equalsIgnoreCase("custom_item")) {
+                return true;
+            }
+        }
+        return false;
     }
 }

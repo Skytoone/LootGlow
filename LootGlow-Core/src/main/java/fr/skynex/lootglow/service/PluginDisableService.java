@@ -64,7 +64,36 @@ public class PluginDisableService {
             }
         }
 
-        // Clear all tracking maps
+        // Clear all tracking maps and manager states
+        if (plugin.getTrackedItemManager() != null) {
+            plugin.getTrackedItemManager().clearAll();
+        }
+        if (plugin.getGroupContainerManager() != null) {
+            plugin.getGroupContainerManager().clearAll();
+        }
+        if (plugin.getBeamManager() != null) {
+            plugin.getBeamManager().clearAll();
+        }
+        if (plugin.getParticleAnimationManager() != null) {
+            plugin.getParticleAnimationManager().getCustomParticles().clear();
+        }
+        if (plugin.getHologramRenderer() != null) {
+            plugin.getHologramRenderer().getCustomHolograms().clear();
+        }
+        if (plugin.getItemMagnetManager() != null) {
+            plugin.getItemMagnetManager().clearAll();
+        }
+        if (plugin.getGlowTeamManager() != null) {
+            plugin.getGlowTeamManager().clearScoreboardTeams();
+        }
+        if (plugin.getPluginTickManager() != null) {
+            plugin.getPluginTickManager().cancelTasks();
+        }
+
+        plugin.getVisibleEntities().clear();
+        plugin.getHiddenVisuals().clear();
+        plugin.getDisabledMagnets().clear();
+
         trackedItems.clear();
         activeLabels.clear();
         activeBeams.clear();

@@ -1,7 +1,10 @@
 package fr.skynex.lootglow.model;
 
+import org.bukkit.entity.Entity;
+
 import java.util.*;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -15,13 +18,25 @@ public class DelegatingMap<V> extends AbstractMap<UUID, V> {
     private final Map<UUID, TrackedItem> trackedItems;
     private final Function<TrackedItem, V> getter;
     private final BiConsumer<TrackedItem, V> setter;
+    private final BiConsumer<UUID, UUID> registerDisplayCallback;
+    private final Consumer<UUID> unregisterDisplayCallback;
 
     public DelegatingMap(Map<UUID, TrackedItem> trackedItems,
                          Function<TrackedItem, V> getter,
                          BiConsumer<TrackedItem, V> setter) {
+        this(trackedItems, getter, setter, null, null);
+    }
+
+    public DelegatingMap(Map<UUID, TrackedItem> trackedItems,
+                         Function<TrackedItem, V> getter,
+                         BiConsumer<TrackedItem, V> setter,
+                         BiConsumer<UUID, UUID> registerDisplayCallback,
+                         Consumer<UUID> unregisterDisplayCallback) {
         this.trackedItems = trackedItems;
         this.getter = getter;
         this.setter = setter;
+        this.registerDisplayCallback = registerDisplayCallback;
+        this.unregisterDisplayCallback = unregisterDisplayCallback;
     }
 
     private TrackedItem getOrCreate(UUID uuid) {
@@ -44,7 +59,13 @@ public class DelegatingMap<V> extends AbstractMap<UUID, V> {
     public V put(UUID key, V value) {
         TrackedItem ti = getOrCreate(key);
         V old = getter.apply(ti);
+        if (old instanceof Entity oldEnt && unregisterDisplayCallback != null) {
+            unregisterDisplayCallback.accept(oldEnt.getUniqueId());
+        }
         setter.accept(ti, value);
+        if (value instanceof Entity newEnt && registerDisplayCallback != null) {
+            registerDisplayCallback.accept(newEnt.getUniqueId(), key);
+        }
         return old;
     }
 
@@ -53,13 +74,22 @@ public class DelegatingMap<V> extends AbstractMap<UUID, V> {
         TrackedItem ti = trackedItems.get(key);
         if (ti == null) return null;
         V old = getter.apply(ti);
+        if (old instanceof Entity oldEnt && unregisterDisplayCallback != null) {
+            unregisterDisplayCallback.accept(oldEnt.getUniqueId());
+        }
         setter.accept(ti, null);
         return old;
     }
 
     @Override
     public void clear() {
-        trackedItems.values().forEach(ti -> setter.accept(ti, null));
+        trackedItems.values().forEach(ti -> {
+            V old = getter.apply(ti);
+            if (old instanceof Entity oldEnt && unregisterDisplayCallback != null) {
+                unregisterDisplayCallback.accept(oldEnt.getUniqueId());
+            }
+            setter.accept(ti, null);
+        });
     }
 
     @Override
@@ -74,3 +104,4 @@ public class DelegatingMap<V> extends AbstractMap<UUID, V> {
         return result;
     }
 }
+

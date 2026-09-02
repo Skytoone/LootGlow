@@ -78,8 +78,8 @@ public class EntityVisibilityService {
         for (int entityId : hiddenVanillaItems) {
             UUID uuid = entityIdMap.get(entityId);
             if (uuid == null) continue;
-            Entity ent = Bukkit.getEntity(uuid);
-            if (ent instanceof Item item && item.getWorld().equals(world)) {
+            Item item = activeItems.get(uuid);
+            if (item != null && item.isValid() && item.getWorld().equals(world)) {
                 if (showVisuals) {
                     player.hideEntity(plugin, item);
                 } else {
@@ -88,8 +88,10 @@ public class EntityVisibilityService {
             }
         }
 
-        Set<UUID> visibleSet = visibleEntities.computeIfAbsent(player.getUniqueId(), k -> new HashSet<>());
-        Location pLoc = player.getLocation();
+        Set<UUID> visibleSet = visibleEntities.computeIfAbsent(player.getUniqueId(), k -> java.util.concurrent.ConcurrentHashMap.newKeySet());
+        double px = player.getX();
+        double py = player.getY();
+        double pz = player.getZ();
         double farmDistSq = farmingViewDistance * farmingViewDistance;
 
         for (Map.Entry<UUID, Item> entry : activeItems.entrySet()) {
@@ -97,7 +99,10 @@ public class EntityVisibilityService {
             Item item = entry.getValue();
             if (item == null || !item.isValid() || !item.getWorld().equals(world)) continue;
 
-            double dSq = pLoc.distanceSquared(item.getLocation());
+            double dx = px - item.getX();
+            double dy = py - item.getY();
+            double dz = pz - item.getZ();
+            double dSq = dx * dx + dy * dy + dz * dz;
             boolean isGrouped = groupedItems.contains(uuid);
 
             TextDisplay label = plugin.getActiveLabels().get(uuid);
@@ -130,7 +135,10 @@ public class EntityVisibilityService {
             BlockDisplay first = symbol.isEmpty() ? null : symbol.get(0);
             Location loc = first != null ? first.getLocation() : null;
             if (loc != null && loc.getWorld().equals(world)) {
-                boolean shouldSee = showVisuals && pLoc.distanceSquared(loc) <= farmDistSq;
+                double cdx = px - loc.getX();
+                double cdy = py - loc.getY();
+                double cdz = pz - loc.getZ();
+                boolean shouldSee = showVisuals && (cdx * cdx + cdy * cdy + cdz * cdz) <= farmDistSq;
                 symbol.forEach(bd -> {
                     if (bd.isValid()) {
                         updateEntityVisibility(player, bd, shouldSee, visibleSet);

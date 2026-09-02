@@ -56,26 +56,31 @@ public class PluginLifecycleManager {
     }
 
     public void resetStateOnReload() {
-        for (TrackedItem ti : plugin.getTrackedItems().values()) {
-            if (ti.label != null && ti.label.isValid()) ti.label.remove();
-            if (ti.beam != null && ti.beam.isValid()) {
-                ti.beam.getPassengers().forEach(e -> { if (e != null) e.remove(); });
-                ti.beam.remove();
+        if (plugin.getTrackedItemManager() != null) {
+            plugin.getTrackedItemManager().clearAll();
+        } else {
+            for (TrackedItem ti : plugin.getTrackedItems().values()) {
+                if (ti.label != null && ti.label.isValid()) ti.label.remove();
+                if (ti.beam != null && ti.beam.isValid()) {
+                    ti.beam.getPassengers().forEach(e -> { if (e != null) e.remove(); });
+                    ti.beam.remove();
+                }
+                if (ti.visual != null && ti.visual.isValid()) ti.visual.remove();
+                if (ti.shadow != null && ti.shadow.isValid()) ti.shadow.remove();
             }
-            if (ti.visual != null && ti.visual.isValid()) ti.visual.remove();
-            if (ti.shadow != null && ti.shadow.isValid()) ti.shadow.remove();
+            plugin.getTrackedItems().clear();
+            plugin.getActiveItems().clear();
+            plugin.getItemsByWorld().clear();
+            plugin.getEntityIdMap().clear();
         }
-        plugin.getTrackedItems().clear();
-        plugin.getActiveItems().clear();
-        plugin.getItemsByWorld().clear();
-        plugin.getEntityIdMap().clear();
+
         plugin.getHiddenVanillaItems().clear();
         plugin.getItemSpawnTimes().clear();
-        plugin.getGroupMembers().clear();
         plugin.getItemCategories().clear();
         plugin.getCategoryParticles().clear();
         plugin.getCategorySounds().clear();
         plugin.getCategoryNames().clear();
+
         if (plugin.getConfigManager() != null) {
             plugin.getConfigManager().getCategoryGlow().clear();
             plugin.getConfigManager().getFilteredWorlds().clear();
@@ -83,31 +88,50 @@ public class PluginLifecycleManager {
         plugin.getCategoryColors().clear();
         plugin.getDisplayNameOverridesCache().clear();
         plugin.getCategoryLights().clear();
+
         plugin.getActiveLights().forEach((uuid, loc) -> {
             for (Player p : Bukkit.getOnlinePlayers()) {
-                p.sendBlockChange(loc, loc.getBlock().getBlockData());
+                if (p.getWorld().equals(loc.getWorld())) {
+                    p.sendBlockChange(loc, loc.getBlock().getBlockData());
+                }
             }
         });
         plugin.getActiveLights().clear();
+
         plugin.getActiveCropSymbols().values().forEach(list -> list.forEach(d -> {
-            if (d != null && d.isValid())
-                d.remove();
+            if (d != null && d.isValid()) d.remove();
         }));
         plugin.getActiveCropSymbols().clear();
+
         plugin.getVisibleEntities().clear();
+        plugin.getHiddenVisuals().clear();
+        plugin.getDisabledMagnets().clear();
         plugin.getCategoryDustOptions().clear();
+
         if (plugin.getSurfaceAlignmentManager() != null) {
             plugin.getSurfaceAlignmentManager().clearAll();
         }
         plugin.getLastFarmingScanLocations().clear();
 
         plugin.getGloballyVisibleEntities().clear();
-        plugin.getGroupedItems().clear();
+
         if (plugin.getGroupContainerManager() != null) {
-            plugin.getGroupContainerManager().getGroupLeaders().clear();
+            plugin.getGroupContainerManager().clearAll();
         }
+        plugin.getGroupMembers().clear();
+        plugin.getGroupedItems().clear();
         plugin.getOpenContainers().clear();
-        if (plugin.getBeamManager() != null) plugin.getBeamManager().getActiveBeamConfigs().clear();
+
+        if (plugin.getBeamManager() != null) {
+            plugin.getBeamManager().clearAll();
+        }
+        if (plugin.getParticleAnimationManager() != null) {
+            plugin.getParticleAnimationManager().getCustomParticles().clear();
+        }
+        if (plugin.getHologramRenderer() != null) {
+            plugin.getHologramRenderer().getCustomHolograms().clear();
+        }
+
         plugin.getRecentlyBounced().clear();
         plugin.getBounceCounts().clear();
     }

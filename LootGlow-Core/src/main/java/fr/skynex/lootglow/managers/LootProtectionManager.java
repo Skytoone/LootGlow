@@ -15,12 +15,16 @@ import java.util.concurrent.ConcurrentHashMap;
 public class LootProtectionManager {
 
     private final LootGlow plugin;
+    private final org.bukkit.NamespacedKey ownerKey;
+    private final org.bukkit.NamespacedKey protectUntilKey;
     private final Map<UUID, UUID> lootOwners = new ConcurrentHashMap<>();
     private final Map<UUID, Long> protectionExpiry = new ConcurrentHashMap<>();
     private final Map<UUID, Set<UUID>> lootSharers = new ConcurrentHashMap<>();
 
     public LootProtectionManager(LootGlow plugin) {
         this.plugin = plugin;
+        this.ownerKey = new org.bukkit.NamespacedKey(plugin, "owner");
+        this.protectUntilKey = new org.bukkit.NamespacedKey(plugin, "protect_until");
     }
 
     public Map<UUID, UUID> getLootOwners() {
@@ -64,8 +68,8 @@ public class LootProtectionManager {
 
         item.setOwner(ownerUuid);
         org.bukkit.persistence.PersistentDataContainer pdc = item.getPersistentDataContainer();
-        pdc.set(new org.bukkit.NamespacedKey(plugin, "owner"), org.bukkit.persistence.PersistentDataType.STRING, ownerUuid.toString());
-        pdc.set(new org.bukkit.NamespacedKey(plugin, "protect_until"), org.bukkit.persistence.PersistentDataType.LONG, protectUntil);
+        pdc.set(ownerKey, org.bukkit.persistence.PersistentDataType.STRING, ownerUuid.toString());
+        pdc.set(protectUntilKey, org.bukkit.persistence.PersistentDataType.LONG, protectUntil);
     }
 
     public boolean isLootProtected(Item item) {
@@ -75,7 +79,7 @@ public class LootProtectionManager {
             return true;
         }
         org.bukkit.persistence.PersistentDataContainer pdc = item.getPersistentDataContainer();
-        Long protectUntil = pdc.get(new org.bukkit.NamespacedKey(plugin, "protect_until"), org.bukkit.persistence.PersistentDataType.LONG);
+        Long protectUntil = pdc.get(protectUntilKey, org.bukkit.persistence.PersistentDataType.LONG);
         return protectUntil != null && protectUntil > System.currentTimeMillis();
     }
 
@@ -97,7 +101,7 @@ public class LootProtectionManager {
         if (owner != null) return owner;
 
         org.bukkit.persistence.PersistentDataContainer pdc = item.getPersistentDataContainer();
-        String ownerStr = pdc.get(new org.bukkit.NamespacedKey(plugin, "owner"), org.bukkit.persistence.PersistentDataType.STRING);
+        String ownerStr = pdc.get(ownerKey, org.bukkit.persistence.PersistentDataType.STRING);
         if (ownerStr != null) {
             try {
                 return UUID.fromString(ownerStr);

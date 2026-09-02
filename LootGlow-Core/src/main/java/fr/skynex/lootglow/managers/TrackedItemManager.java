@@ -1,10 +1,6 @@
 package fr.skynex.lootglow.managers;
 
 import fr.skynex.lootglow.LootGlow;
-import net.kyori.adventure.text.Component;
-import org.bukkit.Particle;
-import org.bukkit.entity.BlockDisplay;
-import org.bukkit.entity.Display;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.TextDisplay;
@@ -13,24 +9,14 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Manages item tracking maps, spatial indexing per world, and display entity attachments.
+ * Manages item tracking maps, spatial indexing per world, and display entity
+ * attachments.
  */
 public class TrackedItemManager {
 
     private final LootGlow plugin;
 
-    public static class TrackedItem {
-        public TextDisplay label;
-        public BlockDisplay beam;
-        public ItemDisplay visual;
-        public Display shadow;
-        public Long spawnTime;
-        public Long lastHoloState;
-        public Component baseName;
-        public String category;
-        public Particle particle;
-        public Double moneyAmount;
-        public int lastRayTraceTick = -999;
+    public static class TrackedItem extends fr.skynex.lootglow.model.TrackedItem {
     }
 
     private final Map<UUID, TrackedItem> trackedItems = new ConcurrentHashMap<>();
@@ -94,7 +80,8 @@ public class TrackedItemManager {
     }
 
     public void setItemCategory(UUID uuid, String category) {
-        if (uuid == null || category == null) return;
+        if (uuid == null || category == null)
+            return;
         itemCategoriesCache.put(uuid, category);
         TrackedItem ti = trackedItems.get(uuid);
         if (ti != null) {
@@ -103,43 +90,29 @@ public class TrackedItemManager {
     }
 
     public String getItemCategory(UUID uuid) {
-        if (uuid == null) return null;
+        if (uuid == null)
+            return null;
         String cat = itemCategoriesCache.get(uuid);
-        if (cat != null) return cat;
+        if (cat != null)
+            return cat;
         TrackedItem ti = trackedItems.get(uuid);
         return ti != null ? ti.category : null;
     }
 
     public Item getItemForDisplay(ItemDisplay display) {
-        if (display == null) return null;
+        if (display == null)
+            return null;
         UUID displayUuid = display.getUniqueId();
         UUID itemUuid = displayToItemMap.get(displayUuid);
-        if (itemUuid != null) {
-            return activeItems.get(itemUuid);
-        }
-        for (Map.Entry<UUID, TrackedItem> entry : trackedItems.entrySet()) {
-            if (entry.getValue() != null && display.equals(entry.getValue().visual)) {
-                displayToItemMap.put(displayUuid, entry.getKey());
-                return activeItems.get(entry.getKey());
-            }
-        }
-        return null;
+        return itemUuid != null ? activeItems.get(itemUuid) : null;
     }
 
     public Item getItemForLabel(TextDisplay label) {
-        if (label == null) return null;
+        if (label == null)
+            return null;
         UUID labelUuid = label.getUniqueId();
         UUID itemUuid = displayToItemMap.get(labelUuid);
-        if (itemUuid != null) {
-            return activeItems.get(itemUuid);
-        }
-        for (Map.Entry<UUID, TrackedItem> entry : trackedItems.entrySet()) {
-            if (entry.getValue() != null && label.equals(entry.getValue().label)) {
-                displayToItemMap.put(labelUuid, entry.getKey());
-                return activeItems.get(entry.getKey());
-            }
-        }
-        return null;
+        return itemUuid != null ? activeItems.get(itemUuid) : null;
     }
 
     public void registerItem(Item item) {
@@ -153,9 +126,18 @@ public class TrackedItemManager {
         itemCategoriesCache.remove(uuid);
         TrackedItem ti = trackedItems.remove(uuid);
         if (ti != null) {
+            cleanDisplayVisibility(ti.label);
+            cleanDisplayVisibility(ti.beam);
+            if (ti.beam != null && ti.beam.isValid()) {
+                ti.beam.getPassengers().forEach(this::cleanDisplayVisibility);
+            }
+            cleanDisplayVisibility(ti.visual);
+            cleanDisplayVisibility(ti.shadow);
+
             if (ti.label != null) {
                 displayToItemMap.remove(ti.label.getUniqueId());
-                if (ti.label.isValid()) ti.label.remove();
+                if (ti.label.isValid())
+                    ti.label.remove();
             }
             if (ti.beam != null) {
                 displayToItemMap.remove(ti.beam.getUniqueId());
@@ -171,12 +153,24 @@ public class TrackedItemManager {
             }
             if (ti.visual != null) {
                 displayToItemMap.remove(ti.visual.getUniqueId());
-                if (ti.visual.isValid()) ti.visual.remove();
+                if (ti.visual.isValid())
+                    ti.visual.remove();
             }
             if (ti.shadow != null) {
                 displayToItemMap.remove(ti.shadow.getUniqueId());
-                if (ti.shadow.isValid()) ti.shadow.remove();
+                if (ti.shadow.isValid())
+                    ti.shadow.remove();
             }
+        }
+        if (plugin.getParticleAnimationManager() != null) {
+            plugin.getParticleAnimationManager().getCustomParticles().remove(uuid);
+        }
+        if (plugin.getHologramRenderer() != null) {
+            plugin.getHologramRenderer().getCustomHolograms().remove(uuid);
+        }
+        if (plugin.getSurfaceAlignmentManager() != null) {
+            plugin.getSurfaceAlignmentManager().getSurfaceStates().remove(uuid);
+            plugin.getSurfaceAlignmentManager().getWaterLogCache().remove(uuid);
         }
         Item item = activeItems.remove(uuid);
         if (item != null) {
@@ -185,6 +179,14 @@ public class TrackedItemManager {
             if (worldItems != null) {
                 worldItems.remove(uuid);
             }
+        }
+    }
+
+    private void cleanDisplayVisibility(org.bukkit.entity.Entity entity) {
+        if (entity == null) return;
+        UUID eUuid = entity.getUniqueId();
+        for (Set<UUID> set : plugin.getVisibleEntities().values()) {
+            if (set != null) set.remove(eUuid);
         }
     }
 
@@ -214,10 +216,12 @@ public class TrackedItemManager {
     }
 
     public List<Item> getNearbyGlowingItems(org.bukkit.Location location, double radius) {
-        if (location == null || location.getWorld() == null) return List.of();
+        if (location == null || location.getWorld() == null)
+            return List.of();
         double radiusSq = radius * radius;
         List<Item> result = new ArrayList<>();
-        for (org.bukkit.entity.Entity entity : location.getWorld().getNearbyEntities(location, radius, radius, radius, e -> e instanceof Item)) {
+        for (org.bukkit.entity.Entity entity : location.getWorld().getNearbyEntities(location, radius, radius, radius,
+                e -> e instanceof Item)) {
             Item item = (Item) entity;
             if (item.isValid() && item.isGlowing() && item.getLocation().distanceSquared(location) <= radiusSq) {
                 result.add(item);
@@ -227,14 +231,24 @@ public class TrackedItemManager {
     }
 
     public void clearAll() {
+        if (gcTask != null) {
+            gcTask.cancel();
+            gcTask = null;
+        }
         for (TrackedItem ti : trackedItems.values()) {
-            if (ti.label != null && ti.label.isValid()) ti.label.remove();
+            if (ti.label != null && ti.label.isValid())
+                ti.label.remove();
             if (ti.beam != null && ti.beam.isValid()) {
-                ti.beam.getPassengers().forEach(e -> { if (e != null) e.remove(); });
+                ti.beam.getPassengers().forEach(e -> {
+                    if (e != null)
+                        e.remove();
+                });
                 ti.beam.remove();
             }
-            if (ti.visual != null && ti.visual.isValid()) ti.visual.remove();
-            if (ti.shadow != null && ti.shadow.isValid()) ti.shadow.remove();
+            if (ti.visual != null && ti.visual.isValid())
+                ti.visual.remove();
+            if (ti.shadow != null && ti.shadow.isValid())
+                ti.shadow.remove();
         }
         trackedItems.clear();
         activeItems.clear();

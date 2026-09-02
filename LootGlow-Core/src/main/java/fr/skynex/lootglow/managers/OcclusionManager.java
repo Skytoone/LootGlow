@@ -15,20 +15,30 @@ public class OcclusionManager {
 
     public boolean hasLineOfSight(Player player, Item item, double maxDistance) {
         if (player == null || item == null || !player.isOnline() || !item.isValid()) return false;
-        Location eyeLoc = player.getEyeLocation();
-        Location itemLoc = item.getLocation().add(0, 0.25, 0);
+        org.bukkit.World pWorld = player.getWorld();
+        org.bukkit.World iWorld = item.getWorld();
+        if (!pWorld.equals(iWorld)) return false;
 
-        if (!eyeLoc.getWorld().equals(itemLoc.getWorld())) return false;
-        double distSq = eyeLoc.distanceSquared(itemLoc);
+        double px = player.getX();
+        double py = player.getEyeHeight() + player.getY();
+        double pz = player.getZ();
+
+        double ix = item.getX();
+        double iy = item.getY() + 0.25;
+        double iz = item.getZ();
+
+        double dx = ix - px;
+        double dy = iy - py;
+        double dz = iz - pz;
+        double distSq = dx * dx + dy * dy + dz * dz;
         if (distSq > maxDistance * maxDistance) return false;
 
-        Vector direction = itemLoc.toVector().subtract(eyeLoc.toVector());
         double distance = Math.sqrt(distSq);
         if (distance < 0.1) return true;
 
-        direction.normalize();
-        org.bukkit.World world = eyeLoc.getWorld();
-        org.bukkit.util.RayTraceResult result = world.rayTraceBlocks(eyeLoc, direction, distance,
+        Vector direction = new Vector(dx / distance, dy / distance, dz / distance);
+        Location eyeLoc = new Location(pWorld, px, py, pz);
+        org.bukkit.util.RayTraceResult result = pWorld.rayTraceBlocks(eyeLoc, direction, distance,
                 org.bukkit.FluidCollisionMode.NEVER, true);
 
         return result == null || result.getHitBlock() == null;

@@ -123,12 +123,12 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
     public String getEconomyFormat() { return configManager != null ? configManager.getEconomyFormat() : ""; }
     public String getEconomyPrefix() { return configManager != null ? configManager.getEconomyPrefix() : ""; }
     public Map<UUID, Particle> getItemParticlesCache() { return itemParticlesCache; }
-    public Set<UUID> getRecentlyBounced() { return recentlyBounced; }
+    public Set<UUID> getRecentlyBounced() { return rpgDropManager != null ? rpgDropManager.getRecentlyBounced() : Collections.emptySet(); }
     public double getFarmingViewDistance() { return configManager != null ? configManager.getFarmingViewDistance() : 0; }
     public double getLodBeamDistSq() { return configManager != null ? configManager.getLodBeamDistSq() : 0; }
     public Map<org.bukkit.block.Block, CropSymbol> getActiveCropSymbols() { return activeCropSymbols; }
     public Map<UUID, TrackedItem> getTrackedItems() { return trackedItems; }
-    public Map<String, Set<UUID>> getItemsByWorld() { return itemsByWorld; }
+    public Map<String, Set<UUID>> getItemsByWorld() { return trackedItemManager != null ? trackedItemManager.getItemsByWorld() : Collections.emptyMap(); }
     public Map<String, NamedTextColor> getItemCategories() { return itemCategories; }
     public Map<String, Particle> getCategoryParticles() { return categoryParticles; }
     public Map<String, Sound> getCategorySounds() { return categorySounds; }
@@ -138,7 +138,7 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
     public Map<UUID, Location> getActiveLights() { return activeLights; }
     public Map<String, org.bukkit.Particle.DustOptions> getCategoryDustOptions() { return categoryDustOptions; }
     public Set<UUID> getGloballyVisibleEntities() { return globallyVisibleEntities; }
-    public Map<UUID, Integer> getBounceCounts() { return bounceCounts; }
+    public Map<UUID, Integer> getBounceCounts() { return rpgDropManager != null ? rpgDropManager.getBounceCounts() : Collections.emptyMap(); }
 
 
 
@@ -149,8 +149,8 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
     private final Map<String, String> categoryAnimTypes = new HashMap<>();
     private final Map<String, Sound> categorySounds = new HashMap<>();
     private final Map<UUID, TrackedItem> trackedItems = new java.util.concurrent.ConcurrentHashMap<>();
-    private final Map<UUID, TextDisplay> activeLabels = new DelegatingMap<>(trackedItems, ti -> ti.label, (ti, v) -> ti.label = v);
-    private final Map<UUID, BlockDisplay> activeBeams = new DelegatingMap<>(trackedItems, ti -> ti.beam, (ti, v) -> ti.beam = v);
+    private final Map<UUID, TextDisplay> activeLabels = new DelegatingMap<>(trackedItems, ti -> ti.label, (ti, v) -> ti.label = v, (dUuid, iUuid) -> { if (trackedItemManager != null) trackedItemManager.registerDisplayEntity(dUuid, iUuid); }, dUuid -> { if (trackedItemManager != null) trackedItemManager.unregisterDisplayEntity(dUuid); });
+    private final Map<UUID, BlockDisplay> activeBeams = new DelegatingMap<>(trackedItems, ti -> ti.beam, (ti, v) -> ti.beam = v, (dUuid, iUuid) -> { if (trackedItemManager != null) trackedItemManager.registerDisplayEntity(dUuid, iUuid); }, dUuid -> { if (trackedItemManager != null) trackedItemManager.unregisterDisplayEntity(dUuid); });
     private final Map<UUID, Long> itemSpawnTimes = new DelegatingMap<>(trackedItems, ti -> ti.spawnTime, (ti, v) -> ti.spawnTime = v);
     private final Map<String, String> categoryNames = new HashMap<>();
     private final Map<String, Component> displayNameOverridesCache = new HashMap<>();
@@ -161,13 +161,12 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
     private final Set<UUID> disabledMagnets = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private final Map<org.bukkit.block.Block, CropSymbol> activeCropSymbols = new HashMap<>();
     private final Map<UUID, Location> lastFarmingScanLocations = new HashMap<>();
-    private final Map<UUID, org.bukkit.entity.Display> activeShadows = new DelegatingMap<>(trackedItems, ti -> ti.shadow, (ti, v) -> ti.shadow = v);
-    private final Map<UUID, ItemDisplay> activeItemVisuals = new DelegatingMap<>(trackedItems, ti -> ti.visual, (ti, v) -> ti.visual = v);
+    private final Map<UUID, org.bukkit.entity.Display> activeShadows = new DelegatingMap<>(trackedItems, ti -> ti.shadow, (ti, v) -> ti.shadow = v, (dUuid, iUuid) -> { if (trackedItemManager != null) trackedItemManager.registerDisplayEntity(dUuid, iUuid); }, dUuid -> { if (trackedItemManager != null) trackedItemManager.unregisterDisplayEntity(dUuid); });
+    private final Map<UUID, ItemDisplay> activeItemVisuals = new DelegatingMap<>(trackedItems, ti -> ti.visual, (ti, v) -> ti.visual = v, (dUuid, iUuid) -> { if (trackedItemManager != null) trackedItemManager.registerDisplayEntity(dUuid, iUuid); }, dUuid -> { if (trackedItemManager != null) trackedItemManager.unregisterDisplayEntity(dUuid); });
     private final Map<UUID, Item> activeItems = new java.util.concurrent.ConcurrentHashMap<>();
-    private final Map<String, Set<UUID>> itemsByWorld = new HashMap<>();
 
     private final Map<Integer, Component> timerComponentCache = new HashMap<>();
-    private final Map<UUID, Set<UUID>> visibleEntities = new HashMap<>();
+    private final Map<UUID, Set<UUID>> visibleEntities = new java.util.concurrent.ConcurrentHashMap<>();
     private final Map<String, org.bukkit.Particle.DustOptions> categoryDustOptions = new HashMap<>();
     private org.bukkit.Particle.DustOptions defaultDustOptions;
     private Set<UUID> globallyVisibleEntities = java.util.concurrent.ConcurrentHashMap.newKeySet();
@@ -193,8 +192,6 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
     private NamespacedKey sourceMobKey;
     private boolean useMythic;
 
-    private final Map<UUID, Integer> bounceCounts = new HashMap<>();
-    private final Set<UUID> recentlyBounced = new HashSet<>();
     private final Map<UUID, List<UUID>> groupMembers = new HashMap<>();
     private final Map<UUID, UUID> openContainers = new HashMap<>();
     private final Set<UUID> groupedItems = new HashSet<>();
@@ -283,7 +280,7 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
         this.isEnabled = false;
         closeDatabase();
         if (pluginDisableService != null) {
-            pluginDisableService.onDisable(activeLabels, activeBeams, activeItemVisuals, activeShadows, activeCropSymbols, hiddenVanillaItems, entityIdMap, trackedItems, activeLights, activeItems, itemsByWorld, timerComponentCache, bounceCounts, recentlyBounced, lastFarmingScanLocations);
+            pluginDisableService.onDisable(activeLabels, activeBeams, activeItemVisuals, activeShadows, activeCropSymbols, hiddenVanillaItems, entityIdMap, trackedItems, activeLights, activeItems, getItemsByWorld(), timerComponentCache, getBounceCounts(), getRecentlyBounced(), lastFarmingScanLocations);
         }
     }
 
@@ -368,7 +365,7 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
         if (itemGlowApplyService != null && configManager != null) {
             itemGlowApplyService.applyGlow(item, playAnimation, isEnabled, configManager.isEconomyEnabled(), configManager.getEconomyKeys(), configManager.getEconomyColor(), configManager.getEconomySound(),
                     itemMoneyAmounts, itemCategories, categoryNames, configManager.getDefaultColor(), categoryParticles,
-                    itemParticlesCache, itemCategoriesCache, configManager.getDespawnTime(), entityIdMap, activeItems, itemsByWorld,
+                    itemParticlesCache, itemCategoriesCache, configManager.getDespawnTime(), entityIdMap, activeItems, getItemsByWorld(),
                     configManager.isRpgDropsEnabled(), configManager.getRpgEnabledCategories(), configManager.getCategoryGlow(), configManager.isDefaultGlow(), hiddenVanillaItems,
                     categorySounds, configManager.isHoloEnabled(), configManager.isHoloHideUncategorized(), itemSpawnTimes, baseNameCache,
                     configManager.isProtectionEnabled(), configManager.getProtectionDuration(), configManager.isShadowsEnabled(), configManager.isBeamsEnabled(), configManager.getBeamCategories());
@@ -411,7 +408,7 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
         if (lodManager != null) {
             lodManager.startLODTask(isEnabled, configManager.isLodEnabled(), configManager.getLodBeamDistSq(), configManager.getLodHoloDistSq(), configManager.getFarmingViewDistance(),
                     visibleEntities, hiddenVisuals, activeItems, groupedItems, activeLabels, activeBeams,
-                    activeItemVisuals, activeShadows, itemsByWorld, configManager.isFarmingEnabled(), activeCropSymbols, configManager.getLodInterval(), globallyVisibleEntities);
+                    activeItemVisuals, activeShadows, getItemsByWorld(), configManager.isFarmingEnabled(), activeCropSymbols, configManager.getLodInterval(), globallyVisibleEntities);
         }
     }
 
@@ -694,7 +691,7 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
             UUID pUuid = p.getUniqueId();
             boolean isHiddenToggle = isHiddenToggleFor(p);
             boolean shouldSee = !isHiddenToggle && p.getLocation().distanceSquared(loc) <= farmDistSq;
-            Set<UUID> visibleSet = visibleEntities.computeIfAbsent(pUuid, k -> new HashSet<>());
+            Set<UUID> visibleSet = visibleEntities.computeIfAbsent(pUuid, k -> java.util.concurrent.ConcurrentHashMap.newKeySet());
 
             for (BlockDisplay bd : cs) {
                 if (bd == null || !bd.isValid()) continue;
@@ -882,7 +879,7 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
 
     public void updateSurfaceAlignment(Item item) {
         if (surfaceAlignmentManager != null) {
-            surfaceAlignmentManager.updateSurfaceAlignment(item, recentlyBounced);
+            surfaceAlignmentManager.updateSurfaceAlignment(item, getRecentlyBounced());
         }
     }
 

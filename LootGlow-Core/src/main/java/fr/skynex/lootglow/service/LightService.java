@@ -20,9 +20,17 @@ import java.util.UUID;
 public class LightService {
 
     private final LootGlow plugin;
+    private org.bukkit.scheduler.BukkitTask lightingTask;
 
     public LightService(LootGlow plugin) {
         this.plugin = plugin;
+    }
+
+    public void stopLightingTask() {
+        if (lightingTask != null) {
+            lightingTask.cancel();
+            lightingTask = null;
+        }
     }
 
     public void startLightingTask(boolean isEnabled,
@@ -34,7 +42,9 @@ public class LightService {
                                   Light[] cachedLightBlockData,
                                   int interval) {
 
-        FoliaScheduler.runTimer(plugin, () -> {
+        stopLightingTask();
+
+        lightingTask = FoliaScheduler.runTimer(plugin, () -> {
             if (!isEnabled || !lightingEnabled) return;
 
             activeLights.keySet().removeIf(uuid -> {

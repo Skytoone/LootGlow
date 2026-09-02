@@ -7,7 +7,6 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Display;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
@@ -74,7 +73,6 @@ public class LODManager {
             if (!isEnabled || !lodEnabled) return;
 
             Set<UUID> newGloballyVisible = new HashSet<>();
-            double maxLodRadius = Math.sqrt(Math.max(lodBeamDistSq, lodHoloDistSq));
             double farmDistSq = farmingViewDistance * farmingViewDistance;
 
             for (Player p : Bukkit.getOnlinePlayers()) {
@@ -82,66 +80,50 @@ public class LODManager {
                 World pWorld = p.getWorld();
                 String worldName = pWorld.getName();
                 double px = p.getX(), py = p.getY(), pz = p.getZ();
-                Set<UUID> visibleSet = visibleEntities.computeIfAbsent(pUuid, k -> new HashSet<>());
+                Set<UUID> visibleSet = visibleEntities.computeIfAbsent(pUuid, k -> java.util.concurrent.ConcurrentHashMap.newKeySet());
                 boolean isHiddenToggle = hiddenVisuals.contains(pUuid);
 
-                Set<UUID> inRangeItemUuids = new HashSet<>();
-
-                for (Entity ent : p.getWorld().getNearbyEntities(p.getLocation(), maxLodRadius, maxLodRadius, maxLodRadius, e -> e instanceof Item)) {
-                    Item item = (Item) ent;
-                    UUID uuid = item.getUniqueId();
-                    if (!activeItems.containsKey(uuid)) continue;
-                    inRangeItemUuids.add(uuid);
-
-                    double ix = item.getX(), iy = item.getY(), iz = item.getZ();
-                    double dx = px - ix, dy = py - iy, dz = pz - iz;
-                    double dSq = dx * dx + dy * dy + dz * dz;
-                    boolean isGrouped = groupedItems.contains(uuid);
-
-                    TextDisplay label = activeLabels.get(uuid);
-                    if (label != null && label.isValid()) {
-                        boolean shouldSee = !isHiddenToggle && !isGrouped && dSq <= lodHoloDistSq;
-                        plugin.updateEntityVisibility(p, label, shouldSee, visibleSet);
-                    }
-
-                    BlockDisplay beam = activeBeams.get(uuid);
-                    if (beam != null && beam.isValid()) {
-                        boolean shouldSee = !isHiddenToggle && !isGrouped && dSq <= lodBeamDistSq;
-                        plugin.updateEntityVisibility(p, beam, shouldSee, visibleSet);
-                        if (shouldSee) newGloballyVisible.add(uuid);
-                    }
-
-                    ItemDisplay visual = activeItemVisuals.get(uuid);
-                    if (visual != null && visual.isValid()) {
-                        boolean shouldSee = !isHiddenToggle && !isGrouped && dSq <= lodHoloDistSq;
-                        plugin.updateEntityVisibility(p, visual, shouldSee, visibleSet);
-                    }
-
-                    Display shadow = activeShadows.get(uuid);
-                    if (shadow != null && shadow.isValid()) {
-                        boolean shouldSee = !isHiddenToggle && !isGrouped && dSq <= lodHoloDistSq;
-                        plugin.updateEntityVisibility(p, shadow, shouldSee, visibleSet);
-                    }
-                }
-
                 Set<UUID> worldItems = itemsByWorld.get(worldName);
-                if (worldItems != null && !worldItems.isEmpty() && !visibleSet.isEmpty()) {
+                if (worldItems != null && !worldItems.isEmpty()) {
                     for (UUID uuid : worldItems) {
-                        if (inRangeItemUuids.contains(uuid)) continue;
+                        Item item = activeItems.get(uuid);
+                        if (item == null || !item.isValid()) continue;
+
+                        double ix = item.getX(), iy = item.getY(), iz = item.getZ();
+                        double dx = px - ix, dy = py - iy, dz = pz - iz;
+                        double dSq = dx * dx + dy * dy + dz * dz;
+                        boolean isGrouped = groupedItems.contains(uuid);
+
                         TextDisplay label = activeLabels.get(uuid);
-                        if (label != null && label.isValid()) plugin.updateEntityVisibility(p, label, false, visibleSet);
+                        if (label != null && label.isValid()) {
+                            boolean shouldSee = !isHiddenToggle && !isGrouped && dSq <= lodHoloDistSq;
+                            plugin.updateEntityVisibility(p, label, shouldSee, visibleSet);
+                        }
+
                         BlockDisplay beam = activeBeams.get(uuid);
-                        if (beam != null && beam.isValid()) plugin.updateEntityVisibility(p, beam, false, visibleSet);
+                        if (beam != null && beam.isValid()) {
+                            boolean shouldSee = !isHiddenToggle && !isGrouped && dSq <= lodBeamDistSq;
+                            plugin.updateEntityVisibility(p, beam, shouldSee, visibleSet);
+                            if (shouldSee) newGloballyVisible.add(uuid);
+                        }
+
                         ItemDisplay visual = activeItemVisuals.get(uuid);
-                        if (visual != null && visual.isValid()) plugin.updateEntityVisibility(p, visual, false, visibleSet);
+                        if (visual != null && visual.isValid()) {
+                            boolean shouldSee = !isHiddenToggle && !isGrouped && dSq <= lodHoloDistSq;
+                            plugin.updateEntityVisibility(p, visual, shouldSee, visibleSet);
+                        }
+
                         Display shadow = activeShadows.get(uuid);
-                        if (shadow != null && shadow.isValid()) plugin.updateEntityVisibility(p, shadow, false, visibleSet);
+                        if (shadow != null && shadow.isValid()) {
+                            boolean shouldSee = !isHiddenToggle && !isGrouped && dSq <= lodHoloDistSq;
+                            plugin.updateEntityVisibility(p, shadow, shouldSee, visibleSet);
+                        }
                     }
                 }
 
                 if (farmingEnabled) {
                     for (Map.Entry<org.bukkit.block.Block, ? extends List<BlockDisplay>> entry : activeCropSymbols.entrySet()) {
-                        if (!entry.getKey().getWorld().getName().equals(worldName)) continue;
+                        if (!entry.getKey().getWorld().equals(pWorld)) continue;
 
                         BlockDisplay first = entry.getValue().isEmpty() ? null : entry.getValue().get(0);
                         Location csLoc = first != null ? first.getLocation() : null;
@@ -159,7 +141,8 @@ public class LODManager {
                     }
                 }
             }
-            plugin.setGloballyVisibleEntities(newGloballyVisible);
+            globallyVisibleEntities.clear();
+            globallyVisibleEntities.addAll(newGloballyVisible);
         }, 200L, (long) lodInterval);
     }
 }

@@ -28,4 +28,12 @@ public class TrackedItem {
     public Double moneyAmount;
     // Throttle ray-trace (globalSyncTick du dernier appel à updateSurfaceAlignment)
     public int lastRayTraceTick = -999;
+    // Cached materials & attributes
+    public org.bukkit.Material itemMaterial;
+    public org.bukkit.Material visualMaterial;
+    public Boolean isBlockItem;
+    public Boolean isFishItem;
+    public Boolean isUprightItem;
+    public Boolean isCustomItem;
+    public fr.skynex.lootglow.managers.RarityManager.ItemRarity rarity;
 }

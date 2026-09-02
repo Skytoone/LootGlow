@@ -131,10 +131,22 @@ public class ItemMagnetManager {
     public void pullItemsToPlayer(Player player, double radius) {
         if (player == null || !player.isOnline()) return;
         Location loc = player.getLocation();
+        double px = loc.getX();
+        double py = loc.getY();
+        double pz = loc.getZ();
         double radiusSq = radius * radius;
-        for (Item item : player.getWorld().getEntitiesByClass(Item.class)) {
-            if (item.isValid() && item.getLocation().distanceSquared(loc) <= radiusSq) {
-                item.teleport(loc);
+        Set<UUID> worldItems = plugin.getTrackedItemManager().getItemsByWorld().get(player.getWorld().getName());
+        if (worldItems != null && !worldItems.isEmpty()) {
+            for (UUID uuid : worldItems) {
+                Item item = plugin.getTrackedItemManager().getActiveItems().get(uuid);
+                if (item != null && item.isValid()) {
+                    double dx = px - item.getX();
+                    double dy = py - item.getY();
+                    double dz = pz - item.getZ();
+                    if ((dx * dx + dy * dy + dz * dz) <= radiusSq) {
+                        item.teleport(loc);
+                    }
+                }
             }
         }
     }

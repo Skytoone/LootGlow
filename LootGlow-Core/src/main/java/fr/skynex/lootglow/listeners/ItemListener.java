@@ -475,8 +475,14 @@ public class ItemListener implements Listener {
         plugin.getHiddenVisuals().remove(uuid);
         plugin.getDisabledMagnets().remove(uuid);
         plugin.getLastFarmingScanLocations().remove(uuid);
+        if (plugin.getPlayerSettingsManager() != null) {
+            plugin.getPlayerSettingsManager().getDisabledPlayers().remove(uuid);
+        }
         if (plugin.getVisibilityPacketManager() != null) {
             plugin.getVisibilityPacketManager().removePlayer(uuid);
+        }
+        if (plugin.getGroupContainerManager() != null) {
+            plugin.getGroupContainerManager().getOpenContainers().remove(uuid);
         }
     }
 
