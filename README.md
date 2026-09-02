@@ -152,7 +152,7 @@ repositories {
 }
 
 dependencies {
-    compileOnly 'com.github.Skytoone.LootGlow:LootGlow-API:v1.6.3-beta1'
+    compileOnly 'com.github.Skytoone.LootGlow:LootGlow-API:1.6.3-beta1'
 }
 ```
 
