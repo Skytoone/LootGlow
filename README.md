@@ -137,7 +137,7 @@ LootGlow exposes a clean, stable API through the `LootGlow-API` module, publishe
 
 <dependencies>
     <dependency>
-        <groupId>com.github.Skytoone</groupId>
+        <groupId>com.github.Skytoone.LootGlow</groupId>
         <artifactId>LootGlow-API</artifactId>
         <version>1.6.3-beta1</version>
         <scope>provided</scope>
@@ -152,7 +152,7 @@ repositories {
 }
 
 dependencies {
-    compileOnly 'com.github.Skytoone:LootGlow-API:1.6.3-beta1'
+    compileOnly 'com.github.Skytoone.LootGlow:LootGlow-API:v1.6.3-beta1'
 }
 ```
 
