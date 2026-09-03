@@ -261,13 +261,22 @@ public class ItemGlowApplyService {
             item.setTicksLived(Math.max(1, 6000 - (despawnTime * 20)));
         }
 
-        entityIdMap.put(item.getEntityId(), item.getUniqueId());
-        activeItems.put(item.getUniqueId(), item);
-        itemsByWorld.computeIfAbsent(item.getWorld().getName(), k -> java.util.concurrent.ConcurrentHashMap.newKeySet()).add(item.getUniqueId());
+        if (plugin.getTrackedItemManager() != null) {
+            plugin.getTrackedItemManager().registerItem(item);
+        } else {
+            entityIdMap.put(item.getEntityId(), item.getUniqueId());
+            activeItems.put(item.getUniqueId(), item);
+            itemsByWorld.computeIfAbsent(item.getWorld().getName(), k -> java.util.concurrent.ConcurrentHashMap.newKeySet()).add(item.getUniqueId());
+        }
 
         boolean isRpgDrop = rpgDropsEnabled && (rpgEnabledCategories.isEmpty()
                 || (finalCategory != null && rpgEnabledCategories.contains(finalCategory.toLowerCase())));
         boolean shouldGlow = categoryGlow.getOrDefault(finalCategory, defaultGlow);
+
+        if (plugin.getConfig().getBoolean("settings.debug", false)) {
+            plugin.getLogger().info("[LootGlow Debug] applyGlow called for item " + stack.getType() + " (UUID: " + item.getUniqueId() + ", Category: " + finalCategory + ", Color: " + finalColor + ", isRpgDrop: " + isRpgDrop + ", glowing: " + shouldGlow + ")");
+        }
+
         if (!isRpgDrop) {
             if (shouldGlow) {
                 item.setGlowing(true);
@@ -398,6 +407,11 @@ public class ItemGlowApplyService {
 
         boolean isRpg = rpgEnabledCategories.isEmpty()
                 || (category != null && rpgEnabledCategories.contains(category.toLowerCase()));
+
+        if (plugin.getConfig().getBoolean("settings.debug", false)) {
+            plugin.getLogger().info("[LootGlow Debug] preHideItem called for " + item.getItemStack().getType() + " (UUID: " + item.getUniqueId() + ", Category: " + category + ", isRpg: " + isRpg + ")");
+        }
+
         if (!isRpg) return;
 
         entityIdMap.put(item.getEntityId(), item.getUniqueId());

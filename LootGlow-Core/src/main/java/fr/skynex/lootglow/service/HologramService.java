@@ -301,6 +301,10 @@ public class HologramService {
         label.setVisibleByDefault(false);
         activeLabels.put(uuid, label);
 
+        if (plugin.getConfig().getBoolean("settings.debug", false)) {
+            plugin.getLogger().info("[LootGlow Debug] Spawned TextDisplay hologram for item " + item.getItemStack().getType() + " (UUID: " + item.getUniqueId() + ", Label UUID: " + label.getUniqueId() + ")");
+        }
+
         for (Player p : item.getWorld().getPlayers()) {
             UUID pUuid = p.getUniqueId();
             if (hiddenVisuals.contains(pUuid)) continue;

@@ -171,6 +171,10 @@ public class ItemVisualSpawnService {
         } catch (Throwable ignored) {}
         activeItemVisuals.put(item.getUniqueId(), display);
 
+        if (plugin.getConfig().getBoolean("settings.debug", false)) {
+            plugin.getLogger().info("[LootGlow Debug] Spawned ItemDisplay for item " + item.getItemStack().getType() + " (UUID: " + item.getUniqueId() + ", Display UUID: " + display.getUniqueId() + ", Category: " + category + ")");
+        }
+
         // Initial visibility broadcast
         for (Player p : Bukkit.getOnlinePlayers()) {
             if (!hiddenVisuals.contains(p.getUniqueId()) && p.getWorld().equals(item.getWorld())) {

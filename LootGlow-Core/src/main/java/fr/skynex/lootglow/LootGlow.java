@@ -303,6 +303,12 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
     }
 
 
+    public void debugLog(String message) {
+        if (getConfig().getBoolean("settings.debug", false)) {
+            getLogger().info("[Debug] " + message);
+        }
+    }
+
     public void loadConfiguration() {
         if (glowTeamManager != null) {
             glowTeamManager.clearScoreboardTeams();
@@ -317,6 +323,9 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
         }
 
         setupTeams();
+
+        debugLog("Configuration loaded. Debug mode enabled.");
+        debugLog("RPG Drops Enabled: " + isRpgDropsEnabled() + ", Enabled Categories: " + (configManager != null ? configManager.getRpgEnabledCategories() : "[]"));
 
         // Re-populate cache and re-apply visuals for existing items on reload
         for (World world : Bukkit.getWorlds()) {

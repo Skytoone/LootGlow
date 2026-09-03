@@ -30,16 +30,16 @@ public class LODManager {
     }
 
     public boolean isLodEnabled() {
-        return plugin.getConfig().getBoolean("settings.lod.enabled", false);
+        return plugin.getConfig().getBoolean("settings.performance.lod.enabled", true);
     }
 
     public double getLodHoloDistanceSquared() {
-        double dist = plugin.getConfig().getDouble("settings.lod.hologram-distance", 32.0);
+        double dist = plugin.getConfig().getDouble("settings.performance.lod.hologram-distance", 24.0);
         return dist * dist;
     }
 
     public double getLodBeamDistanceSquared() {
-        double dist = plugin.getConfig().getDouble("settings.lod.beam-distance", 64.0);
+        double dist = plugin.getConfig().getDouble("settings.performance.lod.beam-distance", 48.0);
         return dist * dist;
     }
 
@@ -87,7 +87,10 @@ public class LODManager {
                 int chunkRadius = (int) Math.ceil(maxDist / 16.0);
                 Set<UUID> nearbyItemUuids = plugin.getTrackedItemManager() != null
                         ? plugin.getTrackedItemManager().getItemsInChunkRadius(pWorld, ((int) px) >> 4, ((int) pz) >> 4, chunkRadius)
-                        : itemsByWorld.get(worldName);
+                        : null;
+                if (nearbyItemUuids == null || nearbyItemUuids.isEmpty()) {
+                    nearbyItemUuids = itemsByWorld.get(worldName);
+                }
 
                 if (nearbyItemUuids != null && !nearbyItemUuids.isEmpty()) {
                     for (UUID uuid : nearbyItemUuids) {
@@ -148,6 +151,6 @@ public class LODManager {
             }
             globallyVisibleEntities.clear();
             globallyVisibleEntities.addAll(newGloballyVisible);
-        }, 200L, (long) lodInterval);
+        }, 1L, (long) lodInterval);
     }
 }
