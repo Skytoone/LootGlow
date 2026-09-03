@@ -5,7 +5,6 @@ import fr.skynex.lootglow.api.events.ItemMergeEvent;
 import fr.skynex.lootglow.util.FoliaScheduler;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
@@ -169,23 +168,53 @@ public class ItemMergeManager {
      * Ticker logic for automatic item stacking using spatial entity indexing.
      */
     private void processAutoStack() {
-        if (!autoStackEnabled) return;
+        if (!autoStackEnabled || plugin.getTrackedItemManager() == null) return;
 
         double dist = autoStackDistance;
         double distSq = dist * dist;
+        TrackedItemManager tim = plugin.getTrackedItemManager();
+        Map<UUID, Item> activeItems = tim.getActiveItems();
 
         for (World world : Bukkit.getWorlds()) {
-            for (Entity entity : world.getEntitiesByClass(Item.class)) {
-                if (!(entity instanceof Item item1) || !item1.isValid() || item1.isDead()) continue;
+            Map<Long, Set<UUID>> worldChunks = tim.getItemsByChunk().get(world.getName());
+            if (worldChunks == null || worldChunks.isEmpty()) continue;
 
-                Collection<Entity> nearby = item1.getNearbyEntities(dist, dist, dist);
-                for (Entity nearEntity : nearby) {
-                    if (!(nearEntity instanceof Item item2) || !item2.isValid() || item2.isDead()) continue;
-                    if (item1.getEntityId() >= item2.getEntityId()) continue;
+            Set<Long> processedPairs = new HashSet<>();
 
-                    if (item1.getLocation().distanceSquared(item2.getLocation()) <= distSq) {
-                        if (canMerge(item1, item2)) {
-                            mergeAmount(item1, item2);
+            for (Map.Entry<Long, Set<UUID>> chunkEntry : worldChunks.entrySet()) {
+                Set<UUID> chunkItemUuids = chunkEntry.getValue();
+                if (chunkItemUuids == null || chunkItemUuids.isEmpty()) continue;
+
+                long chunkKey = chunkEntry.getKey();
+                int cX = (int) (chunkKey >> 32);
+                int cZ = (int) (chunkKey & 0xFFFFFFFFL);
+
+                Set<UUID> candidateUuids = tim.getItemsInChunkRadius(world, cX, cZ, 1);
+                if (candidateUuids.size() < 2) continue;
+
+                List<Item> candidateItems = new ArrayList<>();
+                for (UUID u : candidateUuids) {
+                    Item it = activeItems.get(u);
+                    if (it != null && it.isValid() && !it.isDead()) {
+                        candidateItems.add(it);
+                    }
+                }
+
+                for (int i = 0; i < candidateItems.size(); i++) {
+                    Item item1 = candidateItems.get(i);
+                    for (int j = i + 1; j < candidateItems.size(); j++) {
+                        Item item2 = candidateItems.get(j);
+                        if (!item1.isValid() || item1.isDead() || !item2.isValid() || item2.isDead()) continue;
+                        if (!item1.getWorld().equals(item2.getWorld())) continue;
+
+                        long pairHash = (((long) Math.min(item1.getEntityId(), item2.getEntityId())) << 32)
+                                | (Math.max(item1.getEntityId(), item2.getEntityId()) & 0xFFFFFFFFL);
+                        if (!processedPairs.add(pairHash)) continue;
+
+                        if (item1.getLocation().distanceSquared(item2.getLocation()) <= distSq) {
+                            if (canMerge(item1, item2)) {
+                                mergeAmount(item1, item2);
+                            }
                         }
                     }
                 }

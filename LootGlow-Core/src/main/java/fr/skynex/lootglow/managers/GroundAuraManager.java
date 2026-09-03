@@ -63,11 +63,13 @@ public class GroundAuraManager {
             double baseY = item.getY() + 0.05;
             double baseZ = item.getZ();
             org.bukkit.World world = item.getWorld();
+            java.util.List<org.bukkit.entity.Player> worldPlayers = world.getPlayers();
+            if (worldPlayers.isEmpty()) continue;
 
             // Collect nearby players in LOD range
             java.util.List<org.bukkit.entity.Player> nearbyPlayers = null;
-            for (org.bukkit.entity.Player p : onlinePlayers) {
-                if (plugin.getHiddenVisuals().contains(p.getUniqueId()) || !p.getWorld().equals(world)) continue;
+            for (org.bukkit.entity.Player p : worldPlayers) {
+                if (plugin.getHiddenVisuals().contains(p.getUniqueId())) continue;
                 double dx = p.getX() - baseX;
                 double dy = p.getY() - baseY;
                 double dz = p.getZ() - baseZ;

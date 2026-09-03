@@ -22,6 +22,8 @@ public class TrackedItemManager {
     private final Map<UUID, TrackedItem> trackedItems = new ConcurrentHashMap<>();
     private final Map<UUID, Item> activeItems = new ConcurrentHashMap<>();
     private final Map<String, Set<UUID>> itemsByWorld = new ConcurrentHashMap<>();
+    private final Map<String, Map<Long, Set<UUID>>> itemsByChunk = new ConcurrentHashMap<>();
+    private final Map<UUID, Set<UUID>> displayViewers = new ConcurrentHashMap<>();
     private final Map<Integer, UUID> entityIdMap = new ConcurrentHashMap<>();
     private final Set<UUID> globallyVisibleEntities = ConcurrentHashMap.newKeySet();
     private final Map<UUID, String> itemCategoriesCache = new ConcurrentHashMap<>();
@@ -29,6 +31,49 @@ public class TrackedItemManager {
 
     public TrackedItemManager(LootGlow plugin) {
         this.plugin = plugin;
+    }
+
+    public static long getChunkKey(int chunkX, int chunkZ) {
+        return (((long) chunkX) << 32) | (chunkZ & 0xFFFFFFFFL);
+    }
+
+    public Map<String, Map<Long, Set<UUID>>> getItemsByChunk() {
+        return itemsByChunk;
+    }
+
+    public Set<UUID> getItemsInChunkRadius(org.bukkit.World world, int centerChunkX, int centerChunkZ, int chunkRadius) {
+        if (world == null) return Collections.emptySet();
+        Map<Long, Set<UUID>> worldChunks = itemsByChunk.get(world.getName());
+        if (worldChunks == null || worldChunks.isEmpty()) return Collections.emptySet();
+
+        Set<UUID> result = new HashSet<>();
+        for (int cx = centerChunkX - chunkRadius; cx <= centerChunkX + chunkRadius; cx++) {
+            for (int cz = centerChunkZ - chunkRadius; cz <= centerChunkZ + chunkRadius; cz++) {
+                Set<UUID> chunkItems = worldChunks.get(getChunkKey(cx, cz));
+                if (chunkItems != null && !chunkItems.isEmpty()) {
+                    result.addAll(chunkItems);
+                }
+            }
+        }
+        return result;
+    }
+
+    public void registerDisplayViewer(UUID displayUuid, UUID playerUuid) {
+        if (displayUuid != null && playerUuid != null) {
+            displayViewers.computeIfAbsent(displayUuid, k -> ConcurrentHashMap.newKeySet()).add(playerUuid);
+        }
+    }
+
+    public void unregisterDisplayViewer(UUID displayUuid, UUID playerUuid) {
+        if (displayUuid != null && playerUuid != null) {
+            Set<UUID> viewers = displayViewers.get(displayUuid);
+            if (viewers != null) {
+                viewers.remove(playerUuid);
+                if (viewers.isEmpty()) {
+                    displayViewers.remove(displayUuid);
+                }
+            }
+        }
     }
 
     public Map<UUID, TrackedItem> getTrackedItems() {
@@ -116,10 +161,16 @@ public class TrackedItemManager {
     }
 
     public void registerItem(Item item) {
+        if (item == null) return;
         UUID uuid = item.getUniqueId();
         activeItems.put(uuid, item);
         entityIdMap.put(item.getEntityId(), uuid);
-        itemsByWorld.computeIfAbsent(item.getWorld().getName(), k -> ConcurrentHashMap.newKeySet()).add(uuid);
+        String worldName = item.getWorld().getName();
+        itemsByWorld.computeIfAbsent(worldName, k -> ConcurrentHashMap.newKeySet()).add(uuid);
+        int cX = item.getLocation().getBlockX() >> 4;
+        int cZ = item.getLocation().getBlockZ() >> 4;
+        itemsByChunk.computeIfAbsent(worldName, k -> new ConcurrentHashMap<>())
+                .computeIfAbsent(getChunkKey(cX, cZ), k -> ConcurrentHashMap.newKeySet()).add(uuid);
     }
 
     public void untrackItem(UUID uuid) {
@@ -172,12 +223,27 @@ public class TrackedItemManager {
             plugin.getSurfaceAlignmentManager().getSurfaceStates().remove(uuid);
             plugin.getSurfaceAlignmentManager().getWaterLogCache().remove(uuid);
         }
+        plugin.getLastHoloState().remove(uuid);
+        plugin.getBaseNameCache().remove(uuid);
+        if (plugin.getEconomyDropManager() != null) {
+            plugin.getEconomyDropManager().getItemMoneyAmounts().remove(uuid);
+        }
         Item item = activeItems.remove(uuid);
         if (item != null) {
             entityIdMap.remove(item.getEntityId());
-            Set<UUID> worldItems = itemsByWorld.get(item.getWorld().getName());
+            String worldName = item.getWorld().getName();
+            Set<UUID> worldItems = itemsByWorld.get(worldName);
             if (worldItems != null) {
                 worldItems.remove(uuid);
+            }
+            Map<Long, Set<UUID>> worldChunks = itemsByChunk.get(worldName);
+            if (worldChunks != null) {
+                int cX = item.getLocation().getBlockX() >> 4;
+                int cZ = item.getLocation().getBlockZ() >> 4;
+                Set<UUID> chunkSet = worldChunks.get(getChunkKey(cX, cZ));
+                if (chunkSet != null) {
+                    chunkSet.remove(uuid);
+                }
             }
         }
     }
@@ -185,8 +251,15 @@ public class TrackedItemManager {
     private void cleanDisplayVisibility(org.bukkit.entity.Entity entity) {
         if (entity == null) return;
         UUID eUuid = entity.getUniqueId();
-        for (Set<UUID> set : plugin.getVisibleEntities().values()) {
-            if (set != null) set.remove(eUuid);
+        Set<UUID> viewers = displayViewers.remove(eUuid);
+        if (viewers != null) {
+            Map<UUID, Set<UUID>> visibleEntitiesMap = plugin.getVisibleEntities();
+            for (UUID pUuid : viewers) {
+                Set<UUID> set = visibleEntitiesMap.get(pUuid);
+                if (set != null) {
+                    set.remove(eUuid);
+                }
+            }
         }
     }
 
@@ -253,6 +326,8 @@ public class TrackedItemManager {
         trackedItems.clear();
         activeItems.clear();
         itemsByWorld.clear();
+        itemsByChunk.clear();
+        displayViewers.clear();
         entityIdMap.clear();
         globallyVisibleEntities.clear();
         itemCategoriesCache.clear();

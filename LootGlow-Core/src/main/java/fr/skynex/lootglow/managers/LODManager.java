@@ -83,9 +83,14 @@ public class LODManager {
                 Set<UUID> visibleSet = visibleEntities.computeIfAbsent(pUuid, k -> java.util.concurrent.ConcurrentHashMap.newKeySet());
                 boolean isHiddenToggle = hiddenVisuals.contains(pUuid);
 
-                Set<UUID> worldItems = itemsByWorld.get(worldName);
-                if (worldItems != null && !worldItems.isEmpty()) {
-                    for (UUID uuid : worldItems) {
+                double maxDist = Math.sqrt(Math.max(lodBeamDistSq, lodHoloDistSq));
+                int chunkRadius = (int) Math.ceil(maxDist / 16.0);
+                Set<UUID> nearbyItemUuids = plugin.getTrackedItemManager() != null
+                        ? plugin.getTrackedItemManager().getItemsInChunkRadius(pWorld, ((int) px) >> 4, ((int) pz) >> 4, chunkRadius)
+                        : itemsByWorld.get(worldName);
+
+                if (nearbyItemUuids != null && !nearbyItemUuids.isEmpty()) {
+                    for (UUID uuid : nearbyItemUuids) {
                         Item item = activeItems.get(uuid);
                         if (item == null || !item.isValid()) continue;
 

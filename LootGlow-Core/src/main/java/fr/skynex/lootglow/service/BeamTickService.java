@@ -8,6 +8,7 @@ import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Entity;
 import org.bukkit.util.Transformation;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -89,9 +90,11 @@ public class BeamTickService {
                         double by = beam.getY() + heightOffset;
                         double bz = beam.getZ();
                         org.bukkit.World world = beam.getWorld();
+                        List<org.bukkit.entity.Player> worldPlayers = world.getPlayers();
+                        if (worldPlayers.isEmpty()) return;
 
-                        for (org.bukkit.entity.Player p : org.bukkit.Bukkit.getOnlinePlayers()) {
-                            if (plugin.getHiddenVisuals().contains(p.getUniqueId()) || !p.getWorld().equals(world)) continue;
+                        for (org.bukkit.entity.Player p : worldPlayers) {
+                            if (plugin.getHiddenVisuals().contains(p.getUniqueId())) continue;
                             double dx = p.getX() - bx;
                             double dy = p.getY() - by;
                             double dz = p.getZ() - bz;

@@ -155,10 +155,16 @@ public class EntityVisibilityService {
             p.showEntity(plugin, entity);
             entity.getPassengers().forEach(pass -> p.showEntity(plugin, pass));
             visibleSet.add(entUuid);
+            if (plugin.getTrackedItemManager() != null) {
+                plugin.getTrackedItemManager().registerDisplayViewer(entUuid, p.getUniqueId());
+            }
         } else if (!shouldSee && currentlyVisible) {
             p.hideEntity(plugin, entity);
             entity.getPassengers().forEach(pass -> p.hideEntity(plugin, pass));
             visibleSet.remove(entUuid);
+            if (plugin.getTrackedItemManager() != null) {
+                plugin.getTrackedItemManager().unregisterDisplayViewer(entUuid, p.getUniqueId());
+            }
         }
     }
 }

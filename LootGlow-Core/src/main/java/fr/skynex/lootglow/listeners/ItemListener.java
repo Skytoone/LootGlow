@@ -35,6 +35,7 @@ public class ItemListener implements Listener {
         this.plugin = plugin;
     }
 
+
     /**
      * Pré-enregistrement à priority LOWEST (s'exécute EN PREMIER, avant HIGHEST).
      * PlayerDropItemEvent se déclenche AVANT que l'item entre dans le monde

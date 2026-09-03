@@ -168,14 +168,18 @@ public class ParticleAnimationManager {
 
                 World pWorld = p.getWorld();
                 String worldName = pWorld.getName();
-                Set<UUID> worldItemUuids = plugin.getItemsByWorld().get(worldName);
-                if (worldItemUuids == null || worldItemUuids.isEmpty()) continue;
-
                 double px = p.getX();
                 double py = p.getY();
                 double pz = p.getZ();
 
-                for (UUID uuid : worldItemUuids) {
+                double maxPartDist = Math.sqrt(lodPartDistSq);
+                int chunkRadius = (int) Math.ceil(maxPartDist / 16.0);
+                Set<UUID> nearbyItemUuids = plugin.getTrackedItemManager() != null
+                        ? plugin.getTrackedItemManager().getItemsInChunkRadius(pWorld, ((int) px) >> 4, ((int) pz) >> 4, chunkRadius)
+                        : plugin.getItemsByWorld().get(worldName);
+                if (nearbyItemUuids == null || nearbyItemUuids.isEmpty()) continue;
+
+                for (UUID uuid : nearbyItemUuids) {
                     Item item = activeItems.get(uuid);
                     if (item == null || item.isDead() || !item.isValid()) continue;
 
@@ -229,7 +233,7 @@ public class ParticleAnimationManager {
                 if (particleTick % 2 == 0 && plugin.getRarityManager() != null) {
                     double closestDistSq = 900.0; // 30 blocks radius
                     Item rarestItem = null;
-                    for (UUID u : worldItemUuids) {
+                    for (UUID u : nearbyItemUuids) {
                         Item itemObj = activeItems.get(u);
                         if (itemObj == null || !itemObj.isValid() || itemObj.isDead()) continue;
 

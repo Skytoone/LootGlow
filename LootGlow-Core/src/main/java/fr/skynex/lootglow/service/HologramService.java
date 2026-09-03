@@ -23,6 +23,8 @@ import java.util.UUID;
 public class HologramService {
 
     private final LootGlow plugin;
+    private static final Component FREED_COMPONENT = fr.skynex.lootglow.util.ColorUtil.parse("<green>🔓 Libéré</green>");
+    private final Map<Long, Component> protComponentCache = new java.util.concurrent.ConcurrentHashMap<>();
 
     public HologramService(LootGlow plugin) {
         this.plugin = plugin;
@@ -123,8 +125,11 @@ public class HologramService {
                             Player ownerPlayer = Bukkit.getPlayer(ownerUuid);
                             if (ownerPlayer != null) ownerName = ownerPlayer.getName();
                         }
-                        String progressBar = buildProgressBar(remaining, protectionDuration);
-                        Component protComp = fr.skynex.lootglow.util.ColorUtil.parse("<gold>🔒 Protégé <yellow>" + progressBar + "</yellow> (" + remaining + "s)</gold>");
+                        long timerKey = (((long) remaining) << 32) | (protectionDuration & 0xFFFFFFFFL);
+                        Component protComp = protComponentCache.computeIfAbsent(timerKey, k -> {
+                            String progressBar = buildProgressBar(remaining, protectionDuration);
+                            return fr.skynex.lootglow.util.ColorUtil.parse("<gold>🔒 Protégé <yellow>" + progressBar + "</yellow> (" + remaining + "s)</gold>");
+                        });
                         result = result.append(Component.newline()).append(protComp);
                         if (rawOwnerFormat != null && !rawOwnerFormat.isEmpty()) {
                             result = result.append(fr.skynex.lootglow.util.ColorUtil.parse(rawOwnerFormat.replace("<owner>", ownerName)));
@@ -134,15 +139,14 @@ public class HologramService {
                     if (remaining == 0) {
                         item.getWorld().playSound(item.getLocation(), org.bukkit.Sound.BLOCK_CHEST_OPEN, 0.4f, 1.3f);
                     }
-                    Component protComp = fr.skynex.lootglow.util.ColorUtil.parse("<green>🔓 Libéré</green>");
-                    result = result.append(Component.newline()).append(protComp);
+                    result = result.append(Component.newline()).append(FREED_COMPONENT);
                 }
             }
         }
 
         if (usePapi) {
             String legacy = net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().serialize(result);
-            if (legacy.contains("%")) {
+            if (legacy.indexOf('%') != -1) {
                 legacy = PlaceholderAPI.setPlaceholders((Player) null, legacy);
                 result = net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection().deserialize(legacy);
             }
