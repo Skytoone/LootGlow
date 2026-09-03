@@ -286,6 +286,9 @@ api.setBouncingEnabled(item, true);
 api.setVisualsHidden(player, true);
 boolean hidden = api.isVisualsHidden(player);
 
+// Force a visual refresh of all LootGlow elements for a player
+api.refreshVisuals(item, player);
+
 // Check if player has direct line of sight to item within 32 blocks (raycast block collision)
 boolean canSee = api.hasLineOfSight(player, item, 32.0);
 
@@ -297,14 +300,22 @@ api.setCropHighlight(cropBlock, true);
 boolean highlighted = api.isCropHighlighted(cropBlock);
 ```
 
-#### Categories & Queries
+#### Spawning & Queries
 ```java
+// Spawn a new item entity with automatic LootGlow category and visual effects
+Item glowItem = api.spawnGlowItem(location, itemStack, "legendary");
+
 // Dynamically override or read the LootGlow category assigned to an item
 api.setItemCategory(item, "legendary");
 String category = api.getItemCategory(item); // e.g. "legendary", "rare"
 
-// Find all glowing items near a location
+// Detect configured LootGlow rarity (e.g. "LEGENDARY", "MYTHIC", "RARE")
+String rarity = api.detectItemRarity(itemStack);
+
+// Check tracking status & query items by location or chunk
+boolean tracked = api.isTracked(item);
 List<Item> nearby = api.getNearbyGlowingItems(location, 20.0);
+List<Item> chunkItems = api.getTrackedItemsInChunk(chunk);
 ```
 
 ---
