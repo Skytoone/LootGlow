@@ -966,6 +966,9 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
     @Override public boolean mergeAmount(@NotNull Item item1, @NotNull Item item2) { return apiImpl.mergeAmount(item1, item2); }
     @Override public boolean unMergeAmount(@NotNull Item item, int amount) { return apiImpl.unMergeAmount(item, amount); }
     @Override public int getMergeAmount(@NotNull Item item) { return apiImpl.getMergeAmount(item); }
+    @Override public void setMergeAmount(@NotNull Item item, int amount) { apiImpl.setMergeAmount(item, amount); }
+    @Override public void addMergeAmount(@NotNull Item item, int amount) { apiImpl.addMergeAmount(item, amount); }
+    @Override public void removeMergeAmount(@NotNull Item item, int amount) { apiImpl.removeMergeAmount(item, amount); }
     private void initManagersAndServices() {
         this.databaseManager = new DatabaseManager(this);
         this.trackedItemManager = new TrackedItemManager(this);

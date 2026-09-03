@@ -436,4 +436,25 @@ public class LootGlowAPIImpl implements LootGlowAPI {
     public int getMergeAmount(@NotNull Item item) {
         return plugin.getItemMergeManager() != null ? plugin.getItemMergeManager().getMergeAmount(item) : 0;
     }
+
+    @Override
+    public void setMergeAmount(@NotNull Item item, int amount) {
+        if (plugin.getItemMergeManager() != null) {
+            plugin.getItemMergeManager().setMergeAmount(item, amount);
+        }
+    }
+
+    @Override
+    public void addMergeAmount(@NotNull Item item, int amount) {
+        if (plugin.getItemMergeManager() != null) {
+            plugin.getItemMergeManager().addMergeAmount(item, amount);
+        }
+    }
+
+    @Override
+    public void removeMergeAmount(@NotNull Item item, int amount) {
+        if (plugin.getItemMergeManager() != null) {
+            plugin.getItemMergeManager().removeMergeAmount(item, amount);
+        }
+    }
 }

@@ -164,6 +164,30 @@ public class ItemMergeManager {
         return item.getItemStack().getAmount();
     }
 
+    public void setMergeAmount(@NotNull Item item, int amount) {
+        if (item == null || !item.isValid()) return;
+        if (amount <= 0) {
+            item.remove();
+            return;
+        }
+        ItemStack stack = item.getItemStack();
+        stack.setAmount(amount);
+        item.setItemStack(stack);
+
+        plugin.getLastHoloState().remove(item.getUniqueId());
+        plugin.getBaseNameCache().remove(item.getUniqueId());
+    }
+
+    public void addMergeAmount(@NotNull Item item, int amount) {
+        if (item == null || !item.isValid() || amount <= 0) return;
+        setMergeAmount(item, getMergeAmount(item) + amount);
+    }
+
+    public void removeMergeAmount(@NotNull Item item, int amount) {
+        if (item == null || !item.isValid() || amount <= 0) return;
+        setMergeAmount(item, getMergeAmount(item) - amount);
+    }
+
     /**
      * Ticker logic for automatic item stacking using spatial entity indexing.
      */

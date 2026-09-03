@@ -436,5 +436,31 @@ public interface LootGlowAPI {
      * @return Item stack count
      */
     int getMergeAmount(@NotNull Item item);
+
+    /**
+     * Sets the stack amount directly on a dropped item entity and updates its visual label.
+     * If amount <= 0, the item entity is removed.
+     *
+     * @param item Target dropped item entity
+     * @param amount New stack count
+     */
+    void setMergeAmount(@NotNull Item item, int amount);
+
+    /**
+     * Increments the stack amount on a dropped item entity by specified amount.
+     *
+     * @param item Target dropped item entity
+     * @param amount Amount to add
+     */
+    void addMergeAmount(@NotNull Item item, int amount);
+
+    /**
+     * Decrements the stack amount on a dropped item entity by specified amount.
+     * If remaining amount <= 0, the item entity is removed.
+     *
+     * @param item Target dropped item entity
+     * @param amount Amount to remove
+     */
+    void removeMergeAmount(@NotNull Item item, int amount);
 }
 

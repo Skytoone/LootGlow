@@ -244,6 +244,11 @@ boolean merged = api.mergeAmount(item1, item2);
 // Split/unmerge a specific amount from an item stack into a new dropped entity
 boolean split = api.unMergeAmount(item, 5);
 
+// Directly modify stack count (automatically refreshes visual hologram label)
+api.setMergeAmount(item, 64);
+api.addMergeAmount(item, 10);      // Increment quantity (+10)
+api.removeMergeAmount(item, 5);    // Decrement quantity (-5)
+
 // Get the current stack quantity
 int amount = api.getMergeAmount(item);
 ```
