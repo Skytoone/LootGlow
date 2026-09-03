@@ -27,8 +27,8 @@ public class ItemMergeManager {
     }
 
     public void loadConfig() {
-        this.autoStackEnabled = plugin.getConfig().getBoolean("AutoStack", false);
-        this.autoStackDistance = plugin.getConfig().getDouble("AutoStackDistance", 3.0);
+        this.autoStackEnabled = plugin.getConfig().getBoolean("settings.AutoStack", plugin.getConfig().getBoolean("AutoStack", false));
+        this.autoStackDistance = plugin.getConfig().getDouble("settings.AutoStackDistance", plugin.getConfig().getDouble("AutoStackDistance", 3.0));
         restartAutoStackTask();
     }
 

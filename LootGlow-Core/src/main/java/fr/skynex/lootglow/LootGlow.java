@@ -245,12 +245,11 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
 
     @Override
     public void onEnable() {
-        initManagersAndServices();
-
         saveDefaultConfig();
-        if (getConfig().getBoolean("settings.auto-update-config", true)) {
-            ConfigUpdater.update(this, "config.yml", new File(getDataFolder(), "config.yml"));
-        }
+        File configFile = new File(getDataFolder(), "config.yml");
+        ConfigUpdater.update(this, "config.yml", configFile);
+
+        initManagersAndServices();
         loadConfiguration();
         this.farmingKey = new NamespacedKey(this, "farming_symbol");
         this.sourceMobKey = new NamespacedKey(this, "source_mob");

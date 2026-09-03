@@ -18,7 +18,17 @@ public class ConfigUpdater {
         }
 
         try {
-            YamlConfiguration userConfig = YamlConfiguration.loadConfiguration(configFile);
+            YamlConfiguration userConfig = new YamlConfiguration();
+            try {
+                userConfig.load(configFile);
+            } catch (Exception e) {
+                plugin.getLogger().warning("Corrupted or invalid YAML syntax detected in " + resourceName + "! Backing up to " + resourceName + ".corrupted.bak and resetting to clean defaults.");
+                File backup = new File(configFile.getParentFile(), resourceName + ".corrupted.bak");
+                if (backup.exists()) backup.delete();
+                configFile.renameTo(backup);
+                plugin.saveResource(resourceName, true);
+                userConfig = YamlConfiguration.loadConfiguration(configFile);
+            }
             InputStream inputStream = plugin.getResource(resourceName);
             if (inputStream == null) return;
 

@@ -6,3 +6,24 @@ folia-supported: true
 author: Skynex
 description: Items on the ground glow with custom colors!
 softdepend: [PlaceholderAPI, WorldGuard, MythicMobs, ProtocolLib, packetevents]
+commands:
+  lootglow:
+    description: Main command for LootGlow
+    aliases: [lg, glow, loot]
+    permission: lootglow.admin
+    usage: /<command> [reload|toggle|magnet|stats|top|help]
+
+permissions:
+  lootglow.admin:
+    description: Allows reloading the configuration and seeing plugin info.
+    default: op
+  lootglow.magnet:
+    description: Allows using the item magnet feature.
+    default: true
+  lootglow.toggle:
+    description: Allows toggling item visuals for yourself.
+    default: true
+  lootglow.bypass.lock:
+    description: Allows picking up items owned by other players.
+    default: op
+

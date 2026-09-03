@@ -38,21 +38,64 @@ public class PluginLifecycleManager {
     }
 
     public void registerCommands() {
-        plugin.getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
-            final var registrar = event.registrar();
-            registrar.register("lootglow", "Main command for LootGlow", List.of("lg", "glow", "loot"),
-                    new BasicCommand() {
-                        @Override
-                        public void execute(CommandSourceStack stack, String[] args) {
-                            plugin.onCommand(stack.getSender(), null, "lootglow", args);
-                        }
+        // 1. Try Paper 1.21+ Lifecycle API
+        try {
+            plugin.getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS, event -> {
+                final var registrar = event.registrar();
+                registrar.register("lootglow", "Main command for LootGlow", List.of("lg", "glow", "loot"),
+                        new BasicCommand() {
+                            @Override
+                            public void execute(CommandSourceStack stack, String[] args) {
+                                plugin.onCommand(stack.getSender(), null, "lootglow", args);
+                            }
 
-                        @Override
-                        public java.util.Collection<String> suggest(CommandSourceStack stack, String[] args) {
-                            return plugin.onTabComplete(stack.getSender(), null, "lootglow", args);
-                        }
-                    });
-        });
+                            @Override
+                            public java.util.Collection<String> suggest(CommandSourceStack stack, String[] args) {
+                                return plugin.onTabComplete(stack.getSender(), null, "lootglow", args);
+                            }
+                        });
+            });
+        } catch (Throwable ignored) {}
+
+        // 2. Standard Bukkit plugin.yml command binding or dynamic fallback
+        try {
+            org.bukkit.command.PluginCommand cmd = plugin.getCommand("lootglow");
+            if (cmd != null && plugin.getCommandManager() != null) {
+                cmd.setExecutor(plugin.getCommandManager());
+                cmd.setTabCompleter(plugin.getCommandManager());
+            } else {
+                registerDynamicCommand("lootglow", List.of("lg", "glow", "loot"));
+            }
+        } catch (Throwable t) {
+            // Paper plugin loader throws UnsupportedOperationException for JavaPlugin#getCommand
+            registerDynamicCommand("lootglow", List.of("lg", "glow", "loot"));
+        }
+    }
+
+    private void registerDynamicCommand(String name, List<String> aliases) {
+        try {
+            java.lang.reflect.Field field = Bukkit.getServer().getClass().getDeclaredField("commandMap");
+            field.setAccessible(true);
+            org.bukkit.command.CommandMap commandMap = (org.bukkit.command.CommandMap) field.get(Bukkit.getServer());
+
+            if (commandMap != null) {
+                org.bukkit.command.Command dynCmd = new org.bukkit.command.Command(name, "Main command for LootGlow", "/" + name, aliases) {
+                    @Override
+                    public boolean execute(org.bukkit.command.CommandSender sender, String commandLabel, String[] args) {
+                        return plugin.onCommand(sender, this, commandLabel, args);
+                    }
+
+                    @Override
+                    public List<String> tabComplete(org.bukkit.command.CommandSender sender, String alias, String[] args) throws IllegalArgumentException {
+                        List<String> completions = plugin.onTabComplete(sender, this, alias, args);
+                        return completions != null ? completions : super.tabComplete(sender, alias, args);
+                    }
+                };
+                commandMap.register("lootglow", dynCmd);
+            }
+        } catch (Throwable t) {
+            plugin.getLogger().warning("Failed to dynamically register /" + name + " command: " + t.getMessage());
+        }
     }
 
     public void resetStateOnReload() {
