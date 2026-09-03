@@ -8,6 +8,10 @@
 settings:
   enabled: true
   only-player-drops: false
+
+# Automatic ItemStack merging configuration
+AutoStack: false
+AutoStackDistance: 3
   
   # Default Minecraft is 300 seconds (5 minutes)
   despawn-time: 300

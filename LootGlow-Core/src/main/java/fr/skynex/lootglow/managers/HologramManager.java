@@ -4,6 +4,7 @@ import fr.skynex.lootglow.LootGlow;
 import fr.skynex.lootglow.managers.TrackedItemManager.TrackedItem;
 import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Item;
+import org.bukkit.entity.Player;
 
 import java.util.Map;
 import java.util.UUID;
@@ -27,7 +28,17 @@ public class HologramManager {
 
     public void removeHologram(Item item) {
         if (item == null) return;
+        if (plugin.getHologramRenderer() != null) {
+            plugin.getHologramRenderer().removeCustomHologram(item);
+        }
         removeHologram(item.getUniqueId());
+    }
+
+    public void removeHologram(Item item, Player player) {
+        if (item == null) return;
+        if (plugin.getHologramRenderer() != null) {
+            plugin.getHologramRenderer().removeCustomHologram(item, player);
+        }
     }
 
     public void removeHologram(UUID uuid) {

@@ -6,7 +6,6 @@ import fr.skynex.lootglow.api.events.LootGlowBeamToggleEvent;
 import fr.skynex.lootglow.api.events.LootGlowCategoryAssignEvent;
 import fr.skynex.lootglow.api.events.LootGlowGlowColorChangeEvent;
 import fr.skynex.lootglow.api.events.LootGlowPlayerToggleVisualsEvent;
-import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
@@ -18,7 +17,6 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.TextDisplay;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -91,21 +89,50 @@ public class LootGlowAPIImpl implements LootGlowAPI {
     public void setCustomHologram(@NotNull Item item, @Nullable String text) {
         if (item == null || !item.isValid())
             return;
-        TextDisplay display = plugin.getActiveLabels().get(item.getUniqueId());
-        if (display != null && display.isValid()) {
+        if (plugin.getHologramRenderer() != null) {
             if (text == null || text.isEmpty()) {
-                display.text(Component.empty());
+                plugin.getHologramRenderer().removeCustomHologram(item);
             } else {
-                display.text(fr.skynex.lootglow.util.ColorUtil.parse(text));
+                plugin.getHologramRenderer().setCustomHologram(item, text, (net.kyori.adventure.text.minimessage.MiniMessage) null);
             }
         }
+        plugin.getBaseNameCache().remove(item.getUniqueId());
+        plugin.getLastHoloState().remove(item.getUniqueId());
     }
 
     @Override
     public void setCustomHologram(@NotNull Item item, @Nullable String text, @NotNull Player player) {
         if (item == null || !item.isValid() || player == null || !player.isOnline())
             return;
-        setCustomHologram(item, text);
+        if (plugin.getHologramRenderer() != null) {
+            if (text == null || text.isEmpty()) {
+                plugin.getHologramRenderer().removeCustomHologram(item, player);
+            } else {
+                plugin.getHologramRenderer().setCustomHologram(item, text, player);
+            }
+        }
+        plugin.getBaseNameCache().remove(item.getUniqueId());
+        plugin.getLastHoloState().remove(item.getUniqueId());
+    }
+
+    @Override
+    public void removeCustomHologram(@NotNull Item item) {
+        if (item == null || !item.isValid()) return;
+        if (plugin.getHologramRenderer() != null) {
+            plugin.getHologramRenderer().removeCustomHologram(item);
+        }
+        plugin.getBaseNameCache().remove(item.getUniqueId());
+        plugin.getLastHoloState().remove(item.getUniqueId());
+    }
+
+    @Override
+    public void removeCustomHologram(@NotNull Item item, @NotNull Player player) {
+        if (item == null || !item.isValid() || player == null) return;
+        if (plugin.getHologramRenderer() != null) {
+            plugin.getHologramRenderer().removeCustomHologram(item, player);
+        }
+        plugin.getBaseNameCache().remove(item.getUniqueId());
+        plugin.getLastHoloState().remove(item.getUniqueId());
     }
 
     @Override
@@ -139,6 +166,13 @@ public class LootGlowAPIImpl implements LootGlowAPI {
     public void setLootProtection(@NotNull Item item, @NotNull UUID ownerUuid, long durationSeconds) {
         if (plugin.getLootProtectionManager() != null) {
             plugin.getLootProtectionManager().setLootProtection(item, ownerUuid, durationSeconds);
+        }
+    }
+
+    @Override
+    public void resetLootProtection(@NotNull Item item) {
+        if (plugin.getLootProtectionManager() != null) {
+            plugin.getLootProtectionManager().resetLootProtection(item);
         }
     }
 
@@ -381,5 +415,25 @@ public class LootGlowAPIImpl implements LootGlowAPI {
         if (item == null || !item.isValid())
             return "COMMON";
         return detectItemRarity(item.getItemStack());
+    }
+
+    @Override
+    public boolean canMerge(@NotNull Item item1, @NotNull Item item2) {
+        return plugin.getItemMergeManager() != null && plugin.getItemMergeManager().canMerge(item1, item2);
+    }
+
+    @Override
+    public boolean mergeAmount(@NotNull Item item1, @NotNull Item item2) {
+        return plugin.getItemMergeManager() != null && plugin.getItemMergeManager().mergeAmount(item1, item2);
+    }
+
+    @Override
+    public boolean unMergeAmount(@NotNull Item item, int amount) {
+        return plugin.getItemMergeManager() != null && plugin.getItemMergeManager().unMergeAmount(item, amount);
+    }
+
+    @Override
+    public int getMergeAmount(@NotNull Item item) {
+        return plugin.getItemMergeManager() != null ? plugin.getItemMergeManager().getMergeAmount(item) : 0;
     }
 }

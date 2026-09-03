@@ -116,6 +116,16 @@ public class LootProtectionManager {
         lootSharers.remove(uuid);
     }
 
+    public void resetLootProtection(Item item) {
+        if (item == null || !item.isValid()) return;
+        UUID uuid = item.getUniqueId();
+        removeProtection(uuid);
+        item.setOwner(null);
+        org.bukkit.persistence.PersistentDataContainer pdc = item.getPersistentDataContainer();
+        pdc.remove(ownerKey);
+        pdc.remove(protectUntilKey);
+    }
+
     public void clearAll() {
         lootOwners.clear();
         protectionExpiry.clear();

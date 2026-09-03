@@ -40,6 +40,7 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
     private fr.skynex.lootglow.managers.ParticleAnimationManager particleAnimationManager;
     private fr.skynex.lootglow.managers.GroupContainerManager groupContainerManager;
     private fr.skynex.lootglow.managers.LootProtectionManager lootProtectionManager;
+    private fr.skynex.lootglow.managers.ItemMergeManager itemMergeManager;
     private fr.skynex.lootglow.managers.OcclusionManager occlusionManager;
     private fr.skynex.lootglow.managers.GlowManager glowManager;
     private fr.skynex.lootglow.managers.ItemMagnetManager itemMagnetManager;
@@ -88,6 +89,7 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
     public fr.skynex.lootglow.managers.ParticleAnimationManager getParticleAnimationManager() { return particleAnimationManager; }
     public fr.skynex.lootglow.managers.GroupContainerManager getGroupContainerManager() { return groupContainerManager; }
     public fr.skynex.lootglow.managers.LootProtectionManager getLootProtectionManager() { return lootProtectionManager; }
+    public fr.skynex.lootglow.managers.ItemMergeManager getItemMergeManager() { return itemMergeManager; }
     public fr.skynex.lootglow.managers.OcclusionManager getOcclusionManager() { return occlusionManager; }
     public fr.skynex.lootglow.managers.GlowManager getGlowManager() { return glowManager; }
     public fr.skynex.lootglow.managers.ItemMagnetManager getItemMagnetManager() { return itemMagnetManager; }
@@ -601,6 +603,8 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
     public double getRmbPickupRange() { return configManager != null ? configManager.getRmbPickupRange() : 3.0; }
     public boolean isRmbPickupEnableForGroups() { return configManager != null && configManager.isRmbPickupEnableForGroups(); }
     public Map<UUID, Long> getItemSpawnTimes() { return itemSpawnTimes; }
+    public Map<UUID, Component> getBaseNameCache() { return baseNameCache; }
+    public Map<UUID, Long> getLastHoloState() { return lastHoloState; }
     public Map<UUID, ItemDisplay> getActiveItemVisuals() { return activeItemVisuals; }
     public Map<UUID, TextDisplay> getActiveLabels() { return activeLabels; }
     public Map<UUID, BlockDisplay> getActiveBeams() { return activeBeams; }
@@ -944,9 +948,16 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
     @NotNull @Override public List<Item> getTrackedItemsInChunk(@NotNull Chunk chunk) { return apiImpl.getTrackedItemsInChunk(chunk); }
     @Override public void addLootSharer(@NotNull Item item, @NotNull UUID playerUuid) { apiImpl.addLootSharer(item, playerUuid); }
     @Override public void removeLootSharer(@NotNull Item item, @NotNull UUID playerUuid) { apiImpl.removeLootSharer(item, playerUuid); }
+    @Override public void removeCustomHologram(@NotNull Item item) { apiImpl.removeCustomHologram(item); }
+    @Override public void removeCustomHologram(@NotNull Item item, @NotNull Player player) { apiImpl.removeCustomHologram(item, player); }
+    @Override public void resetLootProtection(@NotNull Item item) { apiImpl.resetLootProtection(item); }
     @NotNull @Override public Set<UUID> getLootSharers(@NotNull Item item) { return apiImpl.getLootSharers(item); }
     @NotNull @Override public String detectItemRarity(@NotNull ItemStack itemStack) { return apiImpl.detectItemRarity(itemStack); }
     @NotNull @Override public String detectItemRarity(@NotNull Item item) { return apiImpl.detectItemRarity(item); }
+    @Override public boolean canMerge(@NotNull Item item1, @NotNull Item item2) { return apiImpl.canMerge(item1, item2); }
+    @Override public boolean mergeAmount(@NotNull Item item1, @NotNull Item item2) { return apiImpl.mergeAmount(item1, item2); }
+    @Override public boolean unMergeAmount(@NotNull Item item, int amount) { return apiImpl.unMergeAmount(item, amount); }
+    @Override public int getMergeAmount(@NotNull Item item) { return apiImpl.getMergeAmount(item); }
     private void initManagersAndServices() {
         this.databaseManager = new DatabaseManager(this);
         this.trackedItemManager = new TrackedItemManager(this);
@@ -959,6 +970,8 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
         this.particleAnimationManager = new fr.skynex.lootglow.managers.ParticleAnimationManager(this);
         this.groupContainerManager = new fr.skynex.lootglow.managers.GroupContainerManager(this);
         this.lootProtectionManager = new fr.skynex.lootglow.managers.LootProtectionManager(this);
+        this.itemMergeManager = new fr.skynex.lootglow.managers.ItemMergeManager(this);
+        this.itemMergeManager.loadConfig();
         this.occlusionManager = new fr.skynex.lootglow.managers.OcclusionManager();
         this.glowManager = new fr.skynex.lootglow.managers.GlowManager();
         this.itemMagnetManager = new fr.skynex.lootglow.managers.ItemMagnetManager(this);

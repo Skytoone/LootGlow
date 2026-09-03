@@ -83,6 +83,21 @@ public interface LootGlowAPI {
     void setCustomHologram(@NotNull Item item, @Nullable String text, @NotNull Player player);
 
     /**
+     * Removes the custom holographic label above a dropped item entity, restoring default label / stack counter.
+     *
+     * @param item Dropped item entity
+     */
+    void removeCustomHologram(@NotNull Item item);
+
+    /**
+     * Removes the custom holographic label above a dropped item entity for a specific player.
+     *
+     * @param item Dropped item entity
+     * @param player Target player
+     */
+    void removeCustomHologram(@NotNull Item item, @NotNull Player player);
+
+    /**
      * Toggles vertical beacon light beam effect for a dropped item entity.
      *
      * @param item Dropped item entity
@@ -128,6 +143,13 @@ public interface LootGlowAPI {
     default void setPermanentLootProtection(@NotNull Item item, @NotNull UUID ownerUuid) {
         setLootProtection(item, ownerUuid, -1L);
     }
+
+    /**
+     * Removes owner loot protection and clears all whitelisted sharers for a dropped item entity.
+     *
+     * @param item Dropped item entity
+     */
+    void resetLootProtection(@NotNull Item item);
 
     /**
      * Checks if a dropped item currently has active loot protection.
@@ -378,5 +400,41 @@ public interface LootGlowAPI {
      */
     @NotNull
     String detectItemRarity(@NotNull Item item);
+
+    /**
+     * Checks if two dropped item entities can be merged together based on item similarity and loot protection compatibility.
+     * If loot protection is active on either item, returns false unless both items share the exact same owner and sharers.
+     *
+     * @param item1 First dropped item entity
+     * @param item2 Second dropped item entity
+     * @return True if items can be merged
+     */
+    boolean canMerge(@NotNull Item item1, @NotNull Item item2);
+
+    /**
+     * Merges item2 stack amount into item1, triggering ItemMergeEvent.
+     *
+     * @param item1 Target dropped item receiving amount
+     * @param item2 Source dropped item merging into item1
+     * @return True if merged successfully
+     */
+    boolean mergeAmount(@NotNull Item item1, @NotNull Item item2);
+
+    /**
+     * Splits amount from a dropped item entity stack, spawning a new item entity with specified amount.
+     *
+     * @param item Target dropped item entity
+     * @param amount Amount to split from the stack
+     * @return True if unmerged successfully
+     */
+    boolean unMergeAmount(@NotNull Item item, int amount);
+
+    /**
+     * Retrieves the total stack amount of a dropped item entity.
+     *
+     * @param item Target dropped item entity
+     * @return Item stack count
+     */
+    int getMergeAmount(@NotNull Item item);
 }
 

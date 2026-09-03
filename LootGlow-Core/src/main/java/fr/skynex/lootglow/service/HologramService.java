@@ -33,6 +33,13 @@ public class HologramService {
                                        Map<UUID, Double> itemMoneyAmounts,
                                        String economyFormat,
                                        String economyPrefix) {
+        if (plugin.getHologramRenderer() != null) {
+            Component customHolo = plugin.getHologramRenderer().getCustomHologram(item, null);
+            if (customHolo != null) {
+                return customHolo.decoration(TextDecoration.ITALIC, false);
+            }
+        }
+
         String customId = plugin.getInternalId(item.getItemStack());
         String matName = item.getItemStack().getType().name();
 

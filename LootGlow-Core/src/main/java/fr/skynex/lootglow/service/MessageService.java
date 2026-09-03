@@ -3,7 +3,6 @@ package fr.skynex.lootglow.service;
 import fr.skynex.lootglow.LootGlow;
 import fr.skynex.lootglow.ConfigUpdater;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
 
@@ -16,7 +15,6 @@ import java.util.Map;
 public class MessageService {
 
     private final LootGlow plugin;
-    private final MiniMessage miniMessage = MiniMessage.miniMessage();
     private YamlConfiguration messagesConfig;
 
     private String rawPrefix = "";
