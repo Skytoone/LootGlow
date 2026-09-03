@@ -223,6 +223,29 @@ api.setLootProtection(item, player.getUniqueId(), 30L);
 boolean protectedItem = api.isLootProtected(item);
 boolean allowed = api.isPlayerAllowedToPickup(player, item);
 UUID ownerUuid = api.getLootOwner(item);
+
+// Add or remove shared loot access for specific players
+api.addLootSharer(item, friendUuid);
+api.removeLootSharer(item, friendUuid);
+Set<UUID> sharers = api.getLootSharers(item);
+
+// Fully reset loot protection (clears owner and all shared access)
+api.resetLootProtection(item);
+```
+
+#### Item Merging & Stacking
+```java
+// Check if two items can be merged (verifies ItemStack similarity & LootProtection compatibility)
+boolean canMerge = api.canMerge(item1, item2);
+
+// Merge item2 into item1
+boolean merged = api.mergeAmount(item1, item2);
+
+// Split/unmerge a specific amount from an item stack into a new dropped entity
+boolean split = api.unMergeAmount(item, 5);
+
+// Get the current stack quantity
+int amount = api.getMergeAmount(item);
 ```
 
 #### VIP Magnet
@@ -338,6 +361,22 @@ public void onContainerOpen(LootGlowContainerOpenEvent event) {
 
     getLogger().info(player.getName()
         + " opened a loot container with " + items.size() + " items.");
+}
+```
+
+#### `ItemMergeEvent`
+Fired when two dropped items are about to be merged together. Cancel to prevent item stacking for specific items.
+
+```java
+@EventHandler
+public void onItemMerge(ItemMergeEvent event) {
+    Item sourceItem = event.getSourceItem();
+    Item targetItem = event.getTargetItem();
+
+    // Cancel merging for quest items
+    if (isQuestItem(sourceItem.getItemStack())) {
+        event.setCancelled(true);
+    }
 }
 ```
 
