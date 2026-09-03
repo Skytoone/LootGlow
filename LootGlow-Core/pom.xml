@@ -6,7 +6,7 @@
     <parent>
         <groupId>fr.skynex</groupId>
         <artifactId>LootGlow-Parent</artifactId>
-        <version>1.6.3-beta4</version>
+        <version>v1.6.3-beta4</version>
     </parent>
 
     <artifactId>LootGlow-Core</artifactId>
