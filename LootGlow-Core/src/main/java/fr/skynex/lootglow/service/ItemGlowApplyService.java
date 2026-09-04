@@ -277,25 +277,29 @@ public class ItemGlowApplyService {
             plugin.getLogger().info("[LootGlow Debug] applyGlow called for item " + stack.getType() + " (UUID: " + item.getUniqueId() + ", Category: " + finalCategory + ", Color: " + finalColor + ", isRpgDrop: " + isRpgDrop + ", glowing: " + shouldGlow + ")");
         }
 
-        if (!isRpgDrop) {
-            if (shouldGlow) {
-                item.setGlowing(true);
-            }
-        } else {
+        if (shouldGlow) {
+            item.setGlowing(true);
+        }
+
+        if (isRpgDrop) {
             try {
                 item.setVisibleByDefault(false);
             } catch (NoSuchMethodError ignored) {}
             hiddenVanillaItems.add(item.getEntityId());
         }
 
-        try {
-            Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
-            String teamName = "LG_" + finalColor.toString().toUpperCase();
-            Team team = scoreboard.getTeam(teamName);
-            if (team != null) {
+        if (shouldGlow && finalColor != null) {
+            try {
+                Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+                String teamName = "LG_" + finalColor.toString().toUpperCase();
+                Team team = scoreboard.getTeam(teamName);
+                if (team == null) {
+                    team = scoreboard.registerNewTeam(teamName);
+                    team.color(finalColor);
+                }
                 team.addEntry(item.getUniqueId().toString());
-            }
-        } catch (Throwable ignored) {}
+            } catch (Throwable ignored) {}
+        }
 
         Sound sound = categorySounds.get(customId);
         if (sound == null) sound = categorySounds.get(matName);
@@ -358,10 +362,7 @@ public class ItemGlowApplyService {
         }
 
         if (isRpgDrop) {
-            plugin.broadcastRpgDropVisibility(item);
-
-            FoliaScheduler.runLater(plugin, () -> {
-                if (!item.isValid() || !activeItems.containsKey(item.getUniqueId())) return;
+            if (item.isValid() && activeItems.containsKey(item.getUniqueId())) {
                 plugin.spawnItemVisual(item, finalCategory, finalColor);
                 if (shadowsEnabled) {
                     plugin.spawnShadow(item);
@@ -370,7 +371,7 @@ public class ItemGlowApplyService {
                     plugin.spawnBeam(item, finalCategory, finalColor);
                 }
                 plugin.broadcastRpgDropVisibility(item);
-            }, 1L);
+            }
         }
     }
 

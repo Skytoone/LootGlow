@@ -146,111 +146,98 @@ public class ItemPhysicsService {
                 continue;
             }
 
-            final boolean finalMoved = moved;
-            final boolean finalItemActuallyMoved = itemActuallyMoved;
-            final double finalTargetVisualY = targetVisualY;
-            final double finalTargetSurfaceY = targetSurfaceY;
-            final double finalVisualYOffset = visualYOffset;
-            final Material finalItemMat = itemMat;
+            Location itemLoc = null;
 
-            FoliaScheduler.runAtEntity(plugin, item, () -> {
-                if (!item.isValid()) return;
+            if (moved) {
+                itemLoc = item.getLocation();
+                if (visual != null && visual.isValid()) {
+                    itemLoc.setY(targetVisualY + visualYOffset);
+                    if (yaw != null) itemLoc.setYaw(yaw);
+                    if (pitch != null) itemLoc.setPitch(pitch);
+                    visual.setTeleportDuration(1);
+                    visual.teleport(itemLoc);
+                }
 
-                Location itemLoc = null;
+                if (label != null && label.isValid()) {
+                    if (itemLoc == null) itemLoc = item.getLocation();
+                    itemLoc.setY(targetVisualY + visualYOffset + holoOffset);
+                    label.setTeleportDuration(1);
+                    label.teleport(itemLoc);
+                }
+            }
 
-                if (finalMoved) {
-                    itemLoc = item.getLocation();
-                    if (visual != null && visual.isValid()) {
-                        itemLoc.setY(finalTargetVisualY + finalVisualYOffset);
-                        if (yaw != null) itemLoc.setYaw(yaw);
-                        if (pitch != null) itemLoc.setPitch(pitch);
-                        visual.setTeleportDuration(1);
-                        visual.teleport(itemLoc);
-                    }
-
-                    if (label != null && label.isValid()) {
+            if (itemActuallyMoved) {
+                if (beam != null && beam.isValid()) {
+                    double targetBeamY = targetSurfaceY + baseWeight;
+                    double bdx = itemX - beam.getX();
+                    double bdy = targetBeamY - beam.getY();
+                    double bdz = itemZ - beam.getZ();
+                    if ((bdx * bdx + bdy * bdy + bdz * bdz) > 0.0001) {
                         if (itemLoc == null) itemLoc = item.getLocation();
-                        itemLoc.setY(finalTargetVisualY + finalVisualYOffset + holoOffset);
-                        label.setTeleportDuration(1);
-                        label.teleport(itemLoc);
+                        itemLoc.setY(targetBeamY);
+                        beam.setTeleportDuration(1);
+                        beam.teleport(itemLoc);
                     }
                 }
 
-                if (finalItemActuallyMoved) {
-                    if (beam != null && beam.isValid()) {
-                        double targetBeamY = finalTargetSurfaceY + baseWeight;
-                        double bdx = itemX - beam.getX();
-                        double bdy = targetBeamY - beam.getY();
-                        double bdz = itemZ - beam.getZ();
-                        if ((bdx * bdx + bdy * bdy + bdz * bdz) > 0.0001) {
-                            if (itemLoc == null) itemLoc = item.getLocation();
-                            itemLoc.setY(targetBeamY);
-                            beam.setTeleportDuration(1);
-                            beam.teleport(itemLoc);
-                        }
+                if (shadow != null && shadow.isValid()) {
+                    double height = Math.max(0, itemY - targetSurfaceY);
+                    float radiusFactor = (float) Math.max(0.4, 1.0 - (height * 0.3));
+                    float baseRadius = shadowScale * 0.8f;
+                    boolean isBlock = itemMat.isBlock();
+                    if (isBlock) baseRadius *= 1.4f;
+
+                    float scale = isBlock ? rpgBlockScale : rpgItemScale;
+                    float targetRadius = baseRadius * radiusFactor * (scale / 0.8f);
+                    float targetStrength = (float) Math.max(0.2, 1.0 - (height * 0.5));
+
+                    shadow.setShadowRadius(targetRadius);
+                    shadow.setShadowStrength(targetStrength);
+
+                    double sdx = itemX - shadow.getX();
+                    double sdy = targetSurfaceY - shadow.getY();
+                    double sdz = itemZ - shadow.getZ();
+                    if ((sdx * sdx + sdy * sdy + sdz * sdz) > 0.0001) {
+                        if (itemLoc == null) itemLoc = item.getLocation();
+                        itemLoc.setY(targetSurfaceY);
+                        shadow.setTeleportDuration(1);
+                        shadow.teleport(itemLoc);
                     }
+                }
 
-                    if (shadow != null && shadow.isValid()) {
-                        if (item.isOnGround()) {
-                            double height = itemY - finalTargetSurfaceY;
-                            float radiusFactor = (float) Math.max(0.4, 1.0 - (height * 0.3));
-                            float baseRadius = shadowScale * 0.8f;
-                            boolean isBlock = finalItemMat.isBlock();
-                            if (isBlock) baseRadius *= 1.4f;
-
-                            float scale = isBlock ? rpgBlockScale : rpgItemScale;
-                            float targetRadius = baseRadius * radiusFactor * (scale / 0.8f);
-                            float targetStrength = (float) Math.max(0.2, 1.0 - (height * 0.5));
-
-                            shadow.setShadowRadius(targetRadius);
-                            shadow.setShadowStrength(targetStrength);
-
-                            double sdx = itemX - shadow.getX();
-                            double sdy = finalTargetSurfaceY - shadow.getY();
-                            double sdz = itemZ - shadow.getZ();
-                            if ((sdx * sdx + sdy * sdy + sdz * sdz) > 0.0001) {
-                                if (itemLoc == null) itemLoc = item.getLocation();
-                                itemLoc.setY(finalTargetSurfaceY);
-                                shadow.setTeleportDuration(1);
-                                shadow.teleport(itemLoc);
-                            }
-                        }
+                if (visual != null && visual.isValid()) {
+                    if (ti.isFishItem == null) {
+                        ti.isFishItem = plugin.isFishItem(itemMat);
                     }
+                    boolean isFish = ti.isFishItem;
+                    boolean currentlyInWater = item.isInWater();
 
-                    if (visual != null && visual.isValid()) {
-                        if (ti.isFishItem == null) {
-                            ti.isFishItem = plugin.isFishItem(finalItemMat);
+                    if (currentlyInWater) {
+                        if (plugin.getSurfaceAlignmentManager() != null) {
+                            plugin.getSurfaceAlignmentManager().getWaterLogCache().add(itemUuid);
                         }
-                        boolean isFish = ti.isFishItem;
-                        boolean currentlyInWater = item.isInWater();
-
-                        if (currentlyInWater) {
-                            if (plugin.getSurfaceAlignmentManager() != null) {
-                                plugin.getSurfaceAlignmentManager().getWaterLogCache().add(itemUuid);
-                            }
-                            if (isFish) {
-                                Location vLoc = visual.getLocation();
-                                vLoc.setYaw(vLoc.getYaw() + 3.0f);
-                                visual.teleport(vLoc);
-                            }
-                        } else {
-                            boolean removed = plugin.getSurfaceAlignmentManager() != null && plugin.getSurfaceAlignmentManager().getWaterLogCache().remove(itemUuid);
-                            if (removed) {
-                                boolean isLeader = groupLeaders.containsKey(itemUuid);
-                                if (!isLeader) {
-                                    if (ti.isCustomItem == null) {
-                                        ti.isCustomItem = plugin.isCustomItem(item.getItemStack());
-                                    }
-                                    float targetRotX = (ti.isCustomItem || isBlockItem) ? 0f : rpgRotation;
-                                    org.bukkit.util.Transformation t = visual.getTransformation();
-                                    t.getLeftRotation().set(new org.joml.Quaternionf().rotationX(targetRotX));
-                                    visual.setTransformation(t);
+                        if (isFish) {
+                            Location vLoc = visual.getLocation();
+                            vLoc.setYaw(vLoc.getYaw() + 3.0f);
+                            visual.teleport(vLoc);
+                        }
+                    } else {
+                        boolean removed = plugin.getSurfaceAlignmentManager() != null && plugin.getSurfaceAlignmentManager().getWaterLogCache().remove(itemUuid);
+                        if (removed) {
+                            boolean isLeader = groupLeaders.containsKey(itemUuid);
+                            if (!isLeader) {
+                                if (ti.isCustomItem == null) {
+                                    ti.isCustomItem = plugin.isCustomItem(item.getItemStack());
                                 }
+                                float targetRotX = (ti.isCustomItem || isBlockItem) ? 0f : rpgRotation;
+                                org.bukkit.util.Transformation t = visual.getTransformation();
+                                t.getLeftRotation().set(new org.joml.Quaternionf().rotationX(targetRotX));
+                                visual.setTransformation(t);
                             }
                         }
                     }
                 }
-            });
+            }
         }
 
         if (staleEntries != null) {

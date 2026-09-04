@@ -327,11 +327,19 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
         debugLog("Configuration loaded. Debug mode enabled.");
         debugLog("RPG Drops Enabled: " + isRpgDropsEnabled() + ", Enabled Categories: " + (configManager != null ? configManager.getRpgEnabledCategories() : "[]"));
 
-        // Re-populate cache and re-apply visuals for existing items on reload
-        for (World world : Bukkit.getWorlds()) {
-            for (Item item : world.getEntitiesByClass(Item.class)) {
-                if (item.isValid()) {
-                    applyGlow(item, false);
+        if (itemMergeManager != null) {
+            itemMergeManager.loadConfig();
+        }
+
+        startBackgroundTasks();
+
+        // Re-populate cache and re-apply visuals for existing items on reload if not only-player-drops
+        if (!isOnlyPlayerDrops()) {
+            for (World world : Bukkit.getWorlds()) {
+                for (Item item : world.getEntitiesByClass(Item.class)) {
+                    if (item.isValid()) {
+                        applyGlow(item, false);
+                    }
                 }
             }
         }

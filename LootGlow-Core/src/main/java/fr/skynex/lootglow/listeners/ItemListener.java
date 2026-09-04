@@ -75,7 +75,7 @@ public class ItemListener implements Listener {
                     }
                 });
             }
-        } else {
+        } else if (!plugin.isOnlyPlayerDrops()) {
             FoliaScheduler.runSync(plugin, () -> {
                 if (event.getTarget().isValid()) {
                     plugin.applyGlow(event.getTarget(), false);
@@ -167,12 +167,21 @@ public class ItemListener implements Listener {
                 }
             }
 
-            // Player pickup: play aspiration animation then remove glow
-            plugin.playAspirationAnimation(event.getItem(), player);
-            plugin.removeGlow(event.getItem());
+            // Player pickup: play aspiration animation and remove glow ONLY if entire stack was picked up
+            if (event.getRemaining() == 0) {
+                plugin.playAspirationAnimation(event.getItem(), player);
+                plugin.removeGlow(event.getItem());
+            } else {
+                // Partial stack pickup: item remains on ground, refresh hologram count
+                plugin.refreshHologram(event.getItem());
+            }
         } else {
-            // Non-player entity pickup (e.g. Piglins, Allays, etc.) — just clean up the glow
-            plugin.removeGlow(event.getItem());
+            // Non-player entity pickup (e.g. Piglins, Allays, etc.)
+            if (event.getRemaining() == 0) {
+                plugin.removeGlow(event.getItem());
+            } else {
+                plugin.refreshHologram(event.getItem());
+            }
         }
     }
 

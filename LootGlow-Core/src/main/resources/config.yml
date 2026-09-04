@@ -12,6 +12,10 @@ settings:
   # Automatic ItemStack merging configuration
   AutoStack: false
   AutoStackDistance: 3
+  # Automatically ignore unique UUID tags inside PDC/NBT when checking item similarity for merging.
+  # Keeps AutoStack compatible with custom ItemBuilders that inject a unique UUID into every ItemStack.
+  ignore-uuid-pdc-on-merge: true
+  ignore-pdc-keys-on-merge: []
   
   # Default Minecraft is 300 seconds (5 minutes)
   despawn-time: 300

@@ -123,7 +123,14 @@ public class HologramService {
                         String ownerName = "Joueur";
                         if (ownerUuid != null) {
                             Player ownerPlayer = Bukkit.getPlayer(ownerUuid);
-                            if (ownerPlayer != null) ownerName = ownerPlayer.getName();
+                            if (ownerPlayer != null) {
+                                ownerName = ownerPlayer.getName();
+                            } else {
+                                org.bukkit.OfflinePlayer offPlayer = Bukkit.getOfflinePlayer(ownerUuid);
+                                if (offPlayer.getName() != null) {
+                                    ownerName = offPlayer.getName();
+                                }
+                            }
                         }
                         long timerKey = (((long) remaining) << 32) | (protectionDuration & 0xFFFFFFFFL);
                         Component protComp = protComponentCache.computeIfAbsent(timerKey, k -> {
@@ -132,7 +139,7 @@ public class HologramService {
                         });
                         result = result.append(Component.newline()).append(protComp);
                         if (rawOwnerFormat != null && !rawOwnerFormat.isEmpty()) {
-                            result = result.append(fr.skynex.lootglow.util.ColorUtil.parse(rawOwnerFormat.replace("<owner>", ownerName)));
+                            result = result.append(Component.newline()).append(fr.skynex.lootglow.util.ColorUtil.parse(rawOwnerFormat.replace("<owner>", ownerName)));
                         }
                     }
                 } else if (remaining >= -3) {
@@ -192,10 +199,11 @@ public class HologramService {
                                boolean holoShowTimer,
                                Map<Integer, Component> timerComponentCache,
                                boolean holoTimerNewLine) {
+        if (!holoEnabled || item == null || !item.isValid()) return;
 
-        if (!holoEnabled || item == null) return;
         UUID uuid = item.getUniqueId();
         String cat = itemCategoriesCache.get(uuid);
+        if (cat == null && plugin.getTrackedItemManager() != null) cat = plugin.getTrackedItemManager().getItemCategory(uuid);
         if (holoHideUncategorized && cat == null) return;
 
         TextDisplay display = activeLabels.get(uuid);
@@ -266,6 +274,7 @@ public class HologramService {
 
         UUID uuid = item.getUniqueId();
         String cat = itemCategoriesCache.get(uuid);
+        if (cat == null && plugin.getTrackedItemManager() != null) cat = plugin.getTrackedItemManager().getItemCategory(uuid);
         if (holoHideUncategorized && cat == null) return;
 
         TextDisplay existing = activeLabels.get(uuid);

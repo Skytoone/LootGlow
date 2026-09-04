@@ -20,6 +20,8 @@ public class ItemMergeManager {
     private final LootGlow plugin;
     private boolean autoStackEnabled = false;
     private double autoStackDistance = 3.0;
+    private boolean ignoreAllUuidKeys = true;
+    private final Set<String> ignoredPdcKeys = new HashSet<>();
     private BukkitTask autoStackTask;
 
     public ItemMergeManager(LootGlow plugin) {
@@ -29,6 +31,11 @@ public class ItemMergeManager {
     public void loadConfig() {
         this.autoStackEnabled = plugin.getConfig().getBoolean("settings.AutoStack", plugin.getConfig().getBoolean("AutoStack", false));
         this.autoStackDistance = plugin.getConfig().getDouble("settings.AutoStackDistance", plugin.getConfig().getDouble("AutoStackDistance", 3.0));
+        this.ignoreAllUuidKeys = plugin.getConfig().getBoolean("settings.ignore-uuid-pdc-on-merge", true);
+        this.ignoredPdcKeys.clear();
+        for (String k : plugin.getConfig().getStringList("settings.ignore-pdc-keys-on-merge")) {
+            this.ignoredPdcKeys.add(k.toLowerCase());
+        }
         restartAutoStackTask();
     }
 
@@ -66,7 +73,7 @@ public class ItemMergeManager {
             return false;
         }
 
-        if (!stack1.isSimilar(stack2)) return false;
+        if (!isSimilarIgnorePdc(stack1, stack2)) return false;
 
         // Check loot protection matching
         LootProtectionManager lpm = plugin.getLootProtectionManager();
@@ -88,6 +95,46 @@ public class ItemMergeManager {
         }
 
         return true;
+    }
+
+    public boolean isSimilarIgnorePdc(@NotNull ItemStack stack1, @NotNull ItemStack stack2) {
+        if (stack1.isSimilar(stack2)) return true;
+        if (stack1.getType() != stack2.getType()) return false;
+        if (!stack1.hasItemMeta() && !stack2.hasItemMeta()) return true;
+        if (stack1.hasItemMeta() != stack2.hasItemMeta()) return false;
+
+        org.bukkit.inventory.meta.ItemMeta meta1 = stack1.getItemMeta().clone();
+        org.bukkit.inventory.meta.ItemMeta meta2 = stack2.getItemMeta().clone();
+
+        org.bukkit.persistence.PersistentDataContainer pdc1 = meta1.getPersistentDataContainer();
+        org.bukkit.persistence.PersistentDataContainer pdc2 = meta2.getPersistentDataContainer();
+
+        for (org.bukkit.NamespacedKey key : new HashSet<>(pdc1.getKeys())) {
+            String keyStr = key.toString().toLowerCase();
+            String keyName = key.getKey().toLowerCase();
+            if (ignoreAllUuidKeys && (keyStr.contains("uuid") || keyName.contains("uuid"))) {
+                pdc1.remove(key);
+            } else if (ignoredPdcKeys.contains(keyStr) || ignoredPdcKeys.contains(keyName)) {
+                pdc1.remove(key);
+            }
+        }
+
+        for (org.bukkit.NamespacedKey key : new HashSet<>(pdc2.getKeys())) {
+            String keyStr = key.toString().toLowerCase();
+            String keyName = key.getKey().toLowerCase();
+            if (ignoreAllUuidKeys && (keyStr.contains("uuid") || keyName.contains("uuid"))) {
+                pdc2.remove(key);
+            } else if (ignoredPdcKeys.contains(keyStr) || ignoredPdcKeys.contains(keyName)) {
+                pdc2.remove(key);
+            }
+        }
+
+        ItemStack clone1 = stack1.clone();
+        clone1.setItemMeta(meta1);
+        ItemStack clone2 = stack2.clone();
+        clone2.setItemMeta(meta2);
+
+        return clone1.isSimilar(clone2);
     }
 
     /**
@@ -189,47 +236,53 @@ public class ItemMergeManager {
     }
 
     /**
-     * Ticker logic for automatic item stacking using spatial entity indexing.
+     * Ticker logic for automatic item stacking using spatial chunk bucketing.
      */
     private void processAutoStack() {
-        if (!autoStackEnabled || plugin.getTrackedItemManager() == null) return;
+        if (!autoStackEnabled) return;
 
         double dist = autoStackDistance;
         double distSq = dist * dist;
-        TrackedItemManager tim = plugin.getTrackedItemManager();
-        Map<UUID, Item> activeItems = tim.getActiveItems();
+        int chunkRadius = (int) Math.ceil(dist / 16.0);
 
         for (World world : Bukkit.getWorlds()) {
-            Map<Long, Set<UUID>> worldChunks = tim.getItemsByChunk().get(world.getName());
-            if (worldChunks == null || worldChunks.isEmpty()) continue;
+            Collection<Item> items = world.getEntitiesByClass(Item.class);
+            if (items.size() < 2) continue;
+
+            Map<Long, List<Item>> chunkMap = new HashMap<>();
+            for (Item item : items) {
+                if (item != null && item.isValid() && !item.isDead()) {
+                    int cx = item.getLocation().getBlockX() >> 4;
+                    int cz = item.getLocation().getBlockZ() >> 4;
+                    long key = TrackedItemManager.getChunkKey(cx, cz);
+                    chunkMap.computeIfAbsent(key, k -> new ArrayList<>()).add(item);
+                }
+            }
 
             Set<Long> processedPairs = new HashSet<>();
-
-            for (Map.Entry<Long, Set<UUID>> chunkEntry : worldChunks.entrySet()) {
-                Set<UUID> chunkItemUuids = chunkEntry.getValue();
-                if (chunkItemUuids == null || chunkItemUuids.isEmpty()) continue;
-
-                long chunkKey = chunkEntry.getKey();
+            for (Map.Entry<Long, List<Item>> entry : chunkMap.entrySet()) {
+                long chunkKey = entry.getKey();
                 int cX = (int) (chunkKey >> 32);
                 int cZ = (int) (chunkKey & 0xFFFFFFFFL);
 
-                Set<UUID> candidateUuids = tim.getItemsInChunkRadius(world, cX, cZ, 1);
-                if (candidateUuids.size() < 2) continue;
-
-                List<Item> candidateItems = new ArrayList<>();
-                for (UUID u : candidateUuids) {
-                    Item it = activeItems.get(u);
-                    if (it != null && it.isValid() && !it.isDead()) {
-                        candidateItems.add(it);
+                List<Item> candidates = new ArrayList<>();
+                for (int dx = -chunkRadius; dx <= chunkRadius; dx++) {
+                    for (int dz = -chunkRadius; dz <= chunkRadius; dz++) {
+                        long nKey = TrackedItemManager.getChunkKey(cX + dx, cZ + dz);
+                        List<Item> nItems = chunkMap.get(nKey);
+                        if (nItems != null) {
+                            candidates.addAll(nItems);
+                        }
                     }
                 }
 
-                for (int i = 0; i < candidateItems.size(); i++) {
-                    Item item1 = candidateItems.get(i);
-                    for (int j = i + 1; j < candidateItems.size(); j++) {
-                        Item item2 = candidateItems.get(j);
+                if (candidates.size() < 2) continue;
+
+                for (int i = 0; i < candidates.size(); i++) {
+                    Item item1 = candidates.get(i);
+                    for (int j = i + 1; j < candidates.size(); j++) {
+                        Item item2 = candidates.get(j);
                         if (!item1.isValid() || item1.isDead() || !item2.isValid() || item2.isDead()) continue;
-                        if (!item1.getWorld().equals(item2.getWorld())) continue;
 
                         long pairHash = (((long) Math.min(item1.getEntityId(), item2.getEntityId())) << 32)
                                 | (Math.max(item1.getEntityId(), item2.getEntityId()) & 0xFFFFFFFFL);
