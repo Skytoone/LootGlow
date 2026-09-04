@@ -130,7 +130,7 @@ public class ItemVisualSpawnService {
                 boolean isUpright = plugin.isUprightItem(mat);
                 ItemDisplay.ItemDisplayTransform transform = isCustom
                         ? ItemDisplay.ItemDisplayTransform.FIXED
-                        : ItemDisplay.ItemDisplayTransform.NONE;
+                        : ItemDisplay.ItemDisplayTransform.GROUND;
 
                 float baseScale = isUpright ? rpgBlockScale : rpgItemScale;
                 if (plugin.isFishItem(mat)) {

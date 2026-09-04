@@ -230,7 +230,7 @@ public class ItemGroupingService {
                     } else {
                         if (currentStack != null && currentStack.getType() == bagMaterial) {
                             visual.setItemStack(item.getItemStack());
-                            visual.setItemDisplayTransform(org.bukkit.entity.ItemDisplay.ItemDisplayTransform.NONE);
+                            visual.setItemDisplayTransform(org.bukkit.entity.ItemDisplay.ItemDisplayTransform.GROUND);
                             org.bukkit.util.Transformation t = visual.getTransformation();
                             Material itemMat = item.getItemStack().getType();
                             boolean isCustom = plugin.isCustomItem(item.getItemStack());
