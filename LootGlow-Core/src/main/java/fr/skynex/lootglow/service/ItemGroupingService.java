@@ -232,7 +232,7 @@ public class ItemGroupingService {
                             visual.setItemDisplayTransform(org.bukkit.entity.ItemDisplay.ItemDisplayTransform.FIXED);
                             org.bukkit.util.Transformation t = visual.getTransformation();
                             t.getLeftRotation().set(new org.joml.Quaternionf());
-                            t.getTranslation().set(0f, 0.05f, 0f);
+                            t.getTranslation().set(0f, 0.30f, 0f);
                             t.getScale().set(1.0f, 1.0f, 1.0f);
                             visual.setTransformation(t);
                         }

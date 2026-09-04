@@ -134,7 +134,7 @@ settings:
       material: "PLAYER_HEAD"
       # Base64 Texture for PLAYER_HEAD (only used if material is PLAYER_HEAD)
       # Default: A nice brown loot bag
-      head-texture: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvYjY4ZWEzYzE2N2IxYjk0ZWRhM2RkMWFmYmZlZDRiZGRkYWQ4MTlmYTRiNmY1YTE5MjU5ZWY2Y2FmNGFmMmU2In19fQ=="
+      head-texture: "eyJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvNTRjYWU0OWExZTdmNjVmOTM1YmQ2MjAzYmYzZjNjOTQ0ZGU4M2Y0YTk2MDhhMjZjOGM3NzVjMTg0OWI1YTc0ZiJ9fX0="
       # If true and material is PLAYER_HEAD, use the skin of the player who dropped the item
       use-owner-head: false
       custom-model-data: 0

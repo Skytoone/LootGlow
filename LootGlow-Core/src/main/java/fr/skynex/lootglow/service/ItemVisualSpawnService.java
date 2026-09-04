@@ -109,7 +109,7 @@ public class ItemVisualSpawnService {
                 ent.setItemStack(bag);
                 ent.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
                 ent.setTransformation(new org.bukkit.util.Transformation(
-                        new org.joml.Vector3f(0f, 0.05f, 0f),
+                        new org.joml.Vector3f(0f, 0.30f, 0f),
                         new org.joml.Quaternionf(),
                         new org.joml.Vector3f(1.0f, 1.0f, 1.0f),
                         new org.joml.Quaternionf()));
