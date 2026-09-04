@@ -128,9 +128,7 @@ public class ItemVisualSpawnService {
                 Material mat = visualStack.getType();
                 boolean isCustom = plugin.isCustomItem(visualStack);
                 boolean isUpright = plugin.isUprightItem(mat);
-                ItemDisplay.ItemDisplayTransform transform = isCustom
-                        ? ItemDisplay.ItemDisplayTransform.FIXED
-                        : ItemDisplay.ItemDisplayTransform.GROUND;
+                ItemDisplay.ItemDisplayTransform transform = ItemDisplay.ItemDisplayTransform.FIXED;
 
                 float baseScale = isUpright ? rpgBlockScale : rpgItemScale;
                 if (plugin.isFishItem(mat)) {
@@ -154,7 +152,6 @@ public class ItemVisualSpawnService {
                 ent.setTransformation(transformation);
                 ent.setItemDisplayTransform(transform);
             }
-            ent.setVisibleByDefault(false);
             ent.setTeleportDuration(1);
             ent.setPersistent(false);
         });
@@ -175,10 +172,13 @@ public class ItemVisualSpawnService {
             plugin.getLogger().info("[LootGlow Debug] Spawned ItemDisplay for item " + item.getItemStack().getType() + " (UUID: " + item.getUniqueId() + ", Display UUID: " + display.getUniqueId() + ", Category: " + category + ")");
         }
 
-        // Initial visibility broadcast
+        // Visibility broadcast: display is visible by default.
+        // Only explicitly hide it from players who toggled off visuals (want vanilla mode).
         for (Player p : Bukkit.getOnlinePlayers()) {
-            if (!hiddenVisuals.contains(p.getUniqueId()) && p.getWorld().equals(item.getWorld())) {
-                p.showEntity(plugin, display);
+            if (!p.getWorld().equals(item.getWorld())) continue;
+            if (hiddenVisuals.contains(p.getUniqueId())) {
+                p.hideEntity(plugin, display);
+            } else {
                 visibleEntities.computeIfAbsent(p.getUniqueId(), k -> java.util.concurrent.ConcurrentHashMap.newKeySet()).add(display.getUniqueId());
             }
         }

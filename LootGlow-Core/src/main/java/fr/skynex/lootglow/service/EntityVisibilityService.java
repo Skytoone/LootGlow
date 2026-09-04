@@ -45,19 +45,28 @@ public class EntityVisibilityService {
     }
 
     public void applyVisibility(Player p, Item item, ItemDisplay display, boolean wantsVanilla, boolean isGrouped) {
+        if (plugin.getConfig().getBoolean("settings.debug", false)) {
+            plugin.getLogger().info("[LootGlow Debug] applyVisibility for player=" + p.getName() + ", item=" + item.getType() + ", displayNull=" + (display == null) + ", wantsVanilla=" + wantsVanilla + ", isGrouped=" + isGrouped);
+        }
         if (wantsVanilla) {
-            p.showEntity(plugin, item);
-            if (display != null && display.isValid()) {
+            if (!p.canSee(item)) {
+                p.showEntity(plugin, item);
+            }
+            if (display != null && display.isValid() && p.canSee(display)) {
                 p.hideEntity(plugin, display);
             }
         } else {
-            p.hideEntity(plugin, item);
+            if (p.canSee(item)) {
+                p.hideEntity(plugin, item);
+            }
             if (isGrouped) {
-                if (display != null && display.isValid()) {
+                if (display != null && display.isValid() && p.canSee(display)) {
                     p.hideEntity(plugin, display);
                 }
             } else if (display != null && display.isValid()) {
-                p.showEntity(plugin, display);
+                if (!p.canSee(display)) {
+                    p.showEntity(plugin, display);
+                }
             }
         }
     }
@@ -152,15 +161,23 @@ public class EntityVisibilityService {
         boolean currentlyVisible = visibleSet.contains(entUuid);
 
         if (shouldSee && !currentlyVisible) {
-            p.showEntity(plugin, entity);
-            entity.getPassengers().forEach(pass -> p.showEntity(plugin, pass));
+            if (!p.canSee(entity)) {
+                p.showEntity(plugin, entity);
+            }
+            entity.getPassengers().forEach(pass -> {
+                if (!p.canSee(pass)) p.showEntity(plugin, pass);
+            });
             visibleSet.add(entUuid);
             if (plugin.getTrackedItemManager() != null) {
                 plugin.getTrackedItemManager().registerDisplayViewer(entUuid, p.getUniqueId());
             }
         } else if (!shouldSee && currentlyVisible) {
-            p.hideEntity(plugin, entity);
-            entity.getPassengers().forEach(pass -> p.hideEntity(plugin, pass));
+            if (p.canSee(entity)) {
+                p.hideEntity(plugin, entity);
+            }
+            entity.getPassengers().forEach(pass -> {
+                if (p.canSee(pass)) p.hideEntity(plugin, pass);
+            });
             visibleSet.remove(entUuid);
             if (plugin.getTrackedItemManager() != null) {
                 plugin.getTrackedItemManager().unregisterDisplayViewer(entUuid, p.getUniqueId());

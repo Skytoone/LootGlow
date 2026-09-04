@@ -320,6 +320,7 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
         if (configManager != null) {
             configManager.loadAll(getConfig(), miniMessage, displayNameOverridesCache);
         }
+        this.isEnabled = isPluginEnabled();
 
         setupTeams();
 
@@ -338,14 +339,14 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
 
     private void startParticleTask() {
         if (particleAnimationManager != null) {
-            particleAnimationManager.startParticleTask(isEnabled, configManager.isParticlesEnabled(), configManager.getLodPartDistSq(), activeItems, itemParticlesCache, itemCategoriesCache, hiddenVisuals, categoryDustOptions, defaultDustOptions, categoryAnimTypes, configManager.getParticleAnimType(), configManager.getParticlesFrequency());
+            particleAnimationManager.startParticleTask(isPluginEnabled(), configManager.isParticlesEnabled(), configManager.getLodPartDistSq(), activeItems, itemParticlesCache, itemCategoriesCache, hiddenVisuals, categoryDustOptions, defaultDustOptions, categoryAnimTypes, configManager.getParticleAnimType(), configManager.getParticlesFrequency());
         }
     }
 
     private void startLightingTask() {
         int interval = getConfig().getInt("settings.lighting.update-interval", 5);
         if (lightService != null && configManager != null) {
-            lightService.startLightingTask(isEnabled, configManager.isLightingEnabled(), activeLights, activeItems, itemCategoriesCache, categoryLights, configManager.getCachedLightBlockData(), interval);
+            lightService.startLightingTask(isPluginEnabled(), configManager.isLightingEnabled(), activeLights, activeItems, itemCategoriesCache, categoryLights, configManager.getCachedLightBlockData(), interval);
         }
     }
 
@@ -389,9 +390,9 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
 
     public void applyGlow(Item item, boolean playAnimation) {
         if (itemGlowApplyService != null && configManager != null) {
-            itemGlowApplyService.applyGlow(item, playAnimation, isEnabled, configManager.isEconomyEnabled(), configManager.getEconomyKeys(), configManager.getEconomyColor(), configManager.getEconomySound(),
+            itemGlowApplyService.applyGlow(item, playAnimation, isPluginEnabled(), configManager.isEconomyEnabled(), configManager.getEconomyKeys(), configManager.getEconomyColor(), configManager.getEconomySound(),
                     itemMoneyAmounts, itemCategories, categoryNames, configManager.getDefaultColor(), categoryParticles,
-                    itemParticlesCache, itemCategoriesCache, configManager.getDespawnTime(), entityIdMap, activeItems, getItemsByWorld(),
+                    itemParticlesCache, itemCategoriesCache, configManager.getDespawnTime(), entityIdMap, getActiveItems(), getItemsByWorld(),
                     configManager.isRpgDropsEnabled(), configManager.getRpgEnabledCategories(), configManager.getCategoryGlow(), configManager.isDefaultGlow(), hiddenVanillaItems,
                     categorySounds, configManager.isHoloEnabled(), configManager.isHoloHideUncategorized(), itemSpawnTimes, baseNameCache,
                     configManager.isProtectionEnabled(), configManager.getProtectionDuration(), configManager.isShadowsEnabled(), configManager.isBeamsEnabled(), configManager.getBeamCategories());
@@ -420,7 +421,7 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
 
     private void startGarbageCollectorTask() {
         if (trackedItemManager != null) {
-            trackedItemManager.startGarbageCollectorTask(isEnabled, activeItems);
+            trackedItemManager.startGarbageCollectorTask(isPluginEnabled(), getActiveItems());
         }
     }
 
@@ -432,8 +433,8 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
 
     private void startLODTask() {
         if (lodManager != null) {
-            lodManager.startLODTask(isEnabled, configManager.isLodEnabled(), configManager.getLodBeamDistSq(), configManager.getLodHoloDistSq(), configManager.getFarmingViewDistance(),
-                    visibleEntities, hiddenVisuals, activeItems, groupedItems, activeLabels, activeBeams,
+            lodManager.startLODTask(isPluginEnabled(), configManager.isLodEnabled(), configManager.getLodBeamDistSq(), configManager.getLodHoloDistSq(), configManager.getFarmingViewDistance(),
+                    visibleEntities, hiddenVisuals, getActiveItems(), groupedItems, activeLabels, activeBeams,
                     activeItemVisuals, activeShadows, getItemsByWorld(), configManager.isFarmingEnabled(), activeCropSymbols, configManager.getLodInterval(), globallyVisibleEntities);
         }
     }
@@ -491,14 +492,14 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
 
     private void startFarmingTask() {
         if (farmingManager != null) {
-            farmingManager.startFarmingTask(isEnabled, configManager.isFarmingEnabled(), configManager.getFarmingCrops(), configManager.getFarmingViewDistance(), lastFarmingScanLocations);
+            farmingManager.startFarmingTask(isPluginEnabled(), configManager.isFarmingEnabled(), configManager.getFarmingCrops(), configManager.getFarmingViewDistance(), lastFarmingScanLocations);
         }
     }
 
 
     private void startGroupingTask() {
         if (itemGroupingService != null) {
-            itemGroupingService.startGroupingTask(isEnabled, configManager.isGroupingEnabled(), trackedItems, activeItems, itemCategoriesCache, groupedItems, groupLeaders, groupMembers, activeItemVisuals, configManager.isUseVisualBag(), configManager.getBagMaterial(), configManager.getBagHeadTexture(), configManager.isUseOwnerHead(), configManager.getBagCustomModelData(), configManager.getRpgRotation(), configManager.isHoloShowTimer(), rawBundleFormat, itemCategories, configManager.getDefaultColor(), miniMessage);
+            itemGroupingService.startGroupingTask(isPluginEnabled(), configManager.isGroupingEnabled(), trackedItems, activeItems, itemCategoriesCache, groupedItems, groupLeaders, groupMembers, activeItemVisuals, configManager.isUseVisualBag(), configManager.getBagMaterial(), configManager.getBagHeadTexture(), configManager.isUseOwnerHead(), configManager.getBagCustomModelData(), configManager.getRpgRotation(), configManager.isHoloShowTimer(), rawBundleFormat, itemCategories, configManager.getDefaultColor(), miniMessage);
         }
     }
 
@@ -634,9 +635,9 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
 
     public void refreshGlowForPlayer(Player player, boolean showVisuals) {
         if (entityVisibilityService != null && configManager != null) {
-            entityVisibilityService.refreshGlowForPlayer(player, showVisuals, hiddenVanillaItems, entityIdMap, visibleEntities, configManager.getFarmingViewDistance(), activeItems, groupedItems, configManager.getLodHoloDistSq(), configManager.getLodBeamDistSq(), activeCropSymbols);
+            entityVisibilityService.refreshGlowForPlayer(player, showVisuals, hiddenVanillaItems, entityIdMap, visibleEntities, configManager.getFarmingViewDistance(), getActiveItems(), groupedItems, configManager.getLodHoloDistSq(), configManager.getLodBeamDistSq(), activeCropSymbols);
         }
-        for (Item item : activeItems.values()) {
+        for (Item item : getActiveItems().values()) {
             if (item.getWorld().equals(player.getWorld()) && !hiddenVanillaItems.contains(item.getEntityId())) {
                 player.hideEntity(this, item);
                 player.showEntity(this, item);
@@ -784,14 +785,14 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
     /** Global sync tick: repositions all Display entities to follow their parent Item. Runs every tick. */
     private void tickGlobalSync() {
         if (itemPhysicsService != null && configManager != null) {
-            itemPhysicsService.tickGlobalSync(isEnabled, activeItems, trackedItems, configManager.getRpgBlockScale(), configManager.getRpgItemScale(), configManager.getBagMaterial(), groupLeaders, configManager.getHoloOffset(), configManager.getShadowScale(), configManager.getRpgRotation());
+            itemPhysicsService.tickGlobalSync(isPluginEnabled(), getActiveItems(), trackedItems, configManager.getRpgBlockScale(), configManager.getRpgItemScale(), configManager.getBagMaterial(), groupLeaders, configManager.getHoloOffset(), configManager.getShadowScale(), configManager.getRpgRotation());
         }
     }
 
     /** Bouncing tick: applies bounce physics to items. Runs every tick. */
     private void tickBouncing() {
         if (rpgDropManager != null && configManager != null) {
-            rpgDropManager.tickBouncing(configManager.isBouncingEnabled(), activeItems, configManager.getBouncingBlockedBlocks(), configManager.isBouncingOnlyOnSnow(), configManager.getMaxBounces(), configManager.getJumpForce(), configManager.getBounceDamping());
+            rpgDropManager.tickBouncing(configManager.isBouncingEnabled(), getActiveItems(), configManager.getBouncingBlockedBlocks(), configManager.isBouncingOnlyOnSnow(), configManager.getMaxBounces(), configManager.getJumpForce(), configManager.getBounceDamping());
         }
     }
 

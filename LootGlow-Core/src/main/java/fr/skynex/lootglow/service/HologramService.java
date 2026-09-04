@@ -298,7 +298,6 @@ public class HologramService {
             ));
         });
 
-        label.setVisibleByDefault(false);
         activeLabels.put(uuid, label);
 
         if (plugin.getConfig().getBoolean("settings.debug", false)) {
@@ -307,11 +306,14 @@ public class HologramService {
 
         for (Player p : item.getWorld().getPlayers()) {
             UUID pUuid = p.getUniqueId();
-            if (hiddenVisuals.contains(pUuid)) continue;
-
+            if (hiddenVisuals.contains(pUuid)) {
+                p.hideEntity(plugin, label);
+                continue;
+            }
             if (p.getLocation().distanceSquared(item.getLocation()) <= lodHoloDistSq) {
-                p.showEntity(plugin, label);
                 visibleEntities.computeIfAbsent(pUuid, k -> java.util.concurrent.ConcurrentHashMap.newKeySet()).add(label.getUniqueId());
+            } else {
+                p.hideEntity(plugin, label);
             }
         }
     }

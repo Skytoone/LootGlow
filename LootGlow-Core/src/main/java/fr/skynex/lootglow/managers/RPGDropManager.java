@@ -73,17 +73,17 @@ public class RPGDropManager {
             ent.setShadowRadius(plugin.getShadowScale() * 0.8f);
             ent.setShadowStrength(1.0f);
             ent.setPersistent(false);
-            ent.setVisibleByDefault(false);
         });
 
         activeShadows.put(item.getUniqueId(), shadow);
 
         for (Player p : Bukkit.getOnlinePlayers()) {
-            if (!plugin.getHiddenVisuals().contains(p.getUniqueId()) && p.getWorld().equals(item.getWorld())) {
-                if (p.getLocation().distanceSquared(item.getLocation()) < plugin.getLodHoloDistSq()) {
-                    p.showEntity(plugin, shadow);
-                    plugin.getVisibleEntities().computeIfAbsent(p.getUniqueId(), k -> java.util.concurrent.ConcurrentHashMap.newKeySet()).add(shadow.getUniqueId());
-                }
+            if (!p.getWorld().equals(item.getWorld())) continue;
+            if (plugin.getHiddenVisuals().contains(p.getUniqueId())
+                    || p.getLocation().distanceSquared(item.getLocation()) >= plugin.getLodHoloDistSq()) {
+                p.hideEntity(plugin, shadow);
+            } else {
+                plugin.getVisibleEntities().computeIfAbsent(p.getUniqueId(), k -> java.util.concurrent.ConcurrentHashMap.newKeySet()).add(shadow.getUniqueId());
             }
         }
     }

@@ -51,14 +51,14 @@ public class ItemListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onItemSpawn(ItemSpawnEvent event) {
         if (plugin.isOnlyPlayerDrops()) return;
-        plugin.applyGlow(event.getEntity());
+        Item item = event.getEntity();
+        if (plugin.getActiveItems().containsKey(item.getUniqueId())) return;
+        plugin.applyGlow(item);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPlayerDrop(PlayerDropItemEvent event) {
-        if (plugin.isOnlyPlayerDrops()) {
-            plugin.applyGlow(event.getItemDrop());
-        }
+        plugin.applyGlow(event.getItemDrop());
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

@@ -119,7 +119,6 @@ public class BeamManager {
             transformation.getTranslation().set(-finalW / 2, 0, -finalW / 2);
             ent.setTransformation(transformation);
 
-            ent.setVisibleByDefault(false);
             ent.setTeleportDuration(1);
             ent.setPersistent(false);
         });
@@ -128,11 +127,12 @@ public class BeamManager {
         activeBeamConfigs.put(item.getUniqueId(), new BeamConfig(finalH, finalW, anim, pulse));
 
         for (Player p : Bukkit.getOnlinePlayers()) {
-            if (!hiddenVisuals.contains(p.getUniqueId()) && p.getWorld().equals(item.getWorld())) {
-                if (p.getLocation().distanceSquared(item.getLocation()) < lodBeamDistSq) {
-                    p.showEntity(plugin, beam);
-                    visibleEntities.computeIfAbsent(p.getUniqueId(), k -> java.util.concurrent.ConcurrentHashMap.newKeySet()).add(beam.getUniqueId());
-                }
+            if (!p.getWorld().equals(item.getWorld())) continue;
+            if (hiddenVisuals.contains(p.getUniqueId())
+                    || p.getLocation().distanceSquared(item.getLocation()) >= lodBeamDistSq) {
+                p.hideEntity(plugin, beam);
+            } else {
+                visibleEntities.computeIfAbsent(p.getUniqueId(), k -> java.util.concurrent.ConcurrentHashMap.newKeySet()).add(beam.getUniqueId());
             }
         }
     }
