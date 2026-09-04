@@ -1,7 +1,7 @@
 package fr.skynex.lootglow.managers;
 
 import fr.skynex.lootglow.LootGlow;
-import fr.skynex.lootglow.managers.TrackedItemManager.TrackedItem;
+import fr.skynex.lootglow.model.TrackedItem;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Color;

@@ -95,7 +95,7 @@ public class HologramService {
         Component result = baseName;
 
         if (plugin.getRarityManager() != null) {
-            fr.skynex.lootglow.managers.TrackedItemManager.TrackedItem ti = plugin.getTrackedItemManager() != null ? plugin.getTrackedItemManager().getTrackedItem(item.getUniqueId()) : null;
+            fr.skynex.lootglow.model.TrackedItem ti = plugin.getTrackedItemManager() != null ? plugin.getTrackedItemManager().getTrackedItem(item.getUniqueId()) : null;
             fr.skynex.lootglow.managers.RarityManager.ItemRarity rarity = ti != null ? ti.rarity : null;
             if (rarity == null) {
                 rarity = plugin.getRarityManager().detectRarity(item.getItemStack());
@@ -177,6 +177,16 @@ public class HologramService {
         return result;
     }
 
+    public void updateHologram(Item item, NamedTextColor color, fr.skynex.lootglow.model.HologramContext ctx) {
+        if (ctx == null) return;
+        updateHologram(item, color, ctx.holoEnabled(), ctx.itemCategoriesCache(), ctx.holoHideUncategorized(),
+                ctx.activeLabels(), ctx.groupLeaders(), ctx.lastHoloState(), ctx.baseNameCache(),
+                ctx.displayNameOverridesCache(), ctx.itemMoneyAmounts(), ctx.economyFormat(), ctx.economyPrefix(),
+                ctx.holoShowAmount(), ctx.rawAmountFormat(), ctx.protectionEnabled(), ctx.protectionDuration(),
+                ctx.itemSpawnTimes(), ctx.rawOwnerFormat(), ctx.usePapi(), ctx.holoShowTimer(),
+                ctx.timerComponentCache(), ctx.holoTimerNewLine());
+    }
+
     public void updateHologram(Item item, NamedTextColor color,
                                boolean holoEnabled,
                                Map<UUID, String> itemCategoriesCache,
@@ -199,7 +209,7 @@ public class HologramService {
                                boolean holoShowTimer,
                                Map<Integer, Component> timerComponentCache,
                                boolean holoTimerNewLine) {
-        if (!holoEnabled || item == null || !item.isValid()) return;
+        if (!holoEnabled || item == null || item.isDead()) return;
 
         UUID uuid = item.getUniqueId();
         String cat = itemCategoriesCache.get(uuid);
@@ -291,6 +301,7 @@ public class HologramService {
             td.setBillboard(Display.Billboard.CENTER);
             td.setSeeThrough(holoSeeThrough);
             td.setViewRange((float) (holoViewDistance / 64.0));
+            td.setTeleportDuration(2);
             td.setPersistent(false);
 
             if (holoBackground) {
@@ -320,6 +331,7 @@ public class HologramService {
                 continue;
             }
             if (p.getLocation().distanceSquared(item.getLocation()) <= lodHoloDistSq) {
+                p.showEntity(plugin, label);
                 visibleEntities.computeIfAbsent(pUuid, k -> java.util.concurrent.ConcurrentHashMap.newKeySet()).add(label.getUniqueId());
             } else {
                 p.hideEntity(plugin, label);
@@ -330,7 +342,7 @@ public class HologramService {
     public void refreshHologram(Item item, boolean holoEnabled, boolean holoHideUncategorized,
                                 Map<UUID, String> itemCategoriesCache, Map<String, NamedTextColor> itemCategories,
                                 NamedTextColor defaultColor, Map<UUID, Long> lastHoloState) {
-        if (!holoEnabled || item == null || !item.isValid())
+        if (!holoEnabled || item == null || item.isDead())
             return;
         UUID uuid = item.getUniqueId();
         String cat = itemCategoriesCache.get(uuid);

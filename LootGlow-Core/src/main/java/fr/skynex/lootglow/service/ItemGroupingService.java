@@ -133,6 +133,15 @@ public class ItemGroupingService {
         groupMembers.putAll(tempMembers);
     }
 
+    public void startGroupingTask(fr.skynex.lootglow.model.ItemGroupingContext ctx) {
+        if (ctx == null) return;
+        startGroupingTask(ctx.isEnabled(), ctx.groupingEnabled(), ctx.trackedItems(), ctx.activeItems(),
+                ctx.itemCategoriesCache(), ctx.groupedItems(), ctx.groupLeaders(), ctx.groupMembers(),
+                ctx.activeItemVisuals(), ctx.useVisualBag(), ctx.bagMaterial(), ctx.bagHeadTexture(),
+                ctx.useOwnerHead(), ctx.bagCustomModelData(), ctx.rpgRotation(), ctx.holoShowTimer(),
+                ctx.rawBundleFormat(), ctx.itemCategories(), ctx.defaultColor(), ctx.miniMessage());
+    }
+
     public void startGroupingTask(boolean isEnabled,
                                   boolean groupingEnabled,
                                   Map<UUID, ?> trackedItems,

@@ -16,10 +16,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-/**
- * Handles spawning, updating, stale-cleanup and initial visibility
- * of ItemDisplay visual replacements for dropped items.
- */
 public class ItemVisualSpawnService {
 
     private final LootGlow plugin;
@@ -28,10 +24,6 @@ public class ItemVisualSpawnService {
         this.plugin = plugin;
     }
 
-    /**
-     * Validate existing display for an item. If valid, updates its ItemStack and returns it.
-     * If stale, removes it from maps and returns null so a new one can be spawned.
-     */
     public ItemDisplay validateExisting(Map<UUID, ItemDisplay> activeItemVisuals,
                                         Map<Integer, UUID> entityIdMap,
                                         Item item) {
@@ -41,26 +33,29 @@ public class ItemVisualSpawnService {
                 existing.setItemStack(item.getItemStack().clone());
                 return existing;
             }
-            // Stale → cleanup
             activeItemVisuals.remove(item.getUniqueId());
             entityIdMap.remove(existing.getEntityId());
         }
         return null;
     }
 
-    /**
-     * Returns true if this item should be filtered out from RPG display by category whitelist.
-     */
     public boolean isFilteredByCategory(Set<String> rpgEnabledCategories, String category, boolean isGroupVisual) {
         return !isGroupVisual
                 && !rpgEnabledCategories.isEmpty()
                 && (category == null || !rpgEnabledCategories.contains(category.toLowerCase()));
     }
 
-    /**
-     * Spawn a visual ItemDisplay for a dropped item, handling both group bag and normal RPG display.
-     * Registers in activeItemVisuals, entityIdMap, scoreboard team, and broadcasts initial visibility.
-     */
+    public void spawnItemVisual(Item item, String category, NamedTextColor color, fr.skynex.lootglow.model.ItemVisualContext ctx) {
+        if (ctx == null) return;
+        spawnItemVisual(item, category, color,
+                ctx.useVisualBag(), ctx.rpgDropsEnabled(), ctx.groupLeaders(),
+                ctx.activeItemVisuals(), ctx.entityIdMap(), ctx.rpgEnabledCategories(),
+                ctx.hiddenVisuals(), ctx.visibleEntities(), ctx.categoryGlow(),
+                ctx.defaultGlow(), ctx.bagMaterial(), ctx.bagHeadTexture(),
+                ctx.useOwnerHead(), ctx.bagCustomModelData(), ctx.rpgItemScale(),
+                ctx.rpgBlockScale(), ctx.rpgRotation());
+    }
+
     public void spawnItemVisual(Item item, String category, NamedTextColor color,
                                 boolean useVisualBag,
                                 boolean rpgDropsEnabled,
@@ -72,7 +67,6 @@ public class ItemVisualSpawnService {
                                 Map<UUID, Set<UUID>> visibleEntities,
                                 Map<String, Boolean> categoryGlow,
                                 boolean defaultGlow,
-                                // Config values passed directly
                                 Material bagMaterial,
                                 String bagHeadTexture,
                                 boolean useOwnerHead,
@@ -84,10 +78,8 @@ public class ItemVisualSpawnService {
         boolean isGroupVisual = useVisualBag && groupLeaders.containsKey(item.getUniqueId());
         if (!rpgDropsEnabled && !isGroupVisual) return;
 
-        // Validate/cleanup existing display
         if (validateExisting(activeItemVisuals, entityIdMap, item) != null) return;
 
-        // Category filter
         if (isFilteredByCategory(rpgEnabledCategories, category, isGroupVisual)) return;
 
         Location spawnLoc = item.getLocation().clone();
@@ -116,50 +108,36 @@ public class ItemVisualSpawnService {
                 }
                 ent.setItemStack(bag);
                 ent.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
-                org.bukkit.util.Transformation bagTransform = new org.bukkit.util.Transformation(
+                ent.setTransformation(new org.bukkit.util.Transformation(
                         new org.joml.Vector3f(0f, 0.05f, 0f),
                         new org.joml.Quaternionf(),
                         new org.joml.Vector3f(1.0f, 1.0f, 1.0f),
-                        new org.joml.Quaternionf());
-                ent.setTransformation(bagTransform);
+                        new org.joml.Quaternionf()));
             } else {
                 ent.setItemStack(visualStack);
-
                 Material mat = visualStack.getType();
                 boolean isCustom = plugin.isCustomItem(visualStack);
                 boolean isUpright = plugin.isUprightItem(mat);
-                ItemDisplay.ItemDisplayTransform transform = ItemDisplay.ItemDisplayTransform.FIXED;
-
                 float baseScale = isUpright ? rpgBlockScale : rpgItemScale;
-                if (plugin.isFishItem(mat)) {
-                    baseScale *= 0.55f;
-                }
-
+                if (plugin.isFishItem(mat)) baseScale *= 0.55f;
                 float rotX = (isCustom || isUpright) ? 0f : rpgRotation;
-                float transY = isCustom ? 0.1f : 0.08f;
-                if (mat == Material.TRIDENT) {
-                    transY += 0.35f;
-                } else if (mat == Material.SHIELD) {
-                    transY += 0.42f;
-                }
-
-                org.bukkit.util.Transformation transformation = new org.bukkit.util.Transformation(
+                float transY = isCustom ? 0.18f : 0.15f;
+                if (mat == Material.TRIDENT) transY += 0.35f;
+                else if (mat == Material.SHIELD) transY += 0.42f;
+                ent.setTransformation(new org.bukkit.util.Transformation(
                         new org.joml.Vector3f(0, transY, 0),
                         new org.joml.Quaternionf().rotationX(rotX),
                         new org.joml.Vector3f(baseScale, baseScale, baseScale),
-                        new org.joml.Quaternionf());
-
-                ent.setTransformation(transformation);
-                ent.setItemDisplayTransform(transform);
+                        new org.joml.Quaternionf()));
+                ent.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
             }
-            ent.setTeleportDuration(1);
+            ent.setTeleportDuration(2);
             ent.setPersistent(false);
         });
 
         boolean shouldGlow = categoryGlow.getOrDefault(category, defaultGlow);
-        if (shouldGlow) {
-            display.setGlowing(true);
-        }
+        if (shouldGlow) display.setGlowing(true);
+
         entityIdMap.put(display.getEntityId(), display.getUniqueId());
         try {
             Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
@@ -169,17 +147,25 @@ public class ItemVisualSpawnService {
         activeItemVisuals.put(item.getUniqueId(), display);
 
         if (plugin.getConfig().getBoolean("settings.debug", false)) {
-            plugin.getLogger().info("[LootGlow Debug] Spawned ItemDisplay for item " + item.getItemStack().getType() + " (UUID: " + item.getUniqueId() + ", Display UUID: " + display.getUniqueId() + ", Category: " + category + ")");
+            plugin.getLogger().info("[LootGlow Debug] Spawned ItemDisplay for item "
+                    + item.getItemStack().getType() + " (UUID: " + item.getUniqueId()
+                    + ", Display UUID: " + display.getUniqueId() + ", Category: " + category + ")");
         }
 
-        // Visibility broadcast: display is visible by default.
-        // Only explicitly hide it from players who toggled off visuals (want vanilla mode).
+        boolean debugMode = plugin.getConfig().getBoolean("settings.debug", false);
+        // Synchronous visibility: display is visible by default (setVisibleByDefault=true).
+        // Paper auto-sends SPAWN_ENTITY. We hide vanilla item and handle toggle players.
         for (Player p : Bukkit.getOnlinePlayers()) {
             if (!p.getWorld().equals(item.getWorld())) continue;
+            p.hideEntity(plugin, item);
             if (hiddenVisuals.contains(p.getUniqueId())) {
                 p.hideEntity(plugin, display);
+                if (debugMode) plugin.getLogger().info("[LootGlow Debug] applyVisibility HIDE display for " + p.getName() + " (toggle=true)");
             } else {
-                visibleEntities.computeIfAbsent(p.getUniqueId(), k -> java.util.concurrent.ConcurrentHashMap.newKeySet()).add(display.getUniqueId());
+                p.showEntity(plugin, display);
+                visibleEntities.computeIfAbsent(p.getUniqueId(),
+                        k -> java.util.concurrent.ConcurrentHashMap.newKeySet()).add(display.getUniqueId());
+                if (debugMode) plugin.getLogger().info("[LootGlow Debug] applyVisibility SHOW display " + display.getUniqueId() + " for " + p.getName() + " canSee=" + p.canSee(display));
             }
         }
     }

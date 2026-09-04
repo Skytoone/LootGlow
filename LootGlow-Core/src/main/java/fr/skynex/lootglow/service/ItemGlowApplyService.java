@@ -36,42 +36,42 @@ public class ItemGlowApplyService {
         this.plugin = plugin;
     }
 
-    public void applyGlow(Item item, boolean playAnimation,
-                          boolean isEnabled,
-                          boolean economyEnabled,
-                          List<NamespacedKey> economyKeys,
-                          NamedTextColor economyColor,
-                          Sound economySound,
-                          Map<UUID, Double> itemMoneyAmounts,
-                          Map<String, NamedTextColor> itemCategories,
-                          Map<String, String> categoryNames,
-                          NamedTextColor defaultColor,
-                          Map<String, Particle> categoryParticles,
-                          Map<UUID, Particle> itemParticlesCache,
-                          Map<UUID, String> itemCategoriesCache,
-                          int despawnTime,
-                          Map<Integer, UUID> entityIdMap,
-                          Map<UUID, Item> activeItems,
-                          Map<String, Set<UUID>> itemsByWorld,
-                          boolean rpgDropsEnabled,
-                          List<String> rpgEnabledCategories,
-                          Map<String, Boolean> categoryGlow,
-                          boolean defaultGlow,
-                          Set<Integer> hiddenVanillaItems,
-                          Map<String, Sound> categorySounds,
-                          boolean holoEnabled,
-                          boolean holoHideUncategorized,
-                          Map<UUID, Long> itemSpawnTimes,
-                          Map<UUID, Component> baseNameCache,
-                          boolean protectionEnabled,
-                          int protectionDuration,
-                          boolean shadowsEnabled,
-                          boolean beamsEnabled,
-                          List<String> beamCategories) {
-
-        if (!isEnabled || item == null) return;
+    public void applyGlow(Item item, boolean playAnimation, fr.skynex.lootglow.model.ItemGlowContext ctx) {
+        if (ctx == null || !ctx.isEnabled() || item == null) return;
         if (!plugin.isWorldAllowed(item.getWorld().getName())) return;
         if (plugin.isInBlockedRegion(item.getLocation())) return;
+
+        boolean isEnabled = ctx.isEnabled();
+        boolean economyEnabled = ctx.economyEnabled();
+        List<NamespacedKey> economyKeys = ctx.economyKeys();
+        NamedTextColor economyColor = ctx.economyColor();
+        Sound economySound = ctx.economySound();
+        Map<UUID, Double> itemMoneyAmounts = ctx.itemMoneyAmounts();
+        Map<String, NamedTextColor> itemCategories = ctx.itemCategories();
+        Map<String, String> categoryNames = ctx.categoryNames();
+        NamedTextColor defaultColor = ctx.defaultColor();
+        Map<String, Particle> categoryParticles = ctx.categoryParticles();
+        Map<UUID, Particle> itemParticlesCache = ctx.itemParticlesCache();
+        Map<UUID, String> itemCategoriesCache = ctx.itemCategoriesCache();
+        int despawnTime = ctx.despawnTime();
+        Map<Integer, UUID> entityIdMap = ctx.entityIdMap();
+        Map<UUID, Item> activeItems = ctx.activeItems();
+        Map<String, Set<UUID>> itemsByWorld = ctx.itemsByWorld();
+        boolean rpgDropsEnabled = ctx.rpgDropsEnabled();
+        List<String> rpgEnabledCategories = ctx.rpgEnabledCategories();
+        Map<String, Boolean> categoryGlow = ctx.categoryGlow();
+        boolean defaultGlow = ctx.defaultGlow();
+        Set<Integer> hiddenVanillaItems = ctx.hiddenVanillaItems();
+        Map<String, Sound> categorySounds = ctx.categorySounds();
+        boolean holoEnabled = ctx.holoEnabled();
+        boolean holoHideUncategorized = ctx.holoHideUncategorized();
+        Map<UUID, Long> itemSpawnTimes = ctx.itemSpawnTimes();
+        Map<UUID, Component> baseNameCache = ctx.baseNameCache();
+        boolean protectionEnabled = ctx.protectionEnabled();
+        int protectionDuration = ctx.protectionDuration();
+        boolean shadowsEnabled = ctx.shadowsEnabled();
+        boolean beamsEnabled = ctx.beamsEnabled();
+        List<String> beamCategories = ctx.beamCategories();
 
         // Apply configurable pickup delay for mob/MythicMobs drops so items land properly before being picked up
         if (item.getThrower() == null) {
@@ -355,14 +355,14 @@ public class ItemGlowApplyService {
 
                 if (protectionEnabled) {
                     FoliaScheduler.runLater(plugin, () -> {
-                        if (item.isValid()) plugin.updateHologram(item, finalColor);
+                        if (!item.isDead()) plugin.updateHologram(item, finalColor);
                     }, protectionDuration * 20L);
                 }
             }
         }
 
         if (isRpgDrop) {
-            if (item.isValid() && activeItems.containsKey(item.getUniqueId())) {
+            if (!item.isDead() && activeItems.containsKey(item.getUniqueId())) {
                 plugin.spawnItemVisual(item, finalCategory, finalColor);
                 if (shadowsEnabled) {
                     plugin.spawnShadow(item);

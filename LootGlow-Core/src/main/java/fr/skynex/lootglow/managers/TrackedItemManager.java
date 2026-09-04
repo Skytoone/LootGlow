@@ -8,6 +8,8 @@ import org.bukkit.entity.TextDisplay;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+import fr.skynex.lootglow.model.TrackedItem;
+
 /**
  * Manages item tracking maps, spatial indexing per world, and display entity
  * attachments.
@@ -16,21 +18,31 @@ public class TrackedItemManager {
 
     private final LootGlow plugin;
 
-    public static class TrackedItem extends fr.skynex.lootglow.model.TrackedItem {
-    }
-
-    private final Map<UUID, TrackedItem> trackedItems = new ConcurrentHashMap<>();
-    private final Map<UUID, Item> activeItems = new ConcurrentHashMap<>();
+    private final Map<UUID, TrackedItem> trackedItems;
+    private final Map<UUID, Item> activeItems;
     private final Map<String, Set<UUID>> itemsByWorld = new ConcurrentHashMap<>();
     private final Map<String, Map<Long, Set<UUID>>> itemsByChunk = new ConcurrentHashMap<>();
     private final Map<UUID, Set<UUID>> displayViewers = new ConcurrentHashMap<>();
-    private final Map<Integer, UUID> entityIdMap = new ConcurrentHashMap<>();
-    private final Set<UUID> globallyVisibleEntities = ConcurrentHashMap.newKeySet();
-    private final Map<UUID, String> itemCategoriesCache = new ConcurrentHashMap<>();
+    private final Map<Integer, UUID> entityIdMap;
+    private final Set<UUID> globallyVisibleEntities;
+    private final Map<UUID, String> itemCategoriesCache;
     private final Map<UUID, UUID> displayToItemMap = new ConcurrentHashMap<>();
 
     public TrackedItemManager(LootGlow plugin) {
+        this(plugin, plugin.getTrackedItems(), plugin.getActiveItems(), plugin.getEntityIdMap(), plugin.getGloballyVisibleEntities());
+    }
+
+    public TrackedItemManager(LootGlow plugin,
+                               Map<UUID, TrackedItem> trackedItems,
+                               Map<UUID, Item> activeItems,
+                               Map<Integer, UUID> entityIdMap,
+                               Set<UUID> globallyVisibleEntities) {
         this.plugin = plugin;
+        this.trackedItems = trackedItems != null ? trackedItems : new ConcurrentHashMap<>();
+        this.activeItems = activeItems != null ? activeItems : new ConcurrentHashMap<>();
+        this.entityIdMap = entityIdMap != null ? entityIdMap : new ConcurrentHashMap<>();
+        this.globallyVisibleEntities = globallyVisibleEntities != null ? globallyVisibleEntities : ConcurrentHashMap.newKeySet();
+        this.itemCategoriesCache = plugin.getItemCategoriesCache();
     }
 
     public static long getChunkKey(int chunkX, int chunkZ) {
@@ -171,6 +183,9 @@ public class TrackedItemManager {
         int cZ = item.getLocation().getBlockZ() >> 4;
         itemsByChunk.computeIfAbsent(worldName, k -> new ConcurrentHashMap<>())
                 .computeIfAbsent(getChunkKey(cX, cZ), k -> ConcurrentHashMap.newKeySet()).add(uuid);
+        if (plugin.getSpatialIndexService() != null) {
+            plugin.getSpatialIndexService().register(item.getLocation(), uuid);
+        }
     }
 
     public void untrackItem(UUID uuid) {
@@ -245,6 +260,9 @@ public class TrackedItemManager {
                     chunkSet.remove(uuid);
                 }
             }
+        }
+        if (plugin.getSpatialIndexService() != null) {
+            plugin.getSpatialIndexService().unregister(uuid);
         }
     }
 

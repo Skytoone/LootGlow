@@ -175,6 +175,9 @@ public class PluginLifecycleManager {
             plugin.getHologramRenderer().getCustomHolograms().clear();
         }
 
+        if (plugin.getSpatialIndexService() != null) {
+            plugin.getSpatialIndexService().clearAll();
+        }
         plugin.getRecentlyBounced().clear();
         plugin.getBounceCounts().clear();
     }

@@ -59,7 +59,7 @@ public class SurfaceAlignmentManager {
     }
 
     public void updateSurfaceAlignment(Item item, Set<UUID> recentlyBounced) {
-        if (item == null || !item.isValid()) return;
+        if (item == null || item.isDead()) return;
         UUID uuid = item.getUniqueId();
         if (!item.isOnGround() || item.isInWater() || (recentlyBounced != null && recentlyBounced.contains(uuid))) {
             surfaceStates.remove(uuid);

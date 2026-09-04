@@ -31,7 +31,7 @@ public class EntityVisibilityService {
                                            Map<UUID, ItemDisplay> activeItemVisuals,
                                            Set<UUID> hiddenVisuals,
                                            Set<UUID> groupedItems) {
-        if (item == null || !item.isValid()) return;
+        if (item == null || item.isDead()) return;
         ItemDisplay display = activeItemVisuals.get(item.getUniqueId());
 
         for (Player p : Bukkit.getOnlinePlayers()) {
@@ -49,24 +49,18 @@ public class EntityVisibilityService {
             plugin.getLogger().info("[LootGlow Debug] applyVisibility for player=" + p.getName() + ", item=" + item.getType() + ", displayNull=" + (display == null) + ", wantsVanilla=" + wantsVanilla + ", isGrouped=" + isGrouped);
         }
         if (wantsVanilla) {
-            if (!p.canSee(item)) {
-                p.showEntity(plugin, item);
-            }
-            if (display != null && display.isValid() && p.canSee(display)) {
+            p.showEntity(plugin, item);
+            if (display != null && display.isValid()) {
                 p.hideEntity(plugin, display);
             }
         } else {
-            if (p.canSee(item)) {
-                p.hideEntity(plugin, item);
-            }
+            p.hideEntity(plugin, item);
             if (isGrouped) {
-                if (display != null && display.isValid() && p.canSee(display)) {
+                if (display != null && display.isValid()) {
                     p.hideEntity(plugin, display);
                 }
             } else if (display != null && display.isValid()) {
-                if (!p.canSee(display)) {
-                    p.showEntity(plugin, display);
-                }
+                p.showEntity(plugin, display);
             }
         }
     }

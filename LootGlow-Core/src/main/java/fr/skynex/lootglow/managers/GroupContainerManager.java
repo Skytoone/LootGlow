@@ -68,7 +68,7 @@ public class GroupContainerManager {
             groupMembers.put(newLeader, members);
         }
 
-        TrackedItemManager.TrackedItem tiOld = plugin.getTrackedItemManager().getTrackedItems().remove(oldLeader);
+        fr.skynex.lootglow.model.TrackedItem tiOld = plugin.getTrackedItemManager().getTrackedItems().remove(oldLeader);
         if (tiOld != null) {
             plugin.getTrackedItemManager().getTrackedItems().put(newLeader, tiOld);
         }

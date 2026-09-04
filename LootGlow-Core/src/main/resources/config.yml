@@ -172,7 +172,7 @@ settings:
     # Rotation angle (90.0 for perfectly flat)
     rotation-angle: 90.0
     # Custom scales for item visuals
-    item-scale: 0.6
+    item-scale: 0.7
     block-scale: 0.8
     # Materials/blocks that will be forced to lie FLAT on the ground (even if they are blocks)
     # Default includes CAKE, CHAIN, CANDLE, END_CRYSTAL so they lie flat like food items
@@ -193,7 +193,7 @@ settings:
     # Gentle sine-wave vertical floating effect for ground items
     bobbing:
       enabled: true
-      amplitude: 0.05
+      amplitude: 0.04
       speed: 0.08
     
   # Loot Protection Display (Show owner name for a few seconds)

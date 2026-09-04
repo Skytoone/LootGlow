@@ -242,7 +242,7 @@ public class ParticleAnimationManager {
                         double dz = pz - itemObj.getZ();
                         double distSq = dx * dx + dy * dy + dz * dz;
                         if (distSq < closestDistSq) {
-                            fr.skynex.lootglow.managers.TrackedItemManager.TrackedItem ti = plugin.getTrackedItemManager().getTrackedItem(u);
+                            fr.skynex.lootglow.model.TrackedItem ti = plugin.getTrackedItemManager().getTrackedItem(u);
                             fr.skynex.lootglow.managers.RarityManager.ItemRarity rarity = ti != null ? ti.rarity : null;
                             if (rarity == null) {
                                 rarity = plugin.getRarityManager().detectRarity(itemObj.getItemStack());

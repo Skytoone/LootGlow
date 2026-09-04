@@ -15,12 +15,25 @@ public class ItemNameFormatter {
     public Component getItemName(ItemStack itemStack) {
         if (itemStack == null) return Component.empty();
         ItemMeta meta = itemStack.getItemMeta();
-        if (meta != null && meta.hasDisplayName()) {
-            return meta.displayName();
+        if (meta != null) {
+            if (meta.hasDisplayName()) {
+                return meta.displayName();
+            }
+            if (meta.hasItemName()) {
+                return meta.itemName();
+            }
         }
-        String typeName = itemStack.getType().name().toLowerCase().replace('_', ' ');
-        String capitalized = typeName.substring(0, 1).toUpperCase() + typeName.substring(1);
-        return Component.text(capitalized);
+        try {
+            return Component.translatable(itemStack.translationKey());
+        } catch (Throwable ignored) {
+            try {
+                return Component.translatable(itemStack.getType().translationKey());
+            } catch (Throwable ignored2) {
+                String typeName = itemStack.getType().name().toLowerCase().replace('_', ' ');
+                String capitalized = typeName.substring(0, 1).toUpperCase() + typeName.substring(1);
+                return Component.text(capitalized);
+            }
+        }
     }
 
     public Component parseMiniMessage(String text) {

@@ -2,6 +2,7 @@ package fr.skynex.lootglow.listeners;
 
 import fr.skynex.lootglow.LootGlow;
 import fr.skynex.lootglow.util.FoliaScheduler;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -53,18 +54,18 @@ public class ItemListener implements Listener {
         if (plugin.isOnlyPlayerDrops()) return;
         Item item = event.getEntity();
         if (plugin.getActiveItems().containsKey(item.getUniqueId())) return;
-        plugin.applyGlow(item);
+        plugin.getLootRenderPipeline().render(item);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPlayerDrop(PlayerDropItemEvent event) {
-        plugin.applyGlow(event.getItemDrop());
+        plugin.getLootRenderPipeline().render(event.getItemDrop());
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onMerge(ItemMergeEvent event) {
         // Supprimer l'hologramme de l'item qui disparaît
-        plugin.removeGlow(event.getEntity());
+        plugin.getLootRenderPipeline().unrender(event.getEntity());
         
         // Si la cible a déjà son glow actif, on force une mise à jour instantanée du hologramme (montrant le nouveau montant)
         if (plugin.getActiveItems().containsKey(event.getTarget().getUniqueId())) {
@@ -78,7 +79,7 @@ public class ItemListener implements Listener {
         } else if (!plugin.isOnlyPlayerDrops()) {
             FoliaScheduler.runSync(plugin, () -> {
                 if (event.getTarget().isValid()) {
-                    plugin.applyGlow(event.getTarget(), false);
+                    plugin.getLootRenderPipeline().render(event.getTarget(), false);
                 }
             });
         }
@@ -126,51 +127,20 @@ public class ItemListener implements Listener {
                 }
             }
 
-            // Custom API event firing
-            String category = plugin.getTrackedItemManager().getItemCategoriesCache().get(event.getItem().getUniqueId());
-            fr.skynex.lootglow.api.events.LootGlowItemPickupEvent apiEvent =
-                    new fr.skynex.lootglow.api.events.LootGlowItemPickupEvent(player, event.getItem(), event.getItem().getItemStack(), category);
-            Bukkit.getPluginManager().callEvent(apiEvent);
-            if (apiEvent.isCancelled()) {
-                event.setCancelled(true);
-                return;
-            }
-
-            // Record loot statistics in SQLite DB
-            if (plugin.getDatabaseManager() != null) {
-                plugin.getDatabaseManager().incrementLootStat(player.getUniqueId(), category != null ? category : "DEFAULT", event.getItem().getItemStack().getAmount());
-            }
-
-            // Pickup Actionbar Notification & Sound
-            if (plugin.getConfig().getBoolean("settings.wow-effects.enabled", true) &&
-                plugin.getConfig().getBoolean("settings.wow-effects.pickup-actionbar.enabled", true)) {
-
-                String itemCat = category != null ? category : plugin.getTrackedItemManager().getItemCategoriesCache().get(event.getItem().getUniqueId());
-                if (itemCat != null) {
-                    java.util.List<String> enabledCategories = plugin.getConfig().getStringList("settings.wow-effects.pickup-actionbar.categories");
-                    if (enabledCategories.isEmpty() || enabledCategories.stream().anyMatch(c -> c.equalsIgnoreCase(itemCat))) {
-                        String format = plugin.getConfig().getString("settings.wow-effects.pickup-actionbar.format", "<gradient:#FF0055:#FF8800><b>✦ BUTIN <category> ✦</b></gradient> <gray>—</gray> <white><item></white>");
-                        String itemName = event.getItem().getItemStack().hasItemMeta() && event.getItem().getItemStack().getItemMeta().hasDisplayName() ?
-                                net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(event.getItem().getItemStack().getItemMeta().displayName()) :
-                                event.getItem().getItemStack().getType().name();
-
-                        String formatted = format.replace("<category>", itemCat.toUpperCase()).replace("<item>", itemName);
-                        net.kyori.adventure.text.Component actionbarComp = fr.skynex.lootglow.util.ColorUtil.parse(formatted);
-                        player.sendActionBar(actionbarComp);
-
-                        String soundStr = plugin.getConfig().getString("settings.wow-effects.pickup-actionbar.sound", "UI_TOAST_CHALLENGE_COMPLETE");
-                        org.bukkit.Sound sound = plugin.parseSound(soundStr);
-                        if (sound != null) {
-                            player.playSound(player.getLocation(), sound, 0.8f, 1.2f);
-                        }
-                    }
+            // Domain event dispatching (API event, DB stats, WoW Actionbar & Sounds)
+            String category = plugin.getTrackedItemManager() != null ? plugin.getTrackedItemManager().getItemCategoriesCache().get(event.getItem().getUniqueId()) : null;
+            if (plugin.getLootEventDispatcher() != null) {
+                boolean allowed = plugin.getLootEventDispatcher().handleItemPickup(player, event.getItem(), event.getItem().getItemStack(), category);
+                if (!allowed) {
+                    event.setCancelled(true);
+                    return;
                 }
             }
 
             // Player pickup: play aspiration animation and remove glow ONLY if entire stack was picked up
             if (event.getRemaining() == 0) {
                 plugin.playAspirationAnimation(event.getItem(), player);
-                plugin.removeGlow(event.getItem());
+                plugin.getLootRenderPipeline().unrender(event.getItem());
             } else {
                 // Partial stack pickup: item remains on ground, refresh hologram count
                 plugin.refreshHologram(event.getItem());
@@ -178,7 +148,7 @@ public class ItemListener implements Listener {
         } else {
             // Non-player entity pickup (e.g. Piglins, Allays, etc.)
             if (event.getRemaining() == 0) {
-                plugin.removeGlow(event.getItem());
+                plugin.getLootRenderPipeline().unrender(event.getItem());
             } else {
                 plugin.refreshHologram(event.getItem());
             }
@@ -194,21 +164,21 @@ public class ItemListener implements Listener {
             event.setCancelled(true);
             return;
         }
-        plugin.removeGlow(event.getEntity());
+        plugin.getLootRenderPipeline().unrender(event.getEntity());
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onInventoryPickup(org.bukkit.event.inventory.InventoryPickupItemEvent event) {
-        plugin.removeGlow(event.getItem());
+        plugin.getLootRenderPipeline().unrender(event.getItem());
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPortal(EntityPortalEvent event) {
         if (event.getEntity() instanceof Item item) {
-            plugin.removeGlow(item);
+            plugin.getLootRenderPipeline().unrender(item);
             FoliaScheduler.runLater(plugin, () -> {
                 if (item.isValid()) {
-                    plugin.applyGlow(item);
+                    plugin.getLootRenderPipeline().render(item);
                 }
             }, 1L);
         }
@@ -218,10 +188,10 @@ public class ItemListener implements Listener {
     public void onTeleport(EntityTeleportEvent event) {
         if (event.getEntity() instanceof Item item) {
             if (event.getTo() != null && !event.getFrom().getWorld().equals(event.getTo().getWorld())) {
-                plugin.removeGlow(item);
+                plugin.getLootRenderPipeline().unrender(item);
                 FoliaScheduler.runLater(plugin, () -> {
                     if (item.isValid()) {
-                        plugin.applyGlow(item);
+                        plugin.getLootRenderPipeline().render(item);
                     }
                 }, 1L);
             }
@@ -411,7 +381,7 @@ public class ItemListener implements Listener {
             for (Entity entity : event.getChunk().getEntities()) {
                 if (!(entity instanceof Item item) || !item.isValid()) continue;
 
-                plugin.applyGlow(item, false);
+                plugin.getLootRenderPipeline().render(item, false);
 
                 // Force re-broadcast aux joueurs déjà connectés à proximité :
                 // si l'item est un RPG drop hidden, on s'assure que les clients qui
@@ -447,7 +417,7 @@ public class ItemListener implements Listener {
     public void onChunkUnload(ChunkUnloadEvent event) {
         for (Entity entity : event.getChunk().getEntities()) {
             if (entity instanceof Item item) {
-                plugin.removeGlow(item);
+                plugin.getLootRenderPipeline().unrender(item);
             }
         }
     }
@@ -457,8 +427,8 @@ public class ItemListener implements Listener {
         String worldName = event.getWorld().getName();
         java.util.List<UUID> toRemove = new java.util.ArrayList<>();
         if (plugin.getTrackedItemManager() != null) {
-            for (java.util.Map.Entry<UUID, fr.skynex.lootglow.managers.TrackedItemManager.TrackedItem> entry : plugin.getTrackedItemManager().getTrackedItems().entrySet()) {
-                fr.skynex.lootglow.managers.TrackedItemManager.TrackedItem ti = entry.getValue();
+            for (java.util.Map.Entry<UUID, fr.skynex.lootglow.model.TrackedItem> entry : plugin.getTrackedItemManager().getTrackedItems().entrySet()) {
+                fr.skynex.lootglow.model.TrackedItem ti = entry.getValue();
                 Entity testEnt = ti.label != null ? ti.label : (ti.beam != null ? ti.beam : (ti.visual != null ? ti.visual : ti.shadow));
                 if (testEnt != null && testEnt.getWorld().getName().equals(worldName)) {
                     toRemove.add(entry.getKey());
@@ -474,7 +444,7 @@ public class ItemListener implements Listener {
             }
         }
         for (UUID uuid : toRemove) {
-            plugin.removeGlow(uuid);
+            plugin.getLootRenderPipeline().unrender(uuid);
         }
     }
 
@@ -498,6 +468,6 @@ public class ItemListener implements Listener {
 
     @EventHandler
     public void onItemMerge(ItemMergeEvent event) {
-        plugin.removeGlow(event.getEntity().getUniqueId());
+        plugin.getLootRenderPipeline().unrender(event.getEntity().getUniqueId());
     }
 }

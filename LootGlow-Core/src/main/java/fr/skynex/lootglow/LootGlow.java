@@ -74,7 +74,15 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
     private fr.skynex.lootglow.managers.PluginLifecycleManager pluginLifecycleManager;
     private fr.skynex.lootglow.managers.RarityManager rarityManager;
     private fr.skynex.lootglow.managers.GroundAuraManager groundAuraManager;
+    private fr.skynex.lootglow.pipeline.LootRenderPipeline lootRenderPipeline;
+    private fr.skynex.lootglow.registry.ServiceRegistry serviceRegistry;
+    private fr.skynex.lootglow.spatial.LootSpatialIndexService spatialIndexService;
+    private fr.skynex.lootglow.event.LootEventDispatcher lootEventDispatcher;
 
+    public fr.skynex.lootglow.registry.ServiceRegistry getServiceRegistry() { return serviceRegistry; }
+    public fr.skynex.lootglow.spatial.LootSpatialIndexService getSpatialIndexService() { return spatialIndexService; }
+    public fr.skynex.lootglow.event.LootEventDispatcher getLootEventDispatcher() { return lootEventDispatcher; }
+    public fr.skynex.lootglow.pipeline.LootRenderPipeline getLootRenderPipeline() { return lootRenderPipeline; }
     public fr.skynex.lootglow.managers.RarityManager getRarityManager() { return rarityManager; }
     public fr.skynex.lootglow.managers.PluginLifecycleManager getPluginLifecycleManager() { return pluginLifecycleManager; }
 
@@ -141,6 +149,7 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
     public Map<String, org.bukkit.Particle.DustOptions> getCategoryDustOptions() { return categoryDustOptions; }
     public Set<UUID> getGloballyVisibleEntities() { return globallyVisibleEntities; }
     public Map<UUID, Integer> getBounceCounts() { return rpgDropManager != null ? rpgDropManager.getBounceCounts() : Collections.emptyMap(); }
+    public Map<UUID, String> getItemCategoriesCache() { return itemCategoriesCache; }
 
 
 
@@ -398,12 +407,15 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
 
     public void applyGlow(Item item, boolean playAnimation) {
         if (itemGlowApplyService != null && configManager != null) {
-            itemGlowApplyService.applyGlow(item, playAnimation, isPluginEnabled(), configManager.isEconomyEnabled(), configManager.getEconomyKeys(), configManager.getEconomyColor(), configManager.getEconomySound(),
+            fr.skynex.lootglow.model.ItemGlowContext ctx = new fr.skynex.lootglow.model.ItemGlowContext(
+                    isPluginEnabled(), configManager.isEconomyEnabled(), configManager.getEconomyKeys(), configManager.getEconomyColor(), configManager.getEconomySound(),
                     itemMoneyAmounts, itemCategories, categoryNames, configManager.getDefaultColor(), categoryParticles,
                     itemParticlesCache, itemCategoriesCache, configManager.getDespawnTime(), entityIdMap, getActiveItems(), getItemsByWorld(),
                     configManager.isRpgDropsEnabled(), configManager.getRpgEnabledCategories(), configManager.getCategoryGlow(), configManager.isDefaultGlow(), hiddenVanillaItems,
                     categorySounds, configManager.isHoloEnabled(), configManager.isHoloHideUncategorized(), itemSpawnTimes, baseNameCache,
-                    configManager.isProtectionEnabled(), configManager.getProtectionDuration(), configManager.isShadowsEnabled(), configManager.isBeamsEnabled(), configManager.getBeamCategories());
+                    configManager.isProtectionEnabled(), configManager.getProtectionDuration(), configManager.isShadowsEnabled(), configManager.isBeamsEnabled(), configManager.getBeamCategories()
+            );
+            itemGlowApplyService.applyGlow(item, playAnimation, ctx);
         }
     }
 
@@ -418,12 +430,16 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
     }
 
     public void updateHologram(Item item, NamedTextColor color) {
-        if (hologramService != null) {
-            hologramService.updateHologram(item, color, configManager.isHoloEnabled(), itemCategoriesCache, configManager.isHoloHideUncategorized(),
+        if (hologramService != null && configManager != null) {
+            fr.skynex.lootglow.model.HologramContext ctx = new fr.skynex.lootglow.model.HologramContext(
+                    configManager.isHoloEnabled(), itemCategoriesCache, configManager.isHoloHideUncategorized(),
                     activeLabels, groupLeaders, lastHoloState, baseNameCache, displayNameOverridesCache,
-                    itemMoneyAmounts, configManager.getEconomyFormat(), configManager.getEconomyPrefix(), configManager.isHoloShowAmount(), rawAmountFormat,
-                    configManager.isProtectionEnabled(), configManager.getProtectionDuration(), itemSpawnTimes, rawOwnerFormat, usePapi,
-                    configManager.isHoloShowTimer(), timerComponentCache, configManager.isHoloTimerNewLine());
+                    itemMoneyAmounts, configManager.getEconomyFormat(), configManager.getEconomyPrefix(),
+                    configManager.isHoloShowAmount(), rawAmountFormat, configManager.isProtectionEnabled(),
+                    configManager.getProtectionDuration(), itemSpawnTimes, rawOwnerFormat, usePapi,
+                    configManager.isHoloShowTimer(), timerComponentCache, configManager.isHoloTimerNewLine()
+            );
+            hologramService.updateHologram(item, color, ctx);
         }
     }
 
@@ -506,8 +522,15 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
 
 
     private void startGroupingTask() {
-        if (itemGroupingService != null) {
-            itemGroupingService.startGroupingTask(isPluginEnabled(), configManager.isGroupingEnabled(), trackedItems, activeItems, itemCategoriesCache, groupedItems, groupLeaders, groupMembers, activeItemVisuals, configManager.isUseVisualBag(), configManager.getBagMaterial(), configManager.getBagHeadTexture(), configManager.isUseOwnerHead(), configManager.getBagCustomModelData(), configManager.getRpgRotation(), configManager.isHoloShowTimer(), rawBundleFormat, itemCategories, configManager.getDefaultColor(), miniMessage);
+        if (itemGroupingService != null && configManager != null) {
+            fr.skynex.lootglow.model.ItemGroupingContext ctx = new fr.skynex.lootglow.model.ItemGroupingContext(
+                    isPluginEnabled(), configManager.isGroupingEnabled(), trackedItems, activeItems,
+                    itemCategoriesCache, groupedItems, groupLeaders, groupMembers, activeItemVisuals,
+                    configManager.isUseVisualBag(), configManager.getBagMaterial(), configManager.getBagHeadTexture(),
+                    configManager.isUseOwnerHead(), configManager.getBagCustomModelData(), configManager.getRpgRotation(),
+                    configManager.isHoloShowTimer(), rawBundleFormat, itemCategories, configManager.getDefaultColor(), miniMessage
+            );
+            itemGroupingService.startGroupingTask(ctx);
         }
     }
 
@@ -781,18 +804,22 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
 
     public void spawnItemVisual(Item item, String category, NamedTextColor color) {
         if (itemVisualSpawnService != null && configManager != null) {
-            itemVisualSpawnService.spawnItemVisual(item, category, color,
+            fr.skynex.lootglow.model.ItemVisualContext ctx = new fr.skynex.lootglow.model.ItemVisualContext(
                     configManager.isUseVisualBag(), configManager.isRpgDropsEnabled(), groupLeaders,
                     activeItemVisuals, entityIdMap, new java.util.HashSet<>(configManager.getRpgEnabledCategories()),
                     hiddenVisuals, visibleEntities, configManager.getCategoryGlow(), configManager.isDefaultGlow(),
                     configManager.getBagMaterial(), configManager.getBagHeadTexture(), configManager.isUseOwnerHead(), configManager.getBagCustomModelData(),
-                    configManager.getRpgItemScale(), configManager.getRpgBlockScale(), configManager.getRpgRotation());
+                    configManager.getRpgItemScale(), configManager.getRpgBlockScale(), configManager.getRpgRotation()
+            );
+            itemVisualSpawnService.spawnItemVisual(item, category, color, ctx);
         }
     }
 
     /** Global sync tick: repositions all Display entities to follow their parent Item. Runs every tick. */
     private void tickGlobalSync() {
-        if (itemPhysicsService != null && configManager != null) {
+        if (lootRenderPipeline != null) {
+            lootRenderPipeline.tickSync();
+        } else if (itemPhysicsService != null && configManager != null) {
             itemPhysicsService.tickGlobalSync(isPluginEnabled(), getActiveItems(), trackedItems, configManager.getRpgBlockScale(), configManager.getRpgItemScale(), configManager.getBagMaterial(), groupLeaders, configManager.getHoloOffset(), configManager.getShadowScale(), configManager.getRpgRotation());
         }
     }
@@ -832,6 +859,10 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
 
     public Map<UUID, List<UUID>> getGroupMembers() {
         return groupContainerManager != null ? groupContainerManager.getGroupMembers() : groupMembers;
+    }
+
+    public Map<UUID, Integer> getGroupLeaders() {
+        return groupLeaders;
     }
 
     public Map<UUID, Item> getActiveItems() {
@@ -978,9 +1009,14 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
     @Override public void setMergeAmount(@NotNull Item item, int amount) { apiImpl.setMergeAmount(item, amount); }
     @Override public void addMergeAmount(@NotNull Item item, int amount) { apiImpl.addMergeAmount(item, amount); }
     @Override public void removeMergeAmount(@NotNull Item item, int amount) { apiImpl.removeMergeAmount(item, amount); }
+
     private void initManagersAndServices() {
+        this.serviceRegistry = new fr.skynex.lootglow.registry.ServiceRegistry();
+        this.spatialIndexService = new fr.skynex.lootglow.spatial.LootSpatialIndexService(this);
+        this.lootEventDispatcher = new fr.skynex.lootglow.event.LootEventDispatcher(this);
+
         this.databaseManager = new DatabaseManager(this);
-        this.trackedItemManager = new TrackedItemManager(this);
+        this.trackedItemManager = new TrackedItemManager(this, trackedItems, activeItems, entityIdMap, globallyVisibleEntities);
         this.beamManager = new BeamManager(this);
         this.hologramManager = new HologramManager(this);
         this.configManager = new LootGlowConfigManager(this);
@@ -1025,6 +1061,17 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
         this.itemGlowApplyService = new fr.skynex.lootglow.service.ItemGlowApplyService(this);
         this.itemPhysicsService = new fr.skynex.lootglow.service.ItemPhysicsService(this);
         this.pluginLifecycleManager = new fr.skynex.lootglow.managers.PluginLifecycleManager(this);
+        this.lootRenderPipeline = new fr.skynex.lootglow.pipeline.LootRenderPipeline(this);
+
+        this.serviceRegistry.registerService(fr.skynex.lootglow.spatial.LootSpatialIndexService.class, spatialIndexService);
+        this.serviceRegistry.registerService(fr.skynex.lootglow.event.LootEventDispatcher.class, lootEventDispatcher);
+        this.serviceRegistry.registerService(fr.skynex.lootglow.pipeline.LootRenderPipeline.class, lootRenderPipeline);
+        this.serviceRegistry.registerService(fr.skynex.lootglow.service.ItemGlowApplyService.class, itemGlowApplyService);
+        this.serviceRegistry.registerService(fr.skynex.lootglow.service.ItemPhysicsService.class, itemPhysicsService);
+        this.serviceRegistry.registerService(fr.skynex.lootglow.service.HologramService.class, hologramService);
+        this.serviceRegistry.registerService(fr.skynex.lootglow.service.ItemGroupingService.class, itemGroupingService);
+        this.serviceRegistry.registerService(fr.skynex.lootglow.service.EntityVisibilityService.class, entityVisibilityService);
+        this.serviceRegistry.registerService(fr.skynex.lootglow.managers.ItemMagnetManager.class, itemMagnetManager);
     }
 
     private void resetStateOnReload() {

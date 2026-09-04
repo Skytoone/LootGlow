@@ -52,7 +52,7 @@ public class ItemPhysicsService {
             UUID itemUuid = entry.getKey();
             Item item = entry.getValue();
 
-            if (item == null || !item.isValid()) {
+            if (item == null || item.isDead()) {
                 if (staleEntries == null)
                     staleEntries = new java.util.ArrayList<>();
                 staleEntries.add(itemUuid);
@@ -107,7 +107,7 @@ public class ItemPhysicsService {
             Float yaw = state != null ? state.yaw : null;
             Float pitch = state != null ? state.pitch : null;
 
-            double baseWeight = 0.08;
+            double baseWeight = 0.02;
             Material itemMat = ti.itemMaterial;
             if (itemMat == null) {
                 itemMat = item.getItemStack().getType();
@@ -117,25 +117,25 @@ public class ItemPhysicsService {
                 ti.isBlockItem = plugin.isUprightItem(itemMat);
             }
             boolean isBlockItem = ti.isBlockItem;
-            double visualYOffset = baseWeight + (isBlockItem ? (rpgBlockScale / 2.0) : 0.0);
-            if (visual != null && visual.isValid()) {
+            double visualYOffset = isBlockItem ? Math.max(0.05, (rpgBlockScale / 2.0) - 0.15) : baseWeight;
+            if (visual != null && !visual.isDead()) {
                 Material vMat = ti.visualMaterial;
                 if (vMat == null && visual.getItemStack() != null) {
                     vMat = visual.getItemStack().getType();
                     ti.visualMaterial = vMat;
                 }
                 if (vMat == Material.PLAYER_HEAD) {
-                    visualYOffset = 0.15;
+                    visualYOffset = 0.10;
                 } else if (vMat == Material.BUNDLE) {
-                    visualYOffset = 0.32;
+                    visualYOffset = 0.15;
                 } else if (vMat == Material.CHEST || vMat == Material.TRAPPED_CHEST || vMat == Material.ENDER_CHEST) {
-                    visualYOffset = 0.20;
+                    visualYOffset = 0.15;
                 }
             }
             Entity representative = (visual != null) ? (Entity) visual : (Entity) label;
 
             boolean moved = false;
-            if ((itemActuallyMoved || bobbingOffset != 0.0) && representative != null && representative.isValid()) {
+            if ((itemActuallyMoved || bobbingOffset != 0.0) && representative != null && !representative.isDead()) {
                 double dx = itemX - representative.getX();
                 double dy = (targetVisualY + visualYOffset) - representative.getY();
                 double dz = itemZ - representative.getZ();
@@ -150,24 +150,22 @@ public class ItemPhysicsService {
 
             if (moved) {
                 itemLoc = item.getLocation();
-                if (visual != null && visual.isValid()) {
+                if (visual != null && !visual.isDead()) {
                     itemLoc.setY(targetVisualY + visualYOffset);
                     if (yaw != null) itemLoc.setYaw(yaw);
                     if (pitch != null) itemLoc.setPitch(pitch);
-                    visual.setTeleportDuration(1);
                     visual.teleport(itemLoc);
                 }
 
-                if (label != null && label.isValid()) {
+                if (label != null && !label.isDead()) {
                     if (itemLoc == null) itemLoc = item.getLocation();
                     itemLoc.setY(targetVisualY + visualYOffset + holoOffset);
-                    label.setTeleportDuration(1);
                     label.teleport(itemLoc);
                 }
             }
 
             if (itemActuallyMoved) {
-                if (beam != null && beam.isValid()) {
+                if (beam != null && !beam.isDead()) {
                     double targetBeamY = targetSurfaceY + baseWeight;
                     double bdx = itemX - beam.getX();
                     double bdy = targetBeamY - beam.getY();
@@ -175,12 +173,11 @@ public class ItemPhysicsService {
                     if ((bdx * bdx + bdy * bdy + bdz * bdz) > 0.0001) {
                         if (itemLoc == null) itemLoc = item.getLocation();
                         itemLoc.setY(targetBeamY);
-                        beam.setTeleportDuration(1);
                         beam.teleport(itemLoc);
                     }
                 }
 
-                if (shadow != null && shadow.isValid()) {
+                if (shadow != null && !shadow.isDead()) {
                     double height = Math.max(0, itemY - targetSurfaceY);
                     float radiusFactor = (float) Math.max(0.4, 1.0 - (height * 0.3));
                     float baseRadius = shadowScale * 0.8f;
@@ -200,12 +197,11 @@ public class ItemPhysicsService {
                     if ((sdx * sdx + sdy * sdy + sdz * sdz) > 0.0001) {
                         if (itemLoc == null) itemLoc = item.getLocation();
                         itemLoc.setY(targetSurfaceY);
-                        shadow.setTeleportDuration(1);
                         shadow.teleport(itemLoc);
                     }
                 }
 
-                if (visual != null && visual.isValid()) {
+                if (visual != null && !visual.isDead()) {
                     if (ti.isFishItem == null) {
                         ti.isFishItem = plugin.isFishItem(itemMat);
                     }

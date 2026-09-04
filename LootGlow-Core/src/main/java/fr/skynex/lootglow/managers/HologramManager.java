@@ -1,7 +1,7 @@
 package fr.skynex.lootglow.managers;
 
 import fr.skynex.lootglow.LootGlow;
-import fr.skynex.lootglow.managers.TrackedItemManager.TrackedItem;
+import fr.skynex.lootglow.model.TrackedItem;
 import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
