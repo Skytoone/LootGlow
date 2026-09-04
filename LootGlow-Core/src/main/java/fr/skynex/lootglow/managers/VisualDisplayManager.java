@@ -98,10 +98,25 @@ public class VisualDisplayManager {
     }
 
     public void removeVisual(UUID uuid) {
+        if (uuid == null) return;
+        if (plugin != null && plugin.getRpgDropManager() != null && plugin.getRpgDropManager().getFlyingVisuals().containsKey(uuid)) {
+            activeItemVisuals.remove(uuid);
+            return;
+        }
         ItemDisplay display = activeItemVisuals.remove(uuid);
         if (display != null && display.isValid()) {
             entityIdMap.remove(display.getEntityId());
             display.remove();
+        }
+        if (plugin != null && plugin.getTrackedItemManager() != null) {
+            TrackedItem ti = plugin.getTrackedItemManager().getTrackedItems().get(uuid);
+            if (ti != null && ti.visual != null) {
+                if (ti.visual.isValid()) {
+                    entityIdMap.remove(ti.visual.getEntityId());
+                    ti.visual.remove();
+                }
+                ti.visual = null;
+            }
         }
     }
 

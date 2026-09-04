@@ -145,6 +145,11 @@ public class ItemVisualSpawnService {
             if (team != null) team.addEntry(display.getUniqueId().toString());
         } catch (Throwable ignored) {}
         activeItemVisuals.put(item.getUniqueId(), display);
+        if (plugin.getTrackedItemManager() != null) {
+            fr.skynex.lootglow.model.TrackedItem ti = plugin.getTrackedItemManager().getOrCreateTrackedItem(item.getUniqueId());
+            ti.visual = display;
+            plugin.getTrackedItemManager().registerDisplayEntity(display.getUniqueId(), item.getUniqueId());
+        }
 
         if (plugin.getConfig().getBoolean("settings.debug", false)) {
             plugin.getLogger().info("[LootGlow Debug] Spawned ItemDisplay for item "

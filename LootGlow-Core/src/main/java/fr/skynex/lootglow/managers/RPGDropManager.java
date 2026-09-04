@@ -78,8 +78,9 @@ public class RPGDropManager {
         activeShadows.put(item.getUniqueId(), shadow);
 
         if (plugin.getTrackedItemManager() != null) {
-            fr.skynex.lootglow.model.TrackedItem ti = plugin.getTrackedItemManager().getTrackedItems().computeIfAbsent(item.getUniqueId(), k -> new fr.skynex.lootglow.model.TrackedItem());
+            fr.skynex.lootglow.model.TrackedItem ti = plugin.getTrackedItemManager().getOrCreateTrackedItem(item.getUniqueId());
             ti.shadow = shadow;
+            plugin.getTrackedItemManager().registerDisplayEntity(shadow.getUniqueId(), item.getUniqueId());
         }
 
         for (Player p : Bukkit.getOnlinePlayers()) {
@@ -94,9 +95,19 @@ public class RPGDropManager {
     }
 
     public void removeShadow(UUID uuid) {
+        if (uuid == null) return;
         Display d = activeShadows.remove(uuid);
         if (d != null && d.isValid()) {
             d.remove();
+        }
+        if (plugin.getTrackedItemManager() != null) {
+            fr.skynex.lootglow.model.TrackedItem ti = plugin.getTrackedItemManager().getTrackedItems().get(uuid);
+            if (ti != null && ti.shadow != null) {
+                if (ti.shadow.isValid()) {
+                    ti.shadow.remove();
+                }
+                ti.shadow = null;
+            }
         }
         VisualAnimation anim = flyingVisuals.remove(uuid);
         if (anim != null && anim.display != null && anim.display.isValid()) {

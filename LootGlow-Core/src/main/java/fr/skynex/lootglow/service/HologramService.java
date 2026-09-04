@@ -117,36 +117,35 @@ public class HologramService {
             if (spawnTime != null) {
                 long elapsed = (System.currentTimeMillis() - spawnTime) / 1000;
                 long remaining = protectionDuration - elapsed;
-                if (remaining > 0) {
-                    if (plugin.getLootProtectionManager() != null) {
-                        UUID ownerUuid = plugin.getLootProtectionManager() != null ? plugin.getLootProtectionManager().getLootOwner(item) : null;
-                        if (ownerUuid == null) {
-                            ownerUuid = item.getThrower();
-                        }
-                        String defaultOwnerName = plugin.getConfig().getString("settings.loot-protection.default-owner-name", "Inconnu");
-                        String ownerName = defaultOwnerName;
-                        if (ownerUuid != null) {
-                            Player ownerPlayer = Bukkit.getPlayer(ownerUuid);
-                            if (ownerPlayer != null) {
-                                ownerName = ownerPlayer.getName();
-                            } else {
-                                org.bukkit.OfflinePlayer offPlayer = Bukkit.getOfflinePlayer(ownerUuid);
-                                if (offPlayer.getName() != null) {
-                                    ownerName = offPlayer.getName();
-                                }
+                UUID ownerUuid = plugin.getLootProtectionManager() != null ? plugin.getLootProtectionManager().getLootOwner(item) : null;
+                if (ownerUuid == null) {
+                    ownerUuid = item.getThrower();
+                }
+                boolean isProtected = (plugin.getLootProtectionManager() != null && plugin.getLootProtectionManager().isLootProtected(item)) || ownerUuid != null;
+                if (isProtected && remaining > 0) {
+                    String defaultOwnerName = plugin.getConfig().getString("settings.loot-protection.default-owner-name", "Inconnu");
+                    String ownerName = defaultOwnerName;
+                    if (ownerUuid != null) {
+                        Player ownerPlayer = Bukkit.getPlayer(ownerUuid);
+                        if (ownerPlayer != null) {
+                            ownerName = ownerPlayer.getName();
+                        } else {
+                            org.bukkit.OfflinePlayer offPlayer = Bukkit.getOfflinePlayer(ownerUuid);
+                            if (offPlayer.getName() != null) {
+                                ownerName = offPlayer.getName();
                             }
                         }
-                        long timerKey = (((long) remaining) << 32) | (protectionDuration & 0xFFFFFFFFL);
-                        Component protComp = protComponentCache.computeIfAbsent(timerKey, k -> {
-                            String progressBar = buildProgressBar(remaining, protectionDuration);
-                            return fr.skynex.lootglow.util.ColorUtil.parse("<gold>🔒 Protégé <yellow>" + progressBar + "</yellow> (" + remaining + "s)</gold>");
-                        });
-                        result = result.append(Component.newline()).append(protComp);
-                        if (rawOwnerFormat != null && !rawOwnerFormat.isEmpty()) {
-                            result = result.append(Component.newline()).append(fr.skynex.lootglow.util.ColorUtil.parse(rawOwnerFormat.replace("<owner>", ownerName)));
-                        }
                     }
-                } else if (remaining >= -3) {
+                    long timerKey = (((long) remaining) << 32) | (protectionDuration & 0xFFFFFFFFL);
+                    Component protComp = protComponentCache.computeIfAbsent(timerKey, k -> {
+                        String progressBar = buildProgressBar(remaining, protectionDuration);
+                        return fr.skynex.lootglow.util.ColorUtil.parse("<gold>🔒 Protégé <yellow>" + progressBar + "</yellow> (" + remaining + "s)</gold>");
+                    });
+                    result = result.append(Component.newline()).append(protComp);
+                    if (rawOwnerFormat != null && !rawOwnerFormat.isEmpty() && ownerUuid != null) {
+                        result = result.append(Component.newline()).append(fr.skynex.lootglow.util.ColorUtil.parse(rawOwnerFormat.replace("<owner>", ownerName)));
+                    }
+                } else if (isProtected && remaining >= -3) {
                     if (remaining == 0) {
                         item.getWorld().playSound(item.getLocation(), org.bukkit.Sound.BLOCK_CHEST_OPEN, 0.4f, 1.3f);
                     }
@@ -323,6 +322,11 @@ public class HologramService {
         });
 
         activeLabels.put(uuid, label);
+        if (plugin.getTrackedItemManager() != null) {
+            fr.skynex.lootglow.model.TrackedItem ti = plugin.getTrackedItemManager().getOrCreateTrackedItem(uuid);
+            ti.label = label;
+            plugin.getTrackedItemManager().registerDisplayEntity(label.getUniqueId(), uuid);
+        }
 
         if (plugin.getConfig().getBoolean("settings.debug", false)) {
             plugin.getLogger().info("[LootGlow Debug] Spawned TextDisplay hologram for item " + item.getItemStack().getType() + " (UUID: " + item.getUniqueId() + ", Label UUID: " + label.getUniqueId() + ")");

@@ -171,7 +171,13 @@ public class LootGlowConfigManager {
         this.magnetEnableForGroups = config.getBoolean("settings.magnet.enable-for-groups", false);
         this.magnetDistance = config.getDouble("settings.magnet.distance", 5.0);
         this.magnetPermission = config.getString("settings.magnet.permission", "lootglow.magnet");
-        this.magnetCategories = config.getStringList("settings.magnet.categories-enabled");
+        List<String> rawMagCats = config.getStringList("settings.magnet.categories-enabled");
+        this.magnetCategories = new ArrayList<>();
+        if (rawMagCats != null) {
+            for (String mc : rawMagCats) {
+                if (mc != null && !mc.isBlank()) this.magnetCategories.add(mc.toLowerCase(java.util.Locale.ROOT));
+            }
+        }
 
         // RMB Pickup
         this.rmbPickupEnabled = config.getBoolean("settings.interaction.rmb-pickup.enabled", false);

@@ -42,7 +42,7 @@ public class LootRenderPipeline {
         if (applyService != null) {
             applyService.applyGlow(item, playAnimation, new fr.skynex.lootglow.model.ItemGlowContext(
                     plugin.isPluginEnabled(), plugin.getConfigManager().isEconomyEnabled(), plugin.getConfigManager().getEconomyKeys(), plugin.getConfigManager().getEconomyColor(), plugin.getConfigManager().getEconomySound(),
-                    plugin.getTrackedItems().isEmpty() ? java.util.Collections.emptyMap() : java.util.Collections.emptyMap(), plugin.getItemCategories(), plugin.getCategoryNames(), plugin.getConfigManager().getDefaultColor(), plugin.getCategoryParticles(),
+                    plugin.getStateRepository().getItemMoneyAmounts(), plugin.getItemCategories(), plugin.getCategoryNames(), plugin.getConfigManager().getDefaultColor(), plugin.getCategoryParticles(),
                     plugin.getItemParticlesCache(), plugin.getItemCategoriesCache(), plugin.getConfigManager().getDespawnTime(), plugin.getEntityIdMap(), plugin.getActiveItems(), plugin.getItemsByWorld(),
                     plugin.getConfigManager().isRpgDropsEnabled(), plugin.getConfigManager().getRpgEnabledCategories(), plugin.getConfigManager().getCategoryGlow(), plugin.getConfigManager().isDefaultGlow(), plugin.getHiddenVanillaItems(),
                     plugin.getCategorySounds(), plugin.getConfigManager().isHoloEnabled(), plugin.getConfigManager().isHoloHideUncategorized(), plugin.getItemSpawnTimes(), plugin.getBaseNameCache(),

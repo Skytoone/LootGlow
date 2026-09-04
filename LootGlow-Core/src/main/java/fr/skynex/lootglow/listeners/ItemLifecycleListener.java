@@ -43,13 +43,7 @@ public class ItemLifecycleListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onMerge(ItemMergeEvent event) {
-        plugin.getLootRenderPipeline().unrender(event.getEntity());
-        if (plugin.getVisualDisplayManager() != null) {
-            plugin.getVisualDisplayManager().removeVisual(event.getEntity().getUniqueId());
-        }
-        if (plugin.getRpgDropManager() != null) {
-            plugin.getRpgDropManager().removeShadow(event.getEntity().getUniqueId());
-        }
+        plugin.removeGlow(event.getEntity().getUniqueId());
         
         if (plugin.getActiveItems().containsKey(event.getTarget().getUniqueId())) {
             if (plugin.isHoloEnabled()) {
@@ -66,53 +60,5 @@ public class ItemLifecycleListener implements Listener {
                 }
             });
         }
-    }
-
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onDespawn(ItemDespawnEvent event) {
-        fr.skynex.lootglow.api.events.LootGlowItemExpireEvent apiEvent =
-                new fr.skynex.lootglow.api.events.LootGlowItemExpireEvent(event.getEntity());
-        Bukkit.getPluginManager().callEvent(apiEvent);
-        if (apiEvent.isCancelled()) {
-            event.setCancelled(true);
-            return;
-        }
-        plugin.getLootRenderPipeline().unrender(event.getEntity());
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onInventoryPickup(InventoryPickupItemEvent event) {
-        plugin.getLootRenderPipeline().unrender(event.getItem());
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onPortal(EntityPortalEvent event) {
-        if (event.getEntity() instanceof Item item) {
-            plugin.getLootRenderPipeline().unrender(item);
-            FoliaScheduler.runLater(plugin, () -> {
-                if (item.isValid()) {
-                    plugin.getLootRenderPipeline().render(item);
-                }
-            }, 1L);
-        }
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onTeleport(EntityTeleportEvent event) {
-        if (event.getEntity() instanceof Item item) {
-            if (event.getTo() != null && !event.getFrom().getWorld().equals(event.getTo().getWorld())) {
-                plugin.getLootRenderPipeline().unrender(item);
-                FoliaScheduler.runLater(plugin, () -> {
-                    if (item.isValid()) {
-                        plugin.getLootRenderPipeline().render(item);
-                    }
-                }, 1L);
-            }
-        }
-    }
-
-    @EventHandler
-    public void onItemMerge(ItemMergeEvent event) {
-        plugin.getLootRenderPipeline().unrender(event.getEntity().getUniqueId());
     }
 }

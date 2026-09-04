@@ -124,6 +124,11 @@ public class BeamManager {
         });
 
         activeBeams.put(item.getUniqueId(), beam);
+        if (plugin.getTrackedItemManager() != null) {
+            TrackedItem ti = plugin.getTrackedItemManager().getOrCreateTrackedItem(item.getUniqueId());
+            ti.beam = beam;
+            plugin.getTrackedItemManager().registerDisplayEntity(beam.getUniqueId(), item.getUniqueId());
+        }
         activeBeamConfigs.put(item.getUniqueId(), new BeamConfig(finalH, finalW, anim, pulse));
 
         for (Player p : Bukkit.getOnlinePlayers()) {
@@ -144,10 +149,18 @@ public class BeamManager {
 
     public void removeBeam(UUID uuid) {
         if (uuid == null) return;
+        BlockDisplay activeBeam = plugin.getActiveBeams().remove(uuid);
+        if (activeBeam != null && activeBeam.isValid()) {
+            activeBeam.getPassengers().forEach(e -> { if (e != null) e.remove(); });
+            activeBeam.remove();
+        }
         TrackedItem ti = plugin.getTrackedItemManager().getTrackedItems().get(uuid);
-        if (ti != null && ti.beam != null && ti.beam.isValid()) {
-            ti.beam.getPassengers().forEach(e -> { if (e != null) e.remove(); });
-            ti.beam.remove();
+        if (ti != null && ti.beam != null) {
+            if (ti.beam.isValid()) {
+                ti.beam.getPassengers().forEach(e -> { if (e != null) e.remove(); });
+                ti.beam.remove();
+            }
+            ti.beam = null;
         }
         activeBeamConfigs.remove(uuid);
     }

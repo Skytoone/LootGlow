@@ -270,7 +270,10 @@ public class ItemGlowApplyService {
 
         boolean isRpgDrop = rpgDropsEnabled && (rpgEnabledCategories.isEmpty()
                 || (finalCategory != null && rpgEnabledCategories.contains(finalCategory.toLowerCase())));
-        boolean shouldGlow = categoryGlow.getOrDefault(finalCategory, defaultGlow);
+        boolean shouldGlow = defaultGlow;
+        if (finalCategory != null) {
+            shouldGlow = categoryGlow.getOrDefault(finalCategory, categoryGlow.getOrDefault(finalCategory.toLowerCase(), defaultGlow));
+        }
 
         if (plugin.getConfig().getBoolean("settings.debug", false)) {
             plugin.getLogger().info("[LootGlow Debug] applyGlow called for item " + stack.getType() + " (UUID: " + item.getUniqueId() + ", Category: " + finalCategory + ", Color: " + finalColor + ", isRpgDrop: " + isRpgDrop + ", glowing: " + shouldGlow + ")");

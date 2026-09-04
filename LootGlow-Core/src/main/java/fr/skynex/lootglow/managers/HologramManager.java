@@ -43,9 +43,16 @@ public class HologramManager {
 
     public void removeHologram(UUID uuid) {
         if (uuid == null) return;
+        org.bukkit.entity.TextDisplay activeLabel = plugin.getActiveLabels().remove(uuid);
+        if (activeLabel != null && activeLabel.isValid()) {
+            activeLabel.remove();
+        }
         TrackedItem ti = plugin.getTrackedItemManager().getTrackedItems().get(uuid);
-        if (ti != null && ti.label != null && ti.label.isValid()) {
-            ti.label.remove();
+        if (ti != null) {
+            if (ti.label != null && ti.label.isValid()) {
+                ti.label.remove();
+            }
+            ti.label = null;
         }
         lastHoloState.remove(uuid);
     }

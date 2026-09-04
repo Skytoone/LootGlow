@@ -155,12 +155,15 @@ public class ParticleAnimationManager {
         }
 
         particleTask = FoliaScheduler.runTimer(plugin, () -> {
-            if (!isEnabled || !particlesEnabled) return;
+            if (!isEnabled) return;
 
             particleTick++;
             if (plugin.getGroundAuraManager() != null) {
                 plugin.getGroundAuraManager().tickAuras(activeItems, itemCategoriesCache);
             }
+
+            if (!particlesEnabled) return;
+
             double partDistSq = lodPartDistSq;
 
             for (Player p : Bukkit.getOnlinePlayers()) {
@@ -184,7 +187,9 @@ public class ParticleAnimationManager {
                     if (item == null || item.isDead() || !item.isValid()) continue;
 
                     Particle particle = itemParticlesCache.get(uuid);
-                    if (particle == null) continue;
+                    if (particle == null) {
+                        particle = Particle.DUST;
+                    }
 
                     double ix = item.getX();
                     double iy = item.getY();
