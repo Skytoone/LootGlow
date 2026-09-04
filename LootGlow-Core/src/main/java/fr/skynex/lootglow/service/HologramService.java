@@ -119,8 +119,12 @@ public class HologramService {
                 long remaining = protectionDuration - elapsed;
                 if (remaining > 0) {
                     if (plugin.getLootProtectionManager() != null) {
-                        UUID ownerUuid = plugin.getLootProtectionManager().getLootOwner(item);
-                        String ownerName = "Joueur";
+                        UUID ownerUuid = plugin.getLootProtectionManager() != null ? plugin.getLootProtectionManager().getLootOwner(item) : null;
+                        if (ownerUuid == null) {
+                            ownerUuid = item.getThrower();
+                        }
+                        String defaultOwnerName = plugin.getConfig().getString("settings.loot-protection.default-owner-name", "Inconnu");
+                        String ownerName = defaultOwnerName;
                         if (ownerUuid != null) {
                             Player ownerPlayer = Bukkit.getPlayer(ownerUuid);
                             if (ownerPlayer != null) {

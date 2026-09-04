@@ -44,6 +44,12 @@ public class ItemLifecycleListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onMerge(ItemMergeEvent event) {
         plugin.getLootRenderPipeline().unrender(event.getEntity());
+        if (plugin.getVisualDisplayManager() != null) {
+            plugin.getVisualDisplayManager().removeVisual(event.getEntity().getUniqueId());
+        }
+        if (plugin.getRpgDropManager() != null) {
+            plugin.getRpgDropManager().removeShadow(event.getEntity().getUniqueId());
+        }
         
         if (plugin.getActiveItems().containsKey(event.getTarget().getUniqueId())) {
             if (plugin.isHoloEnabled()) {

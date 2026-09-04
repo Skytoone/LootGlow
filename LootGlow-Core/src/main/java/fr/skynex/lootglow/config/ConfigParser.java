@@ -19,11 +19,31 @@ public class ConfigParser {
 
     public NamedTextColor parseNamedColor(String input) {
         if (input == null || input.trim().isEmpty()) return NamedTextColor.WHITE;
+        String clean = input.trim().toLowerCase().replace("&", "").replace("§", "").replace("-", "_").replace(" ", "_");
         try {
-            NamedTextColor ntc = NamedTextColor.NAMES.value(input.trim().toLowerCase());
+            NamedTextColor ntc = NamedTextColor.NAMES.value(clean);
             if (ntc != null) return ntc;
         } catch (Exception ignored) {}
-        return NamedTextColor.WHITE;
+
+        return switch (clean) {
+            case "0", "black" -> NamedTextColor.BLACK;
+            case "1", "dark_blue" -> NamedTextColor.DARK_BLUE;
+            case "2", "dark_green" -> NamedTextColor.DARK_GREEN;
+            case "3", "dark_aqua" -> NamedTextColor.DARK_AQUA;
+            case "4", "dark_red" -> NamedTextColor.DARK_RED;
+            case "5", "dark_purple" -> NamedTextColor.DARK_PURPLE;
+            case "6", "gold" -> NamedTextColor.GOLD;
+            case "7", "gray", "grey" -> NamedTextColor.GRAY;
+            case "8", "dark_gray", "dark_grey" -> NamedTextColor.DARK_GRAY;
+            case "9", "blue" -> NamedTextColor.BLUE;
+            case "a", "green" -> NamedTextColor.GREEN;
+            case "b", "aqua" -> NamedTextColor.AQUA;
+            case "c", "red" -> NamedTextColor.RED;
+            case "d", "light_purple", "pink", "purple" -> NamedTextColor.LIGHT_PURPLE;
+            case "e", "yellow" -> NamedTextColor.YELLOW;
+            case "f", "white" -> NamedTextColor.WHITE;
+            default -> NamedTextColor.WHITE;
+        };
     }
 
     public Sound parseSound(String soundStr) {
