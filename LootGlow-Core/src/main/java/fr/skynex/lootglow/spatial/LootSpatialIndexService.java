@@ -13,14 +13,15 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class LootSpatialIndexService {
 
-    private final LootGlow plugin;
     // Map<WorldName, Map<ChunkKey, Set<ItemUUID>>>
     private final Map<String, Map<Long, Set<UUID>>> worldSpatialIndex = new ConcurrentHashMap<>();
     private final Map<UUID, Long> itemChunkCache = new ConcurrentHashMap<>();
     private final Map<UUID, String> itemWorldCache = new ConcurrentHashMap<>();
 
+    public LootSpatialIndexService() {
+    }
+
     public LootSpatialIndexService(LootGlow plugin) {
-        this.plugin = plugin;
     }
 
     /**

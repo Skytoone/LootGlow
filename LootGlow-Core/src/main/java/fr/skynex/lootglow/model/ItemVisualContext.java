@@ -1,6 +1,5 @@
 package fr.skynex.lootglow.model;
 
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Material;
 import org.bukkit.entity.ItemDisplay;
 

@@ -41,7 +41,6 @@ public class ItemGlowApplyService {
         if (!plugin.isWorldAllowed(item.getWorld().getName())) return;
         if (plugin.isInBlockedRegion(item.getLocation())) return;
 
-        boolean isEnabled = ctx.isEnabled();
         boolean economyEnabled = ctx.economyEnabled();
         List<NamespacedKey> economyKeys = ctx.economyKeys();
         NamedTextColor economyColor = ctx.economyColor();
@@ -337,7 +336,7 @@ public class ItemGlowApplyService {
                 }
             }
 
-            if (finalColor.equals(NamedTextColor.GOLD)) {
+            if (NamedTextColor.GOLD.equals(finalColor)) {
                 item.getWorld().getNearbyPlayers(item.getLocation(), 15)
                         .forEach(p -> plugin.sendMessage(p, "legendary-found"));
             }

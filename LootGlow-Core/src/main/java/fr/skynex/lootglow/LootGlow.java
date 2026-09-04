@@ -10,7 +10,6 @@ import fr.skynex.lootglow.config.LootGlowConfigManager;
 import fr.skynex.lootglow.commands.LootGlowCommandManager;
 import fr.skynex.lootglow.model.TrackedItem;
 import fr.skynex.lootglow.model.CropSymbol;
-import fr.skynex.lootglow.model.DelegatingMap;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -29,216 +28,125 @@ import java.util.List;
 
 public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootGlowAPI {
 
-    private DatabaseManager databaseManager;
-    private TrackedItemManager trackedItemManager;
-    private BeamManager beamManager;
-    private HologramManager hologramManager;
-    private LootGlowConfigManager configManager;
-    private LootGlowCommandManager commandManager;
-    private fr.skynex.lootglow.managers.FarmingManager farmingManager;
-    private fr.skynex.lootglow.managers.RPGDropManager rpgDropManager;
-    private fr.skynex.lootglow.managers.ParticleAnimationManager particleAnimationManager;
-    private fr.skynex.lootglow.managers.GroupContainerManager groupContainerManager;
-    private fr.skynex.lootglow.managers.LootProtectionManager lootProtectionManager;
-    private fr.skynex.lootglow.managers.ItemMergeManager itemMergeManager;
-    private fr.skynex.lootglow.managers.OcclusionManager occlusionManager;
-    private fr.skynex.lootglow.managers.GlowManager glowManager;
-    private fr.skynex.lootglow.managers.ItemMagnetManager itemMagnetManager;
-    private fr.skynex.lootglow.managers.EconomyDropManager economyDropManager;
-    private fr.skynex.lootglow.managers.HologramRenderer hologramRenderer;
-    private fr.skynex.lootglow.managers.SurfaceAlignmentManager surfaceAlignmentManager;
-    private fr.skynex.lootglow.managers.GlowTeamManager glowTeamManager;
-    private fr.skynex.lootglow.managers.VisualDisplayManager visualDisplayManager;
-    private fr.skynex.lootglow.managers.PluginTickManager pluginTickManager;
-    private fr.skynex.lootglow.managers.VisualSpawner visualSpawner;
-    private fr.skynex.lootglow.config.ConfigParser configParser;
-    private fr.skynex.lootglow.integration.IntegrationManager integrationManager;
-    private fr.skynex.lootglow.managers.PlayerSettingsManager playerSettingsManager;
-    private fr.skynex.lootglow.managers.VisibilityPacketManager visibilityPacketManager;
-    private fr.skynex.lootglow.managers.LODManager lodManager;
-    private fr.skynex.lootglow.util.ItemNameFormatter itemNameFormatter;
-    private fr.skynex.lootglow.managers.LootWorldManager lootWorldManager;
-    private fr.skynex.lootglow.managers.VanillaItemVisibilityManager vanillaItemVisibilityManager;
-    private fr.skynex.lootglow.service.HologramTickService hologramTickService;
-    private fr.skynex.lootglow.service.BeamTickService beamTickService;
-    private fr.skynex.lootglow.service.ItemRotationService itemRotationService;
-    private fr.skynex.lootglow.service.EntityVisibilityService entityVisibilityService;
-    private fr.skynex.lootglow.service.ItemVisualSpawnService itemVisualSpawnService;
-    private fr.skynex.lootglow.service.ItemGroupingService itemGroupingService;
-    private fr.skynex.lootglow.service.HologramService hologramService;
-    private fr.skynex.lootglow.service.PluginDisableService pluginDisableService;
-    private fr.skynex.lootglow.service.MessageService messageService;
-    private fr.skynex.lootglow.service.LightService lightService;
-    private fr.skynex.lootglow.service.ItemGlowApplyService itemGlowApplyService;
-    private fr.skynex.lootglow.service.ItemPhysicsService itemPhysicsService;
-    private fr.skynex.lootglow.managers.PluginLifecycleManager pluginLifecycleManager;
-    private fr.skynex.lootglow.managers.RarityManager rarityManager;
-    private fr.skynex.lootglow.managers.GroundAuraManager groundAuraManager;
-    private fr.skynex.lootglow.pipeline.LootRenderPipeline lootRenderPipeline;
-    private fr.skynex.lootglow.registry.ServiceRegistry serviceRegistry;
-    private fr.skynex.lootglow.spatial.LootSpatialIndexService spatialIndexService;
-    private fr.skynex.lootglow.event.LootEventDispatcher lootEventDispatcher;
+    private final fr.skynex.lootglow.state.LootStateRepository stateRepository = new fr.skynex.lootglow.state.LootStateRepository();
+    private fr.skynex.lootglow.registry.ServiceRegistry serviceRegistry = new fr.skynex.lootglow.registry.ServiceRegistry();
+
+    public <T> T getService(Class<T> clazz) {
+        return serviceRegistry.get(clazz);
+    }
 
     public fr.skynex.lootglow.registry.ServiceRegistry getServiceRegistry() { return serviceRegistry; }
-    public fr.skynex.lootglow.spatial.LootSpatialIndexService getSpatialIndexService() { return spatialIndexService; }
-    public fr.skynex.lootglow.event.LootEventDispatcher getLootEventDispatcher() { return lootEventDispatcher; }
-    public fr.skynex.lootglow.pipeline.LootRenderPipeline getLootRenderPipeline() { return lootRenderPipeline; }
-    public fr.skynex.lootglow.managers.RarityManager getRarityManager() { return rarityManager; }
-    public fr.skynex.lootglow.managers.PluginLifecycleManager getPluginLifecycleManager() { return pluginLifecycleManager; }
+    public fr.skynex.lootglow.state.LootStateRepository getStateRepository() { return stateRepository; }
+    public fr.skynex.lootglow.spatial.LootSpatialIndexService getSpatialIndexService() { return getService(fr.skynex.lootglow.spatial.LootSpatialIndexService.class); }
+    public fr.skynex.lootglow.event.LootEventDispatcher getLootEventDispatcher() { return getService(fr.skynex.lootglow.event.LootEventDispatcher.class); }
+    public fr.skynex.lootglow.pipeline.LootRenderPipeline getLootRenderPipeline() { return getService(fr.skynex.lootglow.pipeline.LootRenderPipeline.class); }
+    public fr.skynex.lootglow.managers.RarityManager getRarityManager() { return getService(fr.skynex.lootglow.managers.RarityManager.class); }
+    public fr.skynex.lootglow.managers.PluginLifecycleManager getPluginLifecycleManager() { return getService(fr.skynex.lootglow.managers.PluginLifecycleManager.class); }
 
-    public DatabaseManager getDatabaseManager() { return databaseManager; }
-    public TrackedItemManager getTrackedItemManager() { return trackedItemManager; }
-    public BeamManager getBeamManager() { return beamManager; }
-    public HologramManager getHologramManager() { return hologramManager; }
-    public LootGlowConfigManager getConfigManager() { return configManager; }
-    public LootGlowCommandManager getCommandManager() { return commandManager; }
-    public fr.skynex.lootglow.managers.FarmingManager getFarmingManager() { return farmingManager; }
-    public fr.skynex.lootglow.managers.RPGDropManager getRpgDropManager() { return rpgDropManager; }
-    public fr.skynex.lootglow.managers.ParticleAnimationManager getParticleAnimationManager() { return particleAnimationManager; }
-    public fr.skynex.lootglow.managers.GroupContainerManager getGroupContainerManager() { return groupContainerManager; }
-    public fr.skynex.lootglow.managers.LootProtectionManager getLootProtectionManager() { return lootProtectionManager; }
-    public fr.skynex.lootglow.managers.ItemMergeManager getItemMergeManager() { return itemMergeManager; }
-    public fr.skynex.lootglow.managers.OcclusionManager getOcclusionManager() { return occlusionManager; }
-    public fr.skynex.lootglow.managers.GlowManager getGlowManager() { return glowManager; }
-    public fr.skynex.lootglow.managers.ItemMagnetManager getItemMagnetManager() { return itemMagnetManager; }
-    public fr.skynex.lootglow.managers.EconomyDropManager getEconomyDropManager() { return economyDropManager; }
-    public fr.skynex.lootglow.managers.HologramRenderer getHologramRenderer() { return hologramRenderer; }
-    public fr.skynex.lootglow.managers.SurfaceAlignmentManager getSurfaceAlignmentManager() { return surfaceAlignmentManager; }
-    public fr.skynex.lootglow.managers.GlowTeamManager getGlowTeamManager() { return glowTeamManager; }
-    public fr.skynex.lootglow.managers.VisualDisplayManager getVisualDisplayManager() { return visualDisplayManager; }
-    public fr.skynex.lootglow.managers.PluginTickManager getPluginTickManager() { return pluginTickManager; }
-    public fr.skynex.lootglow.managers.VisualSpawner getVisualSpawner() { return visualSpawner; }
-    public fr.skynex.lootglow.config.ConfigParser getConfigParser() { return configParser; }
-    public fr.skynex.lootglow.integration.IntegrationManager getIntegrationManager() { return integrationManager; }
-    public fr.skynex.lootglow.managers.PlayerSettingsManager getPlayerSettingsManager() { return playerSettingsManager; }
-    public fr.skynex.lootglow.managers.VisibilityPacketManager getVisibilityPacketManager() { return visibilityPacketManager; }
-    public fr.skynex.lootglow.managers.LODManager getLodManager() { return lodManager; }
-    public fr.skynex.lootglow.util.ItemNameFormatter getItemNameFormatter() { return itemNameFormatter; }
-    public fr.skynex.lootglow.managers.LootWorldManager getLootWorldManager() { return lootWorldManager; }
-    public fr.skynex.lootglow.managers.VanillaItemVisibilityManager getVanillaItemVisibilityManager() { return vanillaItemVisibilityManager; }
-    public fr.skynex.lootglow.managers.GroundAuraManager getGroundAuraManager() { return groundAuraManager; }
-    public fr.skynex.lootglow.service.HologramTickService getHologramTickService() { return hologramTickService; }
-    public fr.skynex.lootglow.service.BeamTickService getBeamTickService() { return beamTickService; }
-    public fr.skynex.lootglow.service.ItemRotationService getItemRotationService() { return itemRotationService; }
-    public fr.skynex.lootglow.service.EntityVisibilityService getEntityVisibilityService() { return entityVisibilityService; }
-    public fr.skynex.lootglow.service.ItemVisualSpawnService getItemVisualSpawnService() { return itemVisualSpawnService; }
-    public fr.skynex.lootglow.service.ItemGroupingService getItemGroupingService() { return itemGroupingService; }
-    public fr.skynex.lootglow.service.HologramService getHologramService() { return hologramService; }
-    public fr.skynex.lootglow.service.PluginDisableService getPluginDisableService() { return pluginDisableService; }
-    public fr.skynex.lootglow.service.MessageService getMessageService() { return messageService; }
-    public fr.skynex.lootglow.service.LightService getLightService() { return lightService; }
-    public fr.skynex.lootglow.service.ItemGlowApplyService getItemGlowApplyService() { return itemGlowApplyService; }
-    public fr.skynex.lootglow.service.ItemPhysicsService getItemPhysicsService() { return itemPhysicsService; }
-    public Map<String, Component> getDisplayNameOverridesCache() { return displayNameOverridesCache; }
-    public String getEconomyFormat() { return configManager != null ? configManager.getEconomyFormat() : ""; }
-    public String getEconomyPrefix() { return configManager != null ? configManager.getEconomyPrefix() : ""; }
-    public Map<UUID, Particle> getItemParticlesCache() { return itemParticlesCache; }
-    public Set<UUID> getRecentlyBounced() { return rpgDropManager != null ? rpgDropManager.getRecentlyBounced() : Collections.emptySet(); }
-    public double getFarmingViewDistance() { return configManager != null ? configManager.getFarmingViewDistance() : 0; }
-    public double getLodBeamDistSq() { return configManager != null ? configManager.getLodBeamDistSq() : 0; }
-    public Map<org.bukkit.block.Block, CropSymbol> getActiveCropSymbols() { return activeCropSymbols; }
-    public Map<UUID, TrackedItem> getTrackedItems() { return trackedItems; }
-    public Map<String, Set<UUID>> getItemsByWorld() { return trackedItemManager != null ? trackedItemManager.getItemsByWorld() : Collections.emptyMap(); }
-    public Map<String, NamedTextColor> getItemCategories() { return itemCategories; }
-    public Map<String, Particle> getCategoryParticles() { return categoryParticles; }
-    public Map<String, Sound> getCategorySounds() { return categorySounds; }
-    public Map<String, String> getCategoryNames() { return categoryNames; }
-    public Map<String, NamedTextColor> getCategoryColors() { return categoryColors; }
-    public Map<String, Integer> getCategoryLights() { return categoryLights; }
-    public Map<UUID, Location> getActiveLights() { return activeLights; }
-    public Map<String, org.bukkit.Particle.DustOptions> getCategoryDustOptions() { return categoryDustOptions; }
-    public Set<UUID> getGloballyVisibleEntities() { return globallyVisibleEntities; }
-    public Map<UUID, Integer> getBounceCounts() { return rpgDropManager != null ? rpgDropManager.getBounceCounts() : Collections.emptyMap(); }
-    public Map<UUID, String> getItemCategoriesCache() { return itemCategoriesCache; }
+    public DatabaseManager getDatabaseManager() { return getService(DatabaseManager.class); }
+    public TrackedItemManager getTrackedItemManager() { return getService(TrackedItemManager.class); }
+    public BeamManager getBeamManager() { return getService(BeamManager.class); }
+    public HologramManager getHologramManager() { return getService(HologramManager.class); }
+    public LootGlowConfigManager getConfigManager() { return getService(LootGlowConfigManager.class); }
+    public LootGlowCommandManager getCommandManager() { return getService(LootGlowCommandManager.class); }
+    public fr.skynex.lootglow.managers.FarmingManager getFarmingManager() { return getService(fr.skynex.lootglow.managers.FarmingManager.class); }
+    public fr.skynex.lootglow.managers.RPGDropManager getRpgDropManager() { return getService(fr.skynex.lootglow.managers.RPGDropManager.class); }
+    public fr.skynex.lootglow.managers.ParticleAnimationManager getParticleAnimationManager() { return getService(fr.skynex.lootglow.managers.ParticleAnimationManager.class); }
+    public fr.skynex.lootglow.managers.GroupContainerManager getGroupContainerManager() { return getService(fr.skynex.lootglow.managers.GroupContainerManager.class); }
+    public fr.skynex.lootglow.managers.LootProtectionManager getLootProtectionManager() { return getService(fr.skynex.lootglow.managers.LootProtectionManager.class); }
+    public fr.skynex.lootglow.managers.ItemMergeManager getItemMergeManager() { return getService(fr.skynex.lootglow.managers.ItemMergeManager.class); }
+    public fr.skynex.lootglow.managers.OcclusionManager getOcclusionManager() { return getService(fr.skynex.lootglow.managers.OcclusionManager.class); }
+    public fr.skynex.lootglow.managers.GlowManager getGlowManager() { return getService(fr.skynex.lootglow.managers.GlowManager.class); }
+    public fr.skynex.lootglow.managers.ItemMagnetManager getItemMagnetManager() { return getService(fr.skynex.lootglow.managers.ItemMagnetManager.class); }
+    public fr.skynex.lootglow.managers.EconomyDropManager getEconomyDropManager() { return getService(fr.skynex.lootglow.managers.EconomyDropManager.class); }
+    public fr.skynex.lootglow.managers.HologramRenderer getHologramRenderer() { return getService(fr.skynex.lootglow.managers.HologramRenderer.class); }
+    public fr.skynex.lootglow.managers.SurfaceAlignmentManager getSurfaceAlignmentManager() { return getService(fr.skynex.lootglow.managers.SurfaceAlignmentManager.class); }
+    public fr.skynex.lootglow.managers.GlowTeamManager getGlowTeamManager() { return getService(fr.skynex.lootglow.managers.GlowTeamManager.class); }
+    public fr.skynex.lootglow.managers.VisualDisplayManager getVisualDisplayManager() { return getService(fr.skynex.lootglow.managers.VisualDisplayManager.class); }
+    public fr.skynex.lootglow.managers.PluginTickManager getPluginTickManager() { return getService(fr.skynex.lootglow.managers.PluginTickManager.class); }
+    public fr.skynex.lootglow.managers.VisualSpawner getVisualSpawner() { return getService(fr.skynex.lootglow.managers.VisualSpawner.class); }
+    public fr.skynex.lootglow.config.ConfigParser getConfigParser() { return getService(fr.skynex.lootglow.config.ConfigParser.class); }
+    public fr.skynex.lootglow.integration.IntegrationManager getIntegrationManager() { return getService(fr.skynex.lootglow.integration.IntegrationManager.class); }
+    public fr.skynex.lootglow.managers.PlayerSettingsManager getPlayerSettingsManager() { return getService(fr.skynex.lootglow.managers.PlayerSettingsManager.class); }
+    public fr.skynex.lootglow.managers.VisibilityPacketManager getVisibilityPacketManager() { return getService(fr.skynex.lootglow.managers.VisibilityPacketManager.class); }
+    public fr.skynex.lootglow.managers.LODManager getLodManager() { return getService(fr.skynex.lootglow.managers.LODManager.class); }
+    public fr.skynex.lootglow.util.ItemNameFormatter getItemNameFormatter() { return getService(fr.skynex.lootglow.util.ItemNameFormatter.class); }
+    public fr.skynex.lootglow.managers.LootWorldManager getLootWorldManager() { return getService(fr.skynex.lootglow.managers.LootWorldManager.class); }
+    public fr.skynex.lootglow.managers.VanillaItemVisibilityManager getVanillaItemVisibilityManager() { return getService(fr.skynex.lootglow.managers.VanillaItemVisibilityManager.class); }
+    public fr.skynex.lootglow.managers.GroundAuraManager getGroundAuraManager() { return getService(fr.skynex.lootglow.managers.GroundAuraManager.class); }
+    public fr.skynex.lootglow.service.HologramTickService getHologramTickService() { return getService(fr.skynex.lootglow.service.HologramTickService.class); }
+    public fr.skynex.lootglow.service.BeamTickService getBeamTickService() { return getService(fr.skynex.lootglow.service.BeamTickService.class); }
+    public fr.skynex.lootglow.service.ItemRotationService getItemRotationService() { return getService(fr.skynex.lootglow.service.ItemRotationService.class); }
+    public fr.skynex.lootglow.service.EntityVisibilityService getEntityVisibilityService() { return getService(fr.skynex.lootglow.service.EntityVisibilityService.class); }
+    public fr.skynex.lootglow.service.ItemVisualSpawnService getItemVisualSpawnService() { return getService(fr.skynex.lootglow.service.ItemVisualSpawnService.class); }
+    public fr.skynex.lootglow.service.ItemGroupingService getItemGroupingService() { return getService(fr.skynex.lootglow.service.ItemGroupingService.class); }
+    public fr.skynex.lootglow.service.HologramService getHologramService() { return getService(fr.skynex.lootglow.service.HologramService.class); }
+    public fr.skynex.lootglow.service.PluginDisableService getPluginDisableService() { return getService(fr.skynex.lootglow.service.PluginDisableService.class); }
+    public fr.skynex.lootglow.service.MessageService getMessageService() { return getService(fr.skynex.lootglow.service.MessageService.class); }
+    public fr.skynex.lootglow.service.LightService getLightService() { return getService(fr.skynex.lootglow.service.LightService.class); }
+    public fr.skynex.lootglow.service.ItemGlowApplyService getItemGlowApplyService() { return getService(fr.skynex.lootglow.service.ItemGlowApplyService.class); }
+    public fr.skynex.lootglow.service.ItemPhysicsService getItemPhysicsService() { return getService(fr.skynex.lootglow.service.ItemPhysicsService.class); }
 
+    public Map<String, Component> getDisplayNameOverridesCache() { return stateRepository.getDisplayNameOverridesCache(); }
+    public String getEconomyFormat() { return getConfigManager() != null ? getConfigManager().getEconomyFormat() : ""; }
+    public String getEconomyPrefix() { return getConfigManager() != null ? getConfigManager().getEconomyPrefix() : ""; }
+    public Map<UUID, Particle> getItemParticlesCache() { return stateRepository.getItemParticlesCache(); }
+    public Set<UUID> getRecentlyBounced() { return getRpgDropManager() != null ? getRpgDropManager().getRecentlyBounced() : Collections.emptySet(); }
+    public double getFarmingViewDistance() { return getConfigManager() != null ? getConfigManager().getFarmingViewDistance() : 0; }
+    public double getLodBeamDistSq() { return getConfigManager() != null ? getConfigManager().getLodBeamDistSq() : 0; }
+    public Map<org.bukkit.block.Block, CropSymbol> getActiveCropSymbols() { return stateRepository.getActiveCropSymbols(); }
+    public Map<UUID, TrackedItem> getTrackedItems() { return stateRepository.getTrackedItems(); }
+    public Map<String, Set<UUID>> getItemsByWorld() { return getTrackedItemManager() != null ? getTrackedItemManager().getItemsByWorld() : Collections.emptyMap(); }
+    public Map<String, NamedTextColor> getItemCategories() { return stateRepository.getItemCategories(); }
+    public Map<String, Particle> getCategoryParticles() { return stateRepository.getCategoryParticles(); }
+    public Map<String, Sound> getCategorySounds() { return stateRepository.getCategorySounds(); }
+    public Map<String, String> getCategoryNames() { return stateRepository.getCategoryNames(); }
+    public Map<String, NamedTextColor> getCategoryColors() { return stateRepository.getCategoryColors(); }
+    public Map<String, Integer> getCategoryLights() { return stateRepository.getCategoryLights(); }
+    public Map<UUID, Location> getActiveLights() { return stateRepository.getActiveLights(); }
+    public Map<String, org.bukkit.Particle.DustOptions> getCategoryDustOptions() { return stateRepository.getCategoryDustOptions(); }
+    public Set<UUID> getGloballyVisibleEntities() { return stateRepository.getGloballyVisibleEntities(); }
+    public Map<UUID, Integer> getBounceCounts() { return getRpgDropManager() != null ? getRpgDropManager().getBounceCounts() : Collections.emptyMap(); }
+    public Map<UUID, String> getItemCategoriesCache() { return stateRepository.getItemCategoriesCache(); }
 
-
-
-    private final Map<String, NamedTextColor> itemCategories = new HashMap<>();
-    private final Map<String, NamedTextColor> categoryColors = new HashMap<>();
-    private final Map<String, Particle> categoryParticles = new HashMap<>();
-    private final Map<String, String> categoryAnimTypes = new HashMap<>();
-    private final Map<String, Sound> categorySounds = new HashMap<>();
-    private final Map<UUID, TrackedItem> trackedItems = new java.util.concurrent.ConcurrentHashMap<>();
-    private final Map<UUID, TextDisplay> activeLabels = new DelegatingMap<>(trackedItems, ti -> ti.label, (ti, v) -> ti.label = v, (dUuid, iUuid) -> { if (trackedItemManager != null) trackedItemManager.registerDisplayEntity(dUuid, iUuid); }, dUuid -> { if (trackedItemManager != null) trackedItemManager.unregisterDisplayEntity(dUuid); });
-    private final Map<UUID, BlockDisplay> activeBeams = new DelegatingMap<>(trackedItems, ti -> ti.beam, (ti, v) -> ti.beam = v, (dUuid, iUuid) -> { if (trackedItemManager != null) trackedItemManager.registerDisplayEntity(dUuid, iUuid); }, dUuid -> { if (trackedItemManager != null) trackedItemManager.unregisterDisplayEntity(dUuid); });
-    private final Map<UUID, Long> itemSpawnTimes = new DelegatingMap<>(trackedItems, ti -> ti.spawnTime, (ti, v) -> ti.spawnTime = v);
-    private final Map<String, String> categoryNames = new HashMap<>();
-    private final Map<String, Component> displayNameOverridesCache = new HashMap<>();
-    private final Map<String, Integer> categoryLights = new HashMap<>();
-    private final Set<Integer> hiddenVanillaItems = java.util.concurrent.ConcurrentHashMap.newKeySet();
-    private final Map<UUID, Location> activeLights = new HashMap<>();
-    private final Set<UUID> hiddenVisuals = java.util.concurrent.ConcurrentHashMap.newKeySet();
-    private final Set<UUID> disabledMagnets = java.util.concurrent.ConcurrentHashMap.newKeySet();
-    private final Map<org.bukkit.block.Block, CropSymbol> activeCropSymbols = new HashMap<>();
-    private final Map<UUID, Location> lastFarmingScanLocations = new HashMap<>();
-    private final Map<UUID, org.bukkit.entity.Display> activeShadows = new DelegatingMap<>(trackedItems, ti -> ti.shadow, (ti, v) -> ti.shadow = v, (dUuid, iUuid) -> { if (trackedItemManager != null) trackedItemManager.registerDisplayEntity(dUuid, iUuid); }, dUuid -> { if (trackedItemManager != null) trackedItemManager.unregisterDisplayEntity(dUuid); });
-    private final Map<UUID, ItemDisplay> activeItemVisuals = new DelegatingMap<>(trackedItems, ti -> ti.visual, (ti, v) -> ti.visual = v, (dUuid, iUuid) -> { if (trackedItemManager != null) trackedItemManager.registerDisplayEntity(dUuid, iUuid); }, dUuid -> { if (trackedItemManager != null) trackedItemManager.unregisterDisplayEntity(dUuid); });
-    private final Map<UUID, Item> activeItems = new java.util.concurrent.ConcurrentHashMap<>();
-
-    private final Map<Integer, Component> timerComponentCache = new HashMap<>();
-    private final Map<UUID, Set<UUID>> visibleEntities = new java.util.concurrent.ConcurrentHashMap<>();
-    private final Map<String, org.bukkit.Particle.DustOptions> categoryDustOptions = new HashMap<>();
-    private org.bukkit.Particle.DustOptions defaultDustOptions;
-    private Set<UUID> globallyVisibleEntities = java.util.concurrent.ConcurrentHashMap.newKeySet();
-
-    private final Map<UUID, Long> lastHoloState = new DelegatingMap<>(trackedItems, ti -> ti.lastHoloState, (ti, v) -> ti.lastHoloState = v);
-    private final Map<UUID, Component> baseNameCache = new DelegatingMap<>(trackedItems, ti -> ti.baseName, (ti, v) -> ti.baseName = v);
-    private final Map<UUID, String> itemCategoriesCache = new DelegatingMap<>(trackedItems, ti -> ti.category, (ti, v) -> ti.category = v);
-    private final Map<UUID, Particle> itemParticlesCache = new DelegatingMap<>(trackedItems, ti -> ti.particle, (ti, v) -> ti.particle = v);
-    private final Map<UUID, Double> itemMoneyAmounts = new DelegatingMap<>(trackedItems, ti -> ti.moneyAmount, (ti, v) -> ti.moneyAmount = v);
-
-    // Pre-deserialized messages for performance
-    private String rawAmountFormat;
-    private String rawOwnerFormat;
-    private String rawBundleFormat;
-
-    private boolean isEnabled;
     private boolean usePapi;
     private boolean useWorldGuard;
     private boolean usePacketProvider = false;
     private fr.skynex.lootglow.packets.PacketProvider packetProvider;
-    private final Map<Integer, UUID> entityIdMap = new java.util.concurrent.ConcurrentHashMap<>();
     private NamespacedKey farmingKey;
     private NamespacedKey sourceMobKey;
     private boolean useMythic;
 
-    private final Map<UUID, List<UUID>> groupMembers = new HashMap<>();
-    private final Map<UUID, UUID> openContainers = new HashMap<>();
-    private final Set<UUID> groupedItems = new HashSet<>();
-    private final Map<UUID, Integer> groupLeaders = new HashMap<>();
-
     public boolean isFarmingEnabled() {
-        return configManager != null ? configManager.isFarmingEnabled() : false;
+        return getConfigManager() != null ? getConfigManager().isFarmingEnabled() : false;
     }
 
     public boolean isGroupingEnabled() {
-        return configManager != null ? configManager.isGroupingEnabled() : false;
+        return getConfigManager() != null ? getConfigManager().isGroupingEnabled() : false;
     }
 
     public boolean isBobbingEnabled() {
-        return configManager != null ? configManager.isBobbingEnabled() : true;
+        return getConfigManager() != null ? getConfigManager().isBobbingEnabled() : true;
     }
 
     public double getBobbingAmplitude() {
-        return configManager != null ? configManager.getBobbingAmplitude() : 0.05;
+        return getConfigManager() != null ? getConfigManager().getBobbingAmplitude() : 0.05;
     }
 
     public double getBobbingSpeed() {
-        return configManager != null ? configManager.getBobbingSpeed() : 0.08;
+        return getConfigManager() != null ? getConfigManager().getBobbingSpeed() : 0.08;
     }
 
     public int getLightColumnHeight() {
-        return configManager != null ? configManager.getLightColumnHeight() : 3;
+        return getConfigManager() != null ? getConfigManager().getLightColumnHeight() : 3;
     }
 
     public NamespacedKey getSourceMobKey() {
         return sourceMobKey;
     }
 
-
     public boolean isWorldAllowed(String worldName) {
-        return configManager != null ? configManager.isWorldAllowed(worldName) : true;
+        return getConfigManager() != null ? getConfigManager().isWorldAllowed(worldName) : true;
     }
 
     private final MiniMessage miniMessage = MiniMessage.miniMessage();
@@ -303,13 +211,17 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
 
     @Override
     public void onDisable() {
-        this.isEnabled = false;
         closeDatabase();
-        if (pluginDisableService != null) {
-            pluginDisableService.onDisable(activeLabels, activeBeams, activeItemVisuals, activeShadows, activeCropSymbols, hiddenVanillaItems, entityIdMap, trackedItems, activeLights, activeItems, getItemsByWorld(), timerComponentCache, getBounceCounts(), getRecentlyBounced(), lastFarmingScanLocations);
+        if (getPluginDisableService() != null) {
+            getPluginDisableService().onDisable(
+                    stateRepository.getActiveLabels(), stateRepository.getActiveBeams(), stateRepository.getActiveItemVisuals(),
+                    stateRepository.getActiveShadows(), stateRepository.getActiveCropSymbols(), stateRepository.getHiddenVanillaItems(),
+                    stateRepository.getEntityIdMap(), stateRepository.getTrackedItems(), stateRepository.getActiveLights(),
+                    stateRepository.getActiveItems(), getItemsByWorld(), stateRepository.getTimerComponentCache(),
+                    getBounceCounts(), getRecentlyBounced(), stateRepository.getLastFarmingScanLocations()
+            );
         }
     }
-
 
     public void debugLog(String message) {
         if (getConfig().getBoolean("settings.debug", false)) {
@@ -318,26 +230,25 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
     }
 
     public void loadConfiguration() {
-        if (glowTeamManager != null) {
-            glowTeamManager.clearScoreboardTeams();
+        if (getGlowTeamManager() != null) {
+            getGlowTeamManager().clearScoreboardTeams();
         }
 
         reloadConfig();
         loadMessages();
         resetStateOnReload();
 
-        if (configManager != null) {
-            configManager.loadAll(getConfig(), miniMessage, displayNameOverridesCache);
+        if (getConfigManager() != null) {
+            getConfigManager().loadAll(getConfig(), miniMessage, stateRepository.getDisplayNameOverridesCache());
         }
-        this.isEnabled = isPluginEnabled();
 
         setupTeams();
 
         debugLog("Configuration loaded. Debug mode enabled.");
-        debugLog("RPG Drops Enabled: " + isRpgDropsEnabled() + ", Enabled Categories: " + (configManager != null ? configManager.getRpgEnabledCategories() : "[]"));
+        debugLog("RPG Drops Enabled: " + isRpgDropsEnabled() + ", Enabled Categories: " + (getConfigManager() != null ? getConfigManager().getRpgEnabledCategories() : "[]"));
 
-        if (itemMergeManager != null) {
-            itemMergeManager.loadConfig();
+        if (getItemMergeManager() != null) {
+            getItemMergeManager().loadConfig();
         }
 
         startBackgroundTasks();
@@ -355,50 +266,49 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
     }
 
     private void startParticleTask() {
-        if (particleAnimationManager != null) {
-            particleAnimationManager.startParticleTask(isPluginEnabled(), configManager.isParticlesEnabled(), configManager.getLodPartDistSq(), activeItems, itemParticlesCache, itemCategoriesCache, hiddenVisuals, categoryDustOptions, defaultDustOptions, categoryAnimTypes, configManager.getParticleAnimType(), configManager.getParticlesFrequency());
+        if (getParticleAnimationManager() != null && getConfigManager() != null) {
+            getParticleAnimationManager().startParticleTask(isPluginEnabled(), getConfigManager().isParticlesEnabled(), getConfigManager().getLodPartDistSq(), stateRepository.getActiveItems(), stateRepository.getItemParticlesCache(), stateRepository.getItemCategoriesCache(), stateRepository.getHiddenVisuals(), stateRepository.getCategoryDustOptions(), stateRepository.getDefaultDustOptions(), stateRepository.getCategoryAnimTypes(), getConfigManager().getParticleAnimType(), getConfigManager().getParticlesFrequency());
         }
     }
 
     private void startLightingTask() {
         int interval = getConfig().getInt("settings.lighting.update-interval", 5);
-        if (lightService != null && configManager != null) {
-            lightService.startLightingTask(isPluginEnabled(), configManager.isLightingEnabled(), activeLights, activeItems, itemCategoriesCache, categoryLights, configManager.getCachedLightBlockData(), interval);
+        if (getLightService() != null && getConfigManager() != null) {
+            getLightService().startLightingTask(isPluginEnabled(), getConfigManager().isLightingEnabled(), stateRepository.getActiveLights(), stateRepository.getActiveItems(), stateRepository.getItemCategoriesCache(), stateRepository.getCategoryLights(), getConfigManager().getCachedLightBlockData(), interval);
         }
     }
 
     private void loadMessages() {
-        if (messageService != null) {
-            messageService.loadMessages(timerComponentCache);
-            this.rawAmountFormat = messageService.getRawAmountFormat();
-            this.rawOwnerFormat = messageService.getRawOwnerFormat();
-            this.rawBundleFormat = messageService.getRawBundleFormat();
+        if (getMessageService() != null) {
+            getMessageService().loadMessages(stateRepository.getTimerComponentCache());
+            stateRepository.setRawAmountFormat(getMessageService().getRawAmountFormat());
+            stateRepository.setRawOwnerFormat(getMessageService().getRawOwnerFormat());
+            stateRepository.setRawBundleFormat(getMessageService().getRawBundleFormat());
         }
     }
 
     public void sendMessage(CommandSender sender, String key) {
-        if (messageService != null) {
-            messageService.sendMessage(sender, key);
+        if (getMessageService() != null) {
+            getMessageService().sendMessage(sender, key);
         }
     }
 
     public void sendMessage(CommandSender sender, String key, @Nullable Map<String, String> placeholders) {
-        if (messageService != null) {
-            messageService.sendMessage(sender, key, placeholders);
+        if (getMessageService() != null) {
+            getMessageService().sendMessage(sender, key, placeholders);
         }
     }
 
-
     private void setupTeams() {
-        if (glowTeamManager != null) {
-            glowTeamManager.setupTeams();
+        if (getGlowTeamManager() != null) {
+            getGlowTeamManager().setupTeams();
         }
     }
 
     public boolean isInBlockedRegion(Location loc) {
-        if (!useWorldGuard || !configManager.isWgEnabled())
+        if (!useWorldGuard || getConfigManager() == null || !getConfigManager().isWgEnabled())
             return false;
-        return fr.skynex.lootglow.integration.WorldGuardHook.isInBlockedRegion(loc, configManager.getWgBlockedRegions());
+        return fr.skynex.lootglow.integration.WorldGuardHook.isInBlockedRegion(loc, getConfigManager().getWgBlockedRegions());
     }
 
     public void applyGlow(Item item) {
@@ -406,16 +316,16 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
     }
 
     public void applyGlow(Item item, boolean playAnimation) {
-        if (itemGlowApplyService != null && configManager != null) {
+        if (getItemGlowApplyService() != null && getConfigManager() != null) {
             fr.skynex.lootglow.model.ItemGlowContext ctx = new fr.skynex.lootglow.model.ItemGlowContext(
-                    isPluginEnabled(), configManager.isEconomyEnabled(), configManager.getEconomyKeys(), configManager.getEconomyColor(), configManager.getEconomySound(),
-                    itemMoneyAmounts, itemCategories, categoryNames, configManager.getDefaultColor(), categoryParticles,
-                    itemParticlesCache, itemCategoriesCache, configManager.getDespawnTime(), entityIdMap, getActiveItems(), getItemsByWorld(),
-                    configManager.isRpgDropsEnabled(), configManager.getRpgEnabledCategories(), configManager.getCategoryGlow(), configManager.isDefaultGlow(), hiddenVanillaItems,
-                    categorySounds, configManager.isHoloEnabled(), configManager.isHoloHideUncategorized(), itemSpawnTimes, baseNameCache,
-                    configManager.isProtectionEnabled(), configManager.getProtectionDuration(), configManager.isShadowsEnabled(), configManager.isBeamsEnabled(), configManager.getBeamCategories()
+                    isPluginEnabled(), getConfigManager().isEconomyEnabled(), getConfigManager().getEconomyKeys(), getConfigManager().getEconomyColor(), getConfigManager().getEconomySound(),
+                    stateRepository.getItemMoneyAmounts(), stateRepository.getItemCategories(), stateRepository.getCategoryNames(), getConfigManager().getDefaultColor(), stateRepository.getCategoryParticles(),
+                    stateRepository.getItemParticlesCache(), stateRepository.getItemCategoriesCache(), getConfigManager().getDespawnTime(), stateRepository.getEntityIdMap(), getActiveItems(), getItemsByWorld(),
+                    getConfigManager().isRpgDropsEnabled(), getConfigManager().getRpgEnabledCategories(), getConfigManager().getCategoryGlow(), getConfigManager().isDefaultGlow(), stateRepository.getHiddenVanillaItems(),
+                    stateRepository.getCategorySounds(), getConfigManager().isHoloEnabled(), getConfigManager().isHoloHideUncategorized(), stateRepository.getItemSpawnTimes(), stateRepository.getBaseNameCache(),
+                    getConfigManager().isProtectionEnabled(), getConfigManager().getProtectionDuration(), getConfigManager().isShadowsEnabled(), getConfigManager().isBeamsEnabled(), getConfigManager().getBeamCategories()
             );
-            itemGlowApplyService.applyGlow(item, playAnimation, ctx);
+            getItemGlowApplyService().applyGlow(item, playAnimation, ctx);
         }
     }
 
@@ -424,64 +334,58 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
     }
 
     public void playSpawnAnimation(Item item, String id) {
-        if (particleAnimationManager != null) {
-            particleAnimationManager.playSpawnAnimation(item, id, sourceMobKey, categoryParticles, configManager.getJumpForce(), configManager.getBurstAmount());
+        if (getParticleAnimationManager() != null && getConfigManager() != null) {
+            getParticleAnimationManager().playSpawnAnimation(item, id, sourceMobKey, stateRepository.getCategoryParticles(), getConfigManager().getJumpForce(), getConfigManager().getBurstAmount());
         }
     }
 
     public void updateHologram(Item item, NamedTextColor color) {
-        if (hologramService != null && configManager != null) {
+        if (getHologramService() != null && getConfigManager() != null) {
             fr.skynex.lootglow.model.HologramContext ctx = new fr.skynex.lootglow.model.HologramContext(
-                    configManager.isHoloEnabled(), itemCategoriesCache, configManager.isHoloHideUncategorized(),
-                    activeLabels, groupLeaders, lastHoloState, baseNameCache, displayNameOverridesCache,
-                    itemMoneyAmounts, configManager.getEconomyFormat(), configManager.getEconomyPrefix(),
-                    configManager.isHoloShowAmount(), rawAmountFormat, configManager.isProtectionEnabled(),
-                    configManager.getProtectionDuration(), itemSpawnTimes, rawOwnerFormat, usePapi,
-                    configManager.isHoloShowTimer(), timerComponentCache, configManager.isHoloTimerNewLine()
+                    getConfigManager().isHoloEnabled(), stateRepository.getItemCategoriesCache(), getConfigManager().isHoloHideUncategorized(),
+                    stateRepository.getActiveLabels(), stateRepository.getGroupLeaders(), stateRepository.getLastHoloState(), stateRepository.getBaseNameCache(), stateRepository.getDisplayNameOverridesCache(),
+                    stateRepository.getItemMoneyAmounts(), getConfigManager().getEconomyFormat(), getConfigManager().getEconomyPrefix(),
+                    getConfigManager().isHoloShowAmount(), stateRepository.getRawAmountFormat(), getConfigManager().isProtectionEnabled(),
+                    getConfigManager().getProtectionDuration(), stateRepository.getItemSpawnTimes(), stateRepository.getRawOwnerFormat(), usePapi,
+                    getConfigManager().isHoloShowTimer(), stateRepository.getTimerComponentCache(), getConfigManager().isHoloTimerNewLine()
             );
-            hologramService.updateHologram(item, color, ctx);
+            getHologramService().updateHologram(item, color, ctx);
         }
     }
 
     private void startGarbageCollectorTask() {
-        if (trackedItemManager != null) {
-            trackedItemManager.startGarbageCollectorTask(isPluginEnabled(), getActiveItems());
+        if (getTrackedItemManager() != null) {
+            getTrackedItemManager().startGarbageCollectorTask(isPluginEnabled(), getActiveItems());
         }
     }
 
     public void removeGlow(UUID uuid) {
-        if (visualSpawner != null) {
-            visualSpawner.removeGlow(uuid);
+        if (getVisualSpawner() != null) {
+            getVisualSpawner().removeGlow(uuid);
         }
     }
 
     private void startLODTask() {
-        if (lodManager != null) {
-            lodManager.startLODTask(isPluginEnabled(), configManager.isLodEnabled(), configManager.getLodBeamDistSq(), configManager.getLodHoloDistSq(), configManager.getFarmingViewDistance(),
-                    visibleEntities, hiddenVisuals, getActiveItems(), groupedItems, activeLabels, activeBeams,
-                    activeItemVisuals, activeShadows, getItemsByWorld(), configManager.isFarmingEnabled(), activeCropSymbols, configManager.getLodInterval(), globallyVisibleEntities);
+        if (getLodManager() != null && getConfigManager() != null) {
+            getLodManager().startLODTask(isPluginEnabled(), getConfigManager().isLodEnabled(), getConfigManager().getLodBeamDistSq(), getConfigManager().getLodHoloDistSq(), getConfigManager().getFarmingViewDistance(),
+                    stateRepository.getVisibleEntities(), stateRepository.getHiddenVisuals(), getActiveItems(), stateRepository.getGroupedItems(), stateRepository.getActiveLabels(), stateRepository.getActiveBeams(),
+                    stateRepository.getActiveItemVisuals(), stateRepository.getActiveShadows(), getItemsByWorld(), getConfigManager().isFarmingEnabled(), stateRepository.getActiveCropSymbols(), getConfigManager().getLodInterval(), stateRepository.getGloballyVisibleEntities());
         }
     }
 
-
     public void updateEntityVisibility(Player p, Entity entity, boolean shouldSee, Set<UUID> visibleSet) {
-        if (entityVisibilityService != null) {
-            entityVisibilityService.updateEntityVisibility(p, entity, shouldSee, visibleSet);
+        if (getEntityVisibilityService() != null) {
+            getEntityVisibilityService().updateEntityVisibility(p, entity, shouldSee, visibleSet);
         }
     }
 
     private boolean isHiddenToggleFor(Player p) {
-        return hiddenVisuals.contains(p.getUniqueId());
+        return stateRepository.getHiddenVisuals().contains(p.getUniqueId());
     }
 
-    /**
-     * Single unified scheduler that replaces 6 high-frequency independent Bukkit tasks.
-     * Runs every tick; internal counter dispatches 2-tick subtasks via modulo.
-     * This reduces Bukkit scheduler overhead (6 → 1 dispatch per tick).
-     */
     private void startUnifiedTickTask() {
-        if (pluginTickManager != null) {
-            pluginTickManager.startUnifiedTickTask(
+        if (getPluginTickManager() != null) {
+            getPluginTickManager().startUnifiedTickTask(
                     this::tickGlobalSync,
                     this::tickBouncing,
                     this::tickAspiration,
@@ -493,76 +397,72 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
     }
 
     private void tickMagnet() {
-        if (itemMagnetManager != null && configManager != null) {
-            itemMagnetManager.tickMagnet(configManager.isMagnetEnabled(), configManager.getMagnetDistance(), configManager.getMagnetPermission(), configManager.getMagnetCategories(),
-                    configManager.isMagnetEnableForGroups(), groupLeaders, groupMembers, groupedItems, itemCategoriesCache,
-                    configManager.isProtectionEnabled(), configManager.getProtectionDuration(), itemSpawnTimes);
+        if (getItemMagnetManager() != null && getConfigManager() != null) {
+            getItemMagnetManager().tickMagnet(getConfigManager().isMagnetEnabled(), getConfigManager().getMagnetDistance(), getConfigManager().getMagnetPermission(), getConfigManager().getMagnetCategories(),
+                    getConfigManager().isMagnetEnableForGroups(), stateRepository.getGroupLeaders(), stateRepository.getGroupMembers(), stateRepository.getGroupedItems(), stateRepository.getItemCategoriesCache(),
+                    getConfigManager().isProtectionEnabled(), getConfigManager().getProtectionDuration(), stateRepository.getItemSpawnTimes());
         }
     }
 
     private void tickBeamAnimation(float angle) {
-        if (beamTickService != null && beamManager != null && configManager != null) {
-            beamTickService.tickBeamAnimation(angle, configManager.isBeamsEnabled(), configManager.isBeamsAnimate(), activeBeams, globallyVisibleEntities,
-                    beamManager.getActiveBeamConfigs(), configManager.getBeamHeight(), configManager.getBeamWidth(), itemParticlesCache);
+        if (getBeamTickService() != null && getBeamManager() != null && getConfigManager() != null) {
+            getBeamTickService().tickBeamAnimation(angle, getConfigManager().isBeamsEnabled(), getConfigManager().isBeamsAnimate(), stateRepository.getActiveBeams(), stateRepository.getGloballyVisibleEntities(),
+                    getBeamManager().getActiveBeamConfigs(), getConfigManager().getBeamHeight(), getConfigManager().getBeamWidth(), stateRepository.getItemParticlesCache());
         }
     }
 
     private void tickFarmingAnimation(float angle) {
-        if (farmingManager != null && configManager != null) {
-            farmingManager.tickFarmingAnimation(angle, configManager.isFarmingEnabled(), configManager.isFarmingAnimation(), globallyVisibleEntities);
+        if (getFarmingManager() != null && getConfigManager() != null) {
+            getFarmingManager().tickFarmingAnimation(angle, getConfigManager().isFarmingEnabled(), getConfigManager().isFarmingAnimation(), stateRepository.getGloballyVisibleEntities());
         }
     }
-
 
     private void startFarmingTask() {
-        if (farmingManager != null) {
-            farmingManager.startFarmingTask(isPluginEnabled(), configManager.isFarmingEnabled(), configManager.getFarmingCrops(), configManager.getFarmingViewDistance(), lastFarmingScanLocations);
+        if (getFarmingManager() != null && getConfigManager() != null) {
+            getFarmingManager().startFarmingTask(isPluginEnabled(), getConfigManager().isFarmingEnabled(), getConfigManager().getFarmingCrops(), getConfigManager().getFarmingViewDistance(), stateRepository.getLastFarmingScanLocations());
         }
     }
 
-
     private void startGroupingTask() {
-        if (itemGroupingService != null && configManager != null) {
+        if (getItemGroupingService() != null && getConfigManager() != null) {
             fr.skynex.lootglow.model.ItemGroupingContext ctx = new fr.skynex.lootglow.model.ItemGroupingContext(
-                    isPluginEnabled(), configManager.isGroupingEnabled(), trackedItems, activeItems,
-                    itemCategoriesCache, groupedItems, groupLeaders, groupMembers, activeItemVisuals,
-                    configManager.isUseVisualBag(), configManager.getBagMaterial(), configManager.getBagHeadTexture(),
-                    configManager.isUseOwnerHead(), configManager.getBagCustomModelData(), configManager.getRpgRotation(),
-                    configManager.isHoloShowTimer(), rawBundleFormat, itemCategories, configManager.getDefaultColor(), miniMessage
+                    isPluginEnabled(), getConfigManager().isGroupingEnabled(), stateRepository.getTrackedItems(), stateRepository.getActiveItems(),
+                    stateRepository.getItemCategoriesCache(), stateRepository.getGroupedItems(), stateRepository.getGroupLeaders(), stateRepository.getGroupMembers(), stateRepository.getActiveItemVisuals(),
+                    getConfigManager().isUseVisualBag(), getConfigManager().getBagMaterial(), getConfigManager().getBagHeadTexture(),
+                    getConfigManager().isUseOwnerHead(), getConfigManager().getBagCustomModelData(), getConfigManager().getRpgRotation(),
+                    getConfigManager().isHoloShowTimer(), stateRepository.getRawBundleFormat(), stateRepository.getItemCategories(), getConfigManager().getDefaultColor(), miniMessage
             );
-            itemGroupingService.startGroupingTask(ctx);
+            getItemGroupingService().startGroupingTask(ctx);
         }
     }
 
     public void spawnHologram(Item item, NamedTextColor color) {
-        if (hologramService != null) {
-            hologramService.spawnHologram(item, color, configManager.isHoloEnabled(), itemCategoriesCache, configManager.isHoloHideUncategorized(),
-                    activeLabels, configManager.isHoloSeeThrough(), configManager.getHoloViewDistance(), configManager.isHoloBackground(), configManager.getHoloOffset(),
-                    baseNameCache, displayNameOverridesCache, itemMoneyAmounts, configManager.getEconomyFormat(), configManager.getEconomyPrefix(),
-                    configManager.isHoloShowAmount(), rawAmountFormat, configManager.isProtectionEnabled(), configManager.getProtectionDuration(), itemSpawnTimes,
-                    rawOwnerFormat, usePapi, configManager.isHoloShowTimer(), timerComponentCache, configManager.isHoloTimerNewLine(),
-                    configManager.getLodHoloDistSq(), hiddenVisuals, visibleEntities);
+        if (getHologramService() != null && getConfigManager() != null) {
+            getHologramService().spawnHologram(item, color, getConfigManager().isHoloEnabled(), stateRepository.getItemCategoriesCache(), getConfigManager().isHoloHideUncategorized(),
+                    stateRepository.getActiveLabels(), getConfigManager().isHoloSeeThrough(), getConfigManager().getHoloViewDistance(), getConfigManager().isHoloBackground(), getConfigManager().getHoloOffset(),
+                    stateRepository.getBaseNameCache(), stateRepository.getDisplayNameOverridesCache(), stateRepository.getItemMoneyAmounts(), getConfigManager().getEconomyFormat(), getConfigManager().getEconomyPrefix(),
+                    getConfigManager().isHoloShowAmount(), stateRepository.getRawAmountFormat(), getConfigManager().isProtectionEnabled(), getConfigManager().getProtectionDuration(), stateRepository.getItemSpawnTimes(),
+                    stateRepository.getRawOwnerFormat(), usePapi, getConfigManager().isHoloShowTimer(), stateRepository.getTimerComponentCache(), getConfigManager().isHoloTimerNewLine(),
+                    getConfigManager().getLodHoloDistSq(), stateRepository.getHiddenVisuals(), stateRepository.getVisibleEntities());
         }
     }
 
     public Component calculateBaseName(Item item, NamedTextColor color) {
-        return hologramService != null ? hologramService.calculateBaseName(item, color, displayNameOverridesCache, itemMoneyAmounts, configManager.getEconomyFormat(), configManager.getEconomyPrefix()) : Component.empty();
+        return getHologramService() != null && getConfigManager() != null ? getHologramService().calculateBaseName(item, color, stateRepository.getDisplayNameOverridesCache(), stateRepository.getItemMoneyAmounts(), getConfigManager().getEconomyFormat(), getConfigManager().getEconomyPrefix()) : Component.empty();
     }
 
     public Component buildFinalName(Item item, Component baseName) {
-        return hologramService != null ? hologramService.buildFinalName(item, baseName, configManager.isHoloShowAmount(), rawAmountFormat, configManager.isProtectionEnabled(), configManager.getProtectionDuration(), itemSpawnTimes, rawOwnerFormat, usePapi, configManager.isHoloShowTimer(), timerComponentCache, configManager.isHoloTimerNewLine()) : baseName;
+        return getHologramService() != null && getConfigManager() != null ? getHologramService().buildFinalName(item, baseName, getConfigManager().isHoloShowAmount(), stateRepository.getRawAmountFormat(), getConfigManager().isProtectionEnabled(), getConfigManager().getProtectionDuration(), stateRepository.getItemSpawnTimes(), stateRepository.getRawOwnerFormat(), usePapi, getConfigManager().isHoloShowTimer(), stateRepository.getTimerComponentCache(), getConfigManager().isHoloTimerNewLine()) : baseName;
     }
 
-
-
     public void spawnBeam(Item item, String category, NamedTextColor color) {
-        if (beamManager != null) {
-            beamManager.spawnBeam(item, category, color, activeBeams, configManager.getBeamHeight(), configManager.getBeamWidth(), configManager.isBeamsAnimate(), configManager.isBeamsUseCategoryColor(), configManager.getLodBeamDistSq(), hiddenVisuals, visibleEntities);
+        if (getBeamManager() != null && getConfigManager() != null) {
+            getBeamManager().spawnBeam(item, category, color, stateRepository.getActiveBeams(), getConfigManager().getBeamHeight(), getConfigManager().getBeamWidth(), getConfigManager().isBeamsAnimate(), getConfigManager().isBeamsUseCategoryColor(), getConfigManager().getLodBeamDistSq(), stateRepository.getHiddenVisuals(), stateRepository.getVisibleEntities());
         }
     }
 
     public Material getColorStainedGlass(NamedTextColor color) {
-        return beamManager != null ? beamManager.getColorStainedGlass(color) : Material.WHITE_STAINED_GLASS;
+        return getBeamManager() != null ? getBeamManager().getColorStainedGlass(color) : Material.WHITE_STAINED_GLASS;
     }
 
     public void removeGlow(Item item) {
@@ -571,169 +471,142 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
         removeGlow(item.getUniqueId());
     }
 
-    /**
-     * Like removeGlow but keeps Display entities alive (hologram, visual bag, beam, shadow).
-     * Used when removing the group leader during a leader transfer so the displays can be
-     * seamlessly re-assigned to the new leader without any flicker or respawn delay.
-     */
     public void removeGlowKeepDisplays(UUID uuid) {
-        if (visualSpawner != null) {
-            visualSpawner.removeGlowKeepDisplays(uuid);
+        if (getVisualSpawner() != null) {
+            getVisualSpawner().removeGlowKeepDisplays(uuid);
         }
-        groupedItems.remove(uuid);
+        stateRepository.getGroupedItems().remove(uuid);
     }
 
     public void refreshHologram(Item item) {
-        if (hologramService != null) {
-            hologramService.refreshHologram(item, configManager.isHoloEnabled(), configManager.isHoloHideUncategorized(), itemCategoriesCache, itemCategories, configManager.getDefaultColor(), lastHoloState);
+        if (getHologramService() != null && getConfigManager() != null) {
+            getHologramService().refreshHologram(item, getConfigManager().isHoloEnabled(), getConfigManager().isHoloHideUncategorized(), stateRepository.getItemCategoriesCache(), stateRepository.getItemCategories(), getConfigManager().getDefaultColor(), stateRepository.getLastHoloState());
         }
     }
 
     public void clearVisualsForPlayer(Player player) {
-        if (visualDisplayManager != null) {
-            visualDisplayManager.clearVisualsForPlayer(player, trackedItems);
+        if (getVisualDisplayManager() != null) {
+            getVisualDisplayManager().clearVisualsForPlayer(player, stateRepository.getTrackedItems());
         }
     }
 
     public void spawnShadow(Item item) {
-        if (rpgDropManager != null) {
-            rpgDropManager.spawnShadow(item);
+        if (getRpgDropManager() != null) {
+            getRpgDropManager().spawnShadow(item);
         }
     }
-
 
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label,
             @NotNull String[] args) {
-        return commandManager != null && commandManager.onCommand(sender, command, label, args);
+        return getCommandManager() != null && getCommandManager().onCommand(sender, command, label, args);
     }
 
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
             @NotNull String alias, @NotNull String[] args) {
-        return commandManager != null ? commandManager.onTabComplete(sender, command, alias, args) : Collections.emptyList();
+        return getCommandManager() != null ? getCommandManager().onTabComplete(sender, command, alias, args) : Collections.emptyList();
     }
 
     public boolean isOnlyPlayerDrops() {
-        return configManager != null && configManager.isOnlyPlayerDrops();
+        return getConfigManager() != null && getConfigManager().isOnlyPlayerDrops();
     }
 
-    /**
-     * Pré-enregistre un item comme RPG drop caché AVANT qu'il entre dans le monde.
-     * Appelé depuis PlayerDropItemEvent (LOWEST priority) — avant ItemSpawnEvent —
-     * pour éviter la race condition où Paper envoie SPAWN_ENTITY aux joueurs
-     * proches
-     * avant que hiddenVanillaItems soit rempli et que ProtocolLib puisse
-     * intercepter.
-     */
     public void preHideItem(Item item) {
-        if (itemGlowApplyService != null && configManager != null) {
-            itemGlowApplyService.preHideItem(item, isPluginEnabled(), isRpgDropsEnabled(), sourceMobKey, itemCategories, categoryNames, configManager.getRpgEnabledCategories(), entityIdMap, hiddenVanillaItems);
+        if (getItemGlowApplyService() != null && getConfigManager() != null) {
+            getItemGlowApplyService().preHideItem(item, isPluginEnabled(), isRpgDropsEnabled(), sourceMobKey, stateRepository.getItemCategories(), stateRepository.getCategoryNames(), getConfigManager().getRpgEnabledCategories(), stateRepository.getEntityIdMap(), stateRepository.getHiddenVanillaItems());
         }
     }
-    public boolean isHoloEnabled() { return configManager != null && configManager.isHoloEnabled(); }
-    public boolean isRpgDropsEnabled() { return configManager != null && configManager.isRpgDropsEnabled(); }
-    public boolean isHardLockEnabled() { return configManager != null && configManager.isHardLockEnabled(); }
-    public int getProtectionDuration() { return configManager != null ? configManager.getProtectionDuration() : 10; }
-    public String getBypassPermission() { return configManager != null ? configManager.getBypassPermission() : "lootglow.bypass.lock"; }
+    public boolean isHoloEnabled() { return getConfigManager() != null && getConfigManager().isHoloEnabled(); }
+    public boolean isRpgDropsEnabled() { return getConfigManager() != null && getConfigManager().isRpgDropsEnabled(); }
+    public boolean isHardLockEnabled() { return getConfigManager() != null && getConfigManager().isHardLockEnabled(); }
+    public int getProtectionDuration() { return getConfigManager() != null ? getConfigManager().getProtectionDuration() : 10; }
+    public String getBypassPermission() { return getConfigManager() != null ? getConfigManager().getBypassPermission() : "lootglow.bypass.lock"; }
     public boolean isProtocolLibEnabled() { return usePacketProvider; }
-    public Map<Integer, UUID> getEntityIdMap() { return entityIdMap; }
-    public boolean isRmbPickupEnabled() { return configManager != null && configManager.isRmbPickupEnabled(); }
-    public boolean isRmbPickupForce() { return configManager != null && configManager.isRmbPickupForce(); }
-    public double getRmbPickupRange() { return configManager != null ? configManager.getRmbPickupRange() : 3.0; }
-    public boolean isRmbPickupEnableForGroups() { return configManager != null && configManager.isRmbPickupEnableForGroups(); }
-    public Map<UUID, Long> getItemSpawnTimes() { return itemSpawnTimes; }
-    public Map<UUID, Component> getBaseNameCache() { return baseNameCache; }
-    public Map<UUID, Long> getLastHoloState() { return lastHoloState; }
-    public Map<UUID, ItemDisplay> getActiveItemVisuals() { return activeItemVisuals; }
-    public Map<UUID, TextDisplay> getActiveLabels() { return activeLabels; }
-    public Map<UUID, BlockDisplay> getActiveBeams() { return activeBeams; }
-    public Map<UUID, org.bukkit.entity.Display> getActiveShadows() { return activeShadows; }
-    public Set<Integer> getHiddenVanillaItems() { return hiddenVanillaItems; }
-    public Set<UUID> getHiddenVisuals() { return hiddenVisuals; }
-    public boolean isPluginEnabled() { return configManager != null ? configManager.isEnabled() : true; }
-
-    // -------------------------------------------------------------------------
-    // Packet Handling (ProtocolLib or PacketEvents)
-    // -------------------------------------------------------------------------
+    public Map<Integer, UUID> getEntityIdMap() { return stateRepository.getEntityIdMap(); }
+    public boolean isRmbPickupEnabled() { return getConfigManager() != null && getConfigManager().isRmbPickupEnabled(); }
+    public boolean isRmbPickupForce() { return getConfigManager() != null && getConfigManager().isRmbPickupForce(); }
+    public double getRmbPickupRange() { return getConfigManager() != null ? getConfigManager().getRmbPickupRange() : 3.0; }
+    public boolean isRmbPickupEnableForGroups() { return getConfigManager() != null && getConfigManager().isRmbPickupEnableForGroups(); }
+    public Map<UUID, Long> getItemSpawnTimes() { return stateRepository.getItemSpawnTimes(); }
+    public Map<UUID, Component> getBaseNameCache() { return stateRepository.getBaseNameCache(); }
+    public Map<UUID, Long> getLastHoloState() { return stateRepository.getLastHoloState(); }
+    public Map<UUID, ItemDisplay> getActiveItemVisuals() { return stateRepository.getActiveItemVisuals(); }
+    public Map<UUID, TextDisplay> getActiveLabels() { return stateRepository.getActiveLabels(); }
+    public Map<UUID, BlockDisplay> getActiveBeams() { return stateRepository.getActiveBeams(); }
+    public Map<UUID, org.bukkit.entity.Display> getActiveShadows() { return stateRepository.getActiveShadows(); }
+    public Set<Integer> getHiddenVanillaItems() { return stateRepository.getHiddenVanillaItems(); }
+    public Set<UUID> getHiddenVisuals() { return stateRepository.getHiddenVisuals(); }
+    public boolean isPluginEnabled() { return getConfigManager() != null ? getConfigManager().isEnabled() : true; }
 
     private void setupPacketProvider() {
-        if (visibilityPacketManager != null) {
-            this.packetProvider = visibilityPacketManager.setupPacketProvider();
+        if (getVisibilityPacketManager() != null) {
+            this.packetProvider = getVisibilityPacketManager().setupPacketProvider();
             this.usePacketProvider = (this.packetProvider != null);
         }
     }
 
     public void refreshGlowForPlayer(Player player, boolean showVisuals) {
-        if (entityVisibilityService != null && configManager != null) {
-            entityVisibilityService.refreshGlowForPlayer(player, showVisuals, hiddenVanillaItems, entityIdMap, visibleEntities, configManager.getFarmingViewDistance(), getActiveItems(), groupedItems, configManager.getLodHoloDistSq(), configManager.getLodBeamDistSq(), activeCropSymbols);
+        if (getEntityVisibilityService() != null && getConfigManager() != null) {
+            getEntityVisibilityService().refreshGlowForPlayer(player, showVisuals, stateRepository.getHiddenVanillaItems(), stateRepository.getEntityIdMap(), stateRepository.getVisibleEntities(), getConfigManager().getFarmingViewDistance(), getActiveItems(), stateRepository.getGroupedItems(), getConfigManager().getLodHoloDistSq(), getConfigManager().getLodBeamDistSq(), stateRepository.getActiveCropSymbols());
         }
         for (Item item : getActiveItems().values()) {
-            if (item.getWorld().equals(player.getWorld()) && !hiddenVanillaItems.contains(item.getEntityId())) {
+            if (item.getWorld().equals(player.getWorld()) && !stateRepository.getHiddenVanillaItems().contains(item.getEntityId())) {
                 player.hideEntity(this, item);
                 player.showEntity(this, item);
             }
         }
     }
 
-
-    // -------------------------------------------------------------------------
-    // Database
-    // -------------------------------------------------------------------------
-
     private void initDatabase() {
-        if (databaseManager != null) {
-            databaseManager.initDatabase();
+        if (getDatabaseManager() != null) {
+            getDatabaseManager().initDatabase();
         }
     }
 
     private void closeDatabase() {
-        if (databaseManager != null) {
-            databaseManager.closeDatabase();
+        if (getDatabaseManager() != null) {
+            getDatabaseManager().closeDatabase();
         }
     }
 
     public void loadPlayerData(Player player) {
-        if (databaseManager != null) {
-            databaseManager.loadPlayerData(player, hiddenVisuals, disabledMagnets);
+        if (getDatabaseManager() != null) {
+            getDatabaseManager().loadPlayerData(player, stateRepository.getHiddenVisuals(), stateRepository.getDisabledMagnets());
         }
     }
 
     public Set<UUID> getDisabledMagnets() {
-        return disabledMagnets;
+        return stateRepository.getDisabledMagnets();
     }
 
     public void savePlayerData(UUID uuid) {
-        if (databaseManager != null) {
-            boolean hidden = hiddenVisuals.contains(uuid);
-            boolean magDisabled = disabledMagnets.contains(uuid);
-            databaseManager.savePlayerData(uuid, hidden, magDisabled);
+        if (getDatabaseManager() != null) {
+            boolean hidden = stateRepository.getHiddenVisuals().contains(uuid);
+            boolean magDisabled = stateRepository.getDisabledMagnets().contains(uuid);
+            getDatabaseManager().savePlayerData(uuid, hidden, magDisabled);
         }
     }
 
-    // -------------------------------------------------------------------------
-    // Farming Highlights
-    // -------------------------------------------------------------------------
-
     public boolean isFarmingAllowed(Location loc) {
-        return farmingManager != null ? farmingManager.isFarmingAllowed(loc) : true;
+        return getFarmingManager() != null ? getFarmingManager().isFarmingAllowed(loc) : true;
     }
 
     public void spawnCropSymbol(org.bukkit.block.Block block) {
-        if (farmingManager != null) {
-            farmingManager.spawnCropSymbol(block);
+        if (getFarmingManager() != null) {
+            getFarmingManager().spawnCropSymbol(block);
         }
     }
 
     public void removeCropSymbol(org.bukkit.block.Block block) {
-        if (farmingManager != null) {
-            farmingManager.removeCropSymbol(block);
+        if (getFarmingManager() != null) {
+            getFarmingManager().removeCropSymbol(block);
         }
     }
 
     public void relinkCropSymbol(org.bukkit.block.Block block, BlockDisplay bd) {
         bd.setVisibleByDefault(false);
-        CropSymbol parts = activeCropSymbols.computeIfAbsent(block, k -> new CropSymbol(block.getLocation().add(0.5, configManager != null ? configManager.getFarmingOffset() : 0.0, 0.5)));
+        CropSymbol parts = stateRepository.getActiveCropSymbols().computeIfAbsent(block, k -> new CropSymbol(block.getLocation().add(0.5, getConfigManager() != null ? getConfigManager().getFarmingOffset() : 0.0, 0.5)));
         if (!parts.contains(bd)) {
             parts.add(bd);
         }
@@ -741,8 +614,8 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
     }
 
     public void updateCropSymbolVisibilityForWorld(CropSymbol cs) {
-        if (cs == null || cs.isEmpty() || configManager == null) return;
-        double farmDistSq = configManager.getFarmingViewDistance() * configManager.getFarmingViewDistance();
+        if (cs == null || cs.isEmpty() || getConfigManager() == null) return;
+        double farmDistSq = getConfigManager().getFarmingViewDistance() * getConfigManager().getFarmingViewDistance();
         Location loc = cs.location;
         World world = loc.getWorld();
         if (world == null) return;
@@ -751,7 +624,7 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
             UUID pUuid = p.getUniqueId();
             boolean isHiddenToggle = isHiddenToggleFor(p);
             boolean shouldSee = !isHiddenToggle && p.getLocation().distanceSquared(loc) <= farmDistSq;
-            Set<UUID> visibleSet = visibleEntities.computeIfAbsent(pUuid, k -> java.util.concurrent.ConcurrentHashMap.newKeySet());
+            Set<UUID> visibleSet = stateRepository.getVisibleEntities().computeIfAbsent(pUuid, k -> java.util.concurrent.ConcurrentHashMap.newKeySet());
 
             for (BlockDisplay bd : cs) {
                 if (bd == null || !bd.isValid()) continue;
@@ -768,161 +641,143 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
     }
 
     public boolean isUseWorldGuard() { return useWorldGuard; }
-    public boolean isWgEnabled() { return configManager != null && configManager.isWgEnabled(); }
-    public Material getFarmingMaterial() { return configManager != null ? configManager.getFarmingMaterial() : Material.AIR; }
-    public double getFarmingOffset() { return configManager != null ? configManager.getFarmingOffset() : 0.0; }
-    public float getFarmingScale() { return configManager != null ? configManager.getFarmingScale() : 1.0f; }
-    public NamedTextColor getFarmingGlowColor() { return configManager != null ? configManager.getFarmingGlowColor() : NamedTextColor.GREEN; }
-    public float getShadowScale() { return configManager != null ? configManager.getShadowScale() : 1.0f; }
-    public double getLodHoloDistSq() { return configManager != null ? configManager.getLodHoloDistSq() : 0.0; }
-    public Map<UUID, Set<UUID>> getVisibleEntities() { return visibleEntities; }
-    public void setGloballyVisibleEntities(Set<UUID> set) { this.globallyVisibleEntities = set; }
-
+    public boolean isWgEnabled() { return getConfigManager() != null && getConfigManager().isWgEnabled(); }
+    public Material getFarmingMaterial() { return getConfigManager() != null ? getConfigManager().getFarmingMaterial() : Material.AIR; }
+    public double getFarmingOffset() { return getConfigManager() != null ? getConfigManager().getFarmingOffset() : 0.0; }
+    public float getFarmingScale() { return getConfigManager() != null ? getConfigManager().getFarmingScale() : 1.0f; }
+    public NamedTextColor getFarmingGlowColor() { return getConfigManager() != null ? getConfigManager().getFarmingGlowColor() : NamedTextColor.GREEN; }
+    public float getShadowScale() { return getConfigManager() != null ? getConfigManager().getShadowScale() : 1.0f; }
+    public double getLodHoloDistSq() { return getConfigManager() != null ? getConfigManager().getLodHoloDistSq() : 0.0; }
+    public Map<UUID, Set<UUID>> getVisibleEntities() { return stateRepository.getVisibleEntities(); }
+    public void setGloballyVisibleEntities(Set<UUID> set) { stateRepository.setGloballyVisibleEntities(set); }
 
     public Set<Material> getFarmingCrops() {
-        return configManager != null ? configManager.getFarmingCrops() : Collections.emptySet();
+        return getConfigManager() != null ? getConfigManager().getFarmingCrops() : Collections.emptySet();
     }
 
     public NamespacedKey getFarmingKey() {
         return farmingKey;
     }
 
-    /**
-     * Force la cohérence vanilla/display pour un RPG drop sur tous les joueurs du
-     * monde.
-     * Respecte le toggle hiddenVisuals : les joueurs qui veulent voir le vanilla
-     * item
-     * l'ont via showEntity (override de setVisibleByDefault(false)), les autres
-     * voient
-     * l'ItemDisplay.
-     */
     public void broadcastRpgDropVisibility(Item item) {
-        if (entityVisibilityService != null) {
-            entityVisibilityService.broadcastRpgDropVisibility(item, activeItemVisuals, hiddenVisuals, groupedItems);
+        if (getEntityVisibilityService() != null) {
+            getEntityVisibilityService().broadcastRpgDropVisibility(item, stateRepository.getActiveItemVisuals(), stateRepository.getHiddenVisuals(), stateRepository.getGroupedItems());
         }
     }
 
     public void spawnItemVisual(Item item, String category, NamedTextColor color) {
-        if (itemVisualSpawnService != null && configManager != null) {
+        if (getItemVisualSpawnService() != null && getConfigManager() != null) {
             fr.skynex.lootglow.model.ItemVisualContext ctx = new fr.skynex.lootglow.model.ItemVisualContext(
-                    configManager.isUseVisualBag(), configManager.isRpgDropsEnabled(), groupLeaders,
-                    activeItemVisuals, entityIdMap, new java.util.HashSet<>(configManager.getRpgEnabledCategories()),
-                    hiddenVisuals, visibleEntities, configManager.getCategoryGlow(), configManager.isDefaultGlow(),
-                    configManager.getBagMaterial(), configManager.getBagHeadTexture(), configManager.isUseOwnerHead(), configManager.getBagCustomModelData(),
-                    configManager.getRpgItemScale(), configManager.getRpgBlockScale(), configManager.getRpgRotation()
+                    getConfigManager().isUseVisualBag(), getConfigManager().isRpgDropsEnabled(), stateRepository.getGroupLeaders(),
+                    stateRepository.getActiveItemVisuals(), stateRepository.getEntityIdMap(), new java.util.HashSet<>(getConfigManager().getRpgEnabledCategories()),
+                    stateRepository.getHiddenVisuals(), stateRepository.getVisibleEntities(), getConfigManager().getCategoryGlow(), getConfigManager().isDefaultGlow(),
+                    getConfigManager().getBagMaterial(), getConfigManager().getBagHeadTexture(), getConfigManager().isUseOwnerHead(), getConfigManager().getBagCustomModelData(),
+                    getConfigManager().getRpgItemScale(), getConfigManager().getRpgBlockScale(), getConfigManager().getRpgRotation()
             );
-            itemVisualSpawnService.spawnItemVisual(item, category, color, ctx);
+            getItemVisualSpawnService().spawnItemVisual(item, category, color, ctx);
         }
     }
 
-    /** Global sync tick: repositions all Display entities to follow their parent Item. Runs every tick. */
     private void tickGlobalSync() {
-        if (lootRenderPipeline != null) {
-            lootRenderPipeline.tickSync();
-        } else if (itemPhysicsService != null && configManager != null) {
-            itemPhysicsService.tickGlobalSync(isPluginEnabled(), getActiveItems(), trackedItems, configManager.getRpgBlockScale(), configManager.getRpgItemScale(), configManager.getBagMaterial(), groupLeaders, configManager.getHoloOffset(), configManager.getShadowScale(), configManager.getRpgRotation());
+        if (getLootRenderPipeline() != null) {
+            getLootRenderPipeline().tickSync();
+        } else if (getItemPhysicsService() != null && getConfigManager() != null) {
+            getItemPhysicsService().tickGlobalSync(isPluginEnabled(), getActiveItems(), stateRepository.getTrackedItems(), getConfigManager().getRpgBlockScale(), getConfigManager().getRpgItemScale(), getConfigManager().getBagMaterial(), stateRepository.getGroupLeaders(), getConfigManager().getHoloOffset(), getConfigManager().getShadowScale(), getConfigManager().getRpgRotation());
         }
     }
 
-    /** Bouncing tick: applies bounce physics to items. Runs every tick. */
     private void tickBouncing() {
-        if (rpgDropManager != null && configManager != null) {
-            rpgDropManager.tickBouncing(configManager.isBouncingEnabled(), getActiveItems(), configManager.getBouncingBlockedBlocks(), configManager.isBouncingOnlyOnSnow(), configManager.getMaxBounces(), configManager.getJumpForce(), configManager.getBounceDamping());
+        if (getRpgDropManager() != null && getConfigManager() != null) {
+            getRpgDropManager().tickBouncing(getConfigManager().isBouncingEnabled(), getActiveItems(), getConfigManager().getBouncingBlockedBlocks(), getConfigManager().isBouncingOnlyOnSnow(), getConfigManager().getMaxBounces(), getConfigManager().getJumpForce(), getConfigManager().getBounceDamping());
         }
     }
-
-
 
     public void playAspirationAnimation(Item item, Player player) {
-        if (rpgDropManager != null && configManager != null) {
-            rpgDropManager.playAspirationAnimation(item, player, activeItemVisuals, configManager.isAspirationEnabled());
+        if (getRpgDropManager() != null && getConfigManager() != null) {
+            getRpgDropManager().playAspirationAnimation(item, player, stateRepository.getActiveItemVisuals(), getConfigManager().isAspirationEnabled());
         }
     }
 
-    /** Aspiration animation tick: flies item visuals towards the collecting player. Runs every tick. */
     private void tickAspiration() {
-        if (rpgDropManager != null && configManager != null) {
-            rpgDropManager.tickAspiration(configManager.isAspirationEnabled(), configManager.getAspirationSpeed());
+        if (getRpgDropManager() != null && getConfigManager() != null) {
+            getRpgDropManager().tickAspiration(getConfigManager().isAspirationEnabled(), getConfigManager().getAspirationSpeed());
         }
     }
-
 
     public void openLootContainer(Player player, UUID leaderUuid) {
-        if (groupContainerManager != null && configManager != null) {
-            groupContainerManager.openLootContainer(player, leaderUuid, configManager.isContainerEnabled(), configManager.getContainerTitle(), activeItemVisuals, configManager.getRpgBlockScale(), miniMessage);
+        if (getGroupContainerManager() != null && getConfigManager() != null) {
+            getGroupContainerManager().openLootContainer(player, leaderUuid, getConfigManager().isContainerEnabled(), getConfigManager().getContainerTitle(), stateRepository.getActiveItemVisuals(), getConfigManager().getRpgBlockScale(), miniMessage);
         }
     }
 
     public Map<UUID, UUID> getOpenContainers() {
-        return groupContainerManager != null ? groupContainerManager.getOpenContainers() : openContainers;
+        return getGroupContainerManager() != null ? getGroupContainerManager().getOpenContainers() : stateRepository.getOpenContainers();
     }
 
     public Map<UUID, List<UUID>> getGroupMembers() {
-        return groupContainerManager != null ? groupContainerManager.getGroupMembers() : groupMembers;
+        return getGroupContainerManager() != null ? getGroupContainerManager().getGroupMembers() : stateRepository.getGroupMembers();
     }
 
     public Map<UUID, Integer> getGroupLeaders() {
-        return groupLeaders;
+        return stateRepository.getGroupLeaders();
     }
 
     public Map<UUID, Item> getActiveItems() {
-        return trackedItemManager != null ? trackedItemManager.getActiveItems() : activeItems;
+        return getTrackedItemManager() != null ? getTrackedItemManager().getActiveItems() : stateRepository.getActiveItems();
     }
 
     public Set<UUID> getGroupedItems() {
-        return groupContainerManager != null ? groupContainerManager.getGroupedItems() : groupedItems;
+        return getGroupContainerManager() != null ? getGroupContainerManager().getGroupedItems() : stateRepository.getGroupedItems();
     }
 
     public boolean isContainerEnabled() {
-        return configManager != null && configManager.isContainerEnabled();
+        return getConfigManager() != null && getConfigManager().isContainerEnabled();
     }
 
     public boolean isContainerRequireClick() {
-        return configManager != null && configManager.isContainerRequireClick();
+        return getConfigManager() != null && getConfigManager().isContainerRequireClick();
     }
 
     public UUID getGroupLeader(UUID itemUuid) {
-        return groupContainerManager != null ? groupContainerManager.getGroupLeader(itemUuid) : null;
+        return getGroupContainerManager() != null ? getGroupContainerManager().getGroupLeader(itemUuid) : null;
     }
 
     public ItemStack createTexturedHead(String textureInput) {
-        return visualDisplayManager != null ? visualDisplayManager.createTexturedHead(textureInput) : new ItemStack(Material.PLAYER_HEAD);
+        return getVisualDisplayManager() != null ? getVisualDisplayManager().createTexturedHead(textureInput) : new ItemStack(Material.PLAYER_HEAD);
     }
 
     public String getBase64Texture(String input) {
-        return visualDisplayManager != null ? visualDisplayManager.getBase64Texture(input) : null;
+        return getVisualDisplayManager() != null ? getVisualDisplayManager().getBase64Texture(input) : null;
     }
 
     public Item getItemForDisplay(ItemDisplay display) {
-        return trackedItemManager != null ? trackedItemManager.getItemForDisplay(display) : null;
+        return getTrackedItemManager() != null ? getTrackedItemManager().getItemForDisplay(display) : null;
     }
 
     public Item getItemForLabel(TextDisplay label) {
-        return trackedItemManager != null ? trackedItemManager.getItemForLabel(label) : null;
+        return getTrackedItemManager() != null ? getTrackedItemManager().getItemForLabel(label) : null;
     }
 
     public void transferLeaderVisuals(UUID oldLeader, UUID newLeader) {
-        if (groupContainerManager != null) {
-            groupContainerManager.transferLeaderVisuals(oldLeader, newLeader);
+        if (getGroupContainerManager() != null) {
+            getGroupContainerManager().transferLeaderVisuals(oldLeader, newLeader);
         }
     }
 
     public ItemStack getOwnerHead(UUID owner) {
-        return visualDisplayManager != null ? visualDisplayManager.getOwnerHead(owner) : new ItemStack(Material.PLAYER_HEAD);
+        return getVisualDisplayManager() != null ? getVisualDisplayManager().getOwnerHead(owner) : new ItemStack(Material.PLAYER_HEAD);
     }
 
     public Map<UUID, Location> getLastFarmingScanLocations() {
-        return lastFarmingScanLocations;
+        return stateRepository.getLastFarmingScanLocations();
     }
 
-
-
     public boolean isFlatItemOrBlock(Material mat) {
-        return fr.skynex.lootglow.util.ItemTypeClassifier.isFlatItemOrBlock(mat, configManager != null ? configManager.getRpgForceFlatMaterials() : Collections.emptySet(), configManager != null ? configManager.getRpgForceUprightMaterials() : Collections.emptySet());
+        return fr.skynex.lootglow.util.ItemTypeClassifier.isFlatItemOrBlock(mat, getConfigManager() != null ? getConfigManager().getRpgForceFlatMaterials() : Collections.emptySet(), getConfigManager() != null ? getConfigManager().getRpgForceUprightMaterials() : Collections.emptySet());
     }
 
     public boolean isUprightItem(Material mat) {
-        return fr.skynex.lootglow.util.ItemTypeClassifier.isUprightItem(mat, configManager != null ? configManager.getRpgForceFlatMaterials() : Collections.emptySet(), configManager != null ? configManager.getRpgForceUprightMaterials() : Collections.emptySet());
+        return fr.skynex.lootglow.util.ItemTypeClassifier.isUprightItem(mat, getConfigManager() != null ? getConfigManager().getRpgForceFlatMaterials() : Collections.emptySet(), getConfigManager() != null ? getConfigManager().getRpgForceUprightMaterials() : Collections.emptySet());
     }
 
     public boolean isFishItem(Material mat) {
@@ -934,20 +789,20 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
     }
 
     public Double getMoneyAmount(ItemStack stack) {
-        return fr.skynex.lootglow.util.MoneyAmountParser.getMoneyAmount(stack, configManager != null && configManager.isEconomyEnabled(), configManager != null ? configManager.getEconomyKeys() : Collections.emptyList());
+        return fr.skynex.lootglow.util.MoneyAmountParser.getMoneyAmount(stack, getConfigManager() != null && getConfigManager().isEconomyEnabled(), getConfigManager() != null ? getConfigManager().getEconomyKeys() : Collections.emptyList());
     }
 
     public NamedTextColor parseNamedColor(String input) {
-        return configParser != null ? configParser.parseNamedColor(input) : NamedTextColor.WHITE;
+        return getConfigParser() != null ? getConfigParser().parseNamedColor(input) : NamedTextColor.WHITE;
     }
 
     public Sound parseSound(String input) {
-        return configParser != null ? configParser.parseSound(input) : null;
+        return getConfigParser() != null ? getConfigParser().parseSound(input) : null;
     }
 
     public void updateSurfaceAlignment(Item item) {
-        if (surfaceAlignmentManager != null) {
-            surfaceAlignmentManager.updateSurfaceAlignment(item, getRecentlyBounced());
+        if (getSurfaceAlignmentManager() != null) {
+            getSurfaceAlignmentManager().updateSurfaceAlignment(item, getRecentlyBounced());
         }
     }
 
@@ -1011,84 +866,32 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
     @Override public void removeMergeAmount(@NotNull Item item, int amount) { apiImpl.removeMergeAmount(item, amount); }
 
     private void initManagersAndServices() {
-        this.serviceRegistry = new fr.skynex.lootglow.registry.ServiceRegistry();
-        this.spatialIndexService = new fr.skynex.lootglow.spatial.LootSpatialIndexService(this);
-        this.lootEventDispatcher = new fr.skynex.lootglow.event.LootEventDispatcher(this);
-
-        this.databaseManager = new DatabaseManager(this);
-        this.trackedItemManager = new TrackedItemManager(this, trackedItems, activeItems, entityIdMap, globallyVisibleEntities);
-        this.beamManager = new BeamManager(this);
-        this.hologramManager = new HologramManager(this);
-        this.configManager = new LootGlowConfigManager(this);
-        this.commandManager = new LootGlowCommandManager(this);
-        this.farmingManager = new fr.skynex.lootglow.managers.FarmingManager(this);
-        this.rpgDropManager = new fr.skynex.lootglow.managers.RPGDropManager(this);
-        this.particleAnimationManager = new fr.skynex.lootglow.managers.ParticleAnimationManager(this);
-        this.groupContainerManager = new fr.skynex.lootglow.managers.GroupContainerManager(this);
-        this.lootProtectionManager = new fr.skynex.lootglow.managers.LootProtectionManager(this);
-        this.itemMergeManager = new fr.skynex.lootglow.managers.ItemMergeManager(this);
-        this.itemMergeManager.loadConfig();
-        this.occlusionManager = new fr.skynex.lootglow.managers.OcclusionManager();
-        this.glowManager = new fr.skynex.lootglow.managers.GlowManager();
-        this.itemMagnetManager = new fr.skynex.lootglow.managers.ItemMagnetManager(this);
-        this.economyDropManager = new fr.skynex.lootglow.managers.EconomyDropManager(this);
-        this.hologramRenderer = new fr.skynex.lootglow.managers.HologramRenderer(this);
-        this.surfaceAlignmentManager = new fr.skynex.lootglow.managers.SurfaceAlignmentManager(this);
-        this.glowTeamManager = new fr.skynex.lootglow.managers.GlowTeamManager(this);
-        this.visualDisplayManager = new fr.skynex.lootglow.managers.VisualDisplayManager(this);
-        this.pluginTickManager = new fr.skynex.lootglow.managers.PluginTickManager(this);
-        this.visualSpawner = new fr.skynex.lootglow.managers.VisualSpawner(this);
-        this.configParser = new fr.skynex.lootglow.config.ConfigParser(this);
-        this.integrationManager = new fr.skynex.lootglow.integration.IntegrationManager(this);
-        this.playerSettingsManager = new fr.skynex.lootglow.managers.PlayerSettingsManager(this);
-        this.visibilityPacketManager = new fr.skynex.lootglow.managers.VisibilityPacketManager(this);
-        this.lodManager = new fr.skynex.lootglow.managers.LODManager(this);
-        this.itemNameFormatter = new fr.skynex.lootglow.util.ItemNameFormatter();
-        this.lootWorldManager = new fr.skynex.lootglow.managers.LootWorldManager(this);
-        this.vanillaItemVisibilityManager = new fr.skynex.lootglow.managers.VanillaItemVisibilityManager(this);
-        this.rarityManager = new fr.skynex.lootglow.managers.RarityManager(this);
-        this.groundAuraManager = new fr.skynex.lootglow.managers.GroundAuraManager(this);
-        this.hologramTickService = new fr.skynex.lootglow.service.HologramTickService(this);
-        this.beamTickService = new fr.skynex.lootglow.service.BeamTickService(this);
-        this.itemRotationService = new fr.skynex.lootglow.service.ItemRotationService(this);
-        this.entityVisibilityService = new fr.skynex.lootglow.service.EntityVisibilityService(this);
-        this.itemVisualSpawnService = new fr.skynex.lootglow.service.ItemVisualSpawnService(this);
-        this.itemGroupingService = new fr.skynex.lootglow.service.ItemGroupingService(this);
-        this.hologramService = new fr.skynex.lootglow.service.HologramService(this);
-        this.pluginDisableService = new fr.skynex.lootglow.service.PluginDisableService(this);
-        this.messageService = new fr.skynex.lootglow.service.MessageService(this);
-        this.lightService = new fr.skynex.lootglow.service.LightService(this);
-        this.itemGlowApplyService = new fr.skynex.lootglow.service.ItemGlowApplyService(this);
-        this.itemPhysicsService = new fr.skynex.lootglow.service.ItemPhysicsService(this);
-        this.pluginLifecycleManager = new fr.skynex.lootglow.managers.PluginLifecycleManager(this);
-        this.lootRenderPipeline = new fr.skynex.lootglow.pipeline.LootRenderPipeline(this);
-
-        this.serviceRegistry.registerService(fr.skynex.lootglow.spatial.LootSpatialIndexService.class, spatialIndexService);
-        this.serviceRegistry.registerService(fr.skynex.lootglow.event.LootEventDispatcher.class, lootEventDispatcher);
-        this.serviceRegistry.registerService(fr.skynex.lootglow.pipeline.LootRenderPipeline.class, lootRenderPipeline);
-        this.serviceRegistry.registerService(fr.skynex.lootglow.service.ItemGlowApplyService.class, itemGlowApplyService);
-        this.serviceRegistry.registerService(fr.skynex.lootglow.service.ItemPhysicsService.class, itemPhysicsService);
-        this.serviceRegistry.registerService(fr.skynex.lootglow.service.HologramService.class, hologramService);
-        this.serviceRegistry.registerService(fr.skynex.lootglow.service.ItemGroupingService.class, itemGroupingService);
-        this.serviceRegistry.registerService(fr.skynex.lootglow.service.EntityVisibilityService.class, entityVisibilityService);
-        this.serviceRegistry.registerService(fr.skynex.lootglow.managers.ItemMagnetManager.class, itemMagnetManager);
+        fr.skynex.lootglow.managers.PluginLifecycleManager lifecycleManager = new fr.skynex.lootglow.managers.PluginLifecycleManager(this);
+        this.serviceRegistry = lifecycleManager.initializeServicesAndManagers(
+                getApiImpl(),
+                stateRepository.getTrackedItems(),
+                stateRepository.getActiveItems(),
+                stateRepository.getEntityIdMap(),
+                stateRepository.getGloballyVisibleEntities()
+        );
+        this.stateRepository.setTrackedItemManagerSupplier(this::getTrackedItemManager);
     }
 
     private void resetStateOnReload() {
-        if (pluginLifecycleManager != null) {
-            pluginLifecycleManager.resetStateOnReload();
+        if (getPluginLifecycleManager() != null) {
+            getPluginLifecycleManager().resetStateOnReload();
         }
     }
 
     private void registerListeners() {
-        if (pluginLifecycleManager != null) {
-            pluginLifecycleManager.registerListeners(useMythic);
+        if (getPluginLifecycleManager() != null) {
+            getPluginLifecycleManager().registerListeners(useMythic);
         }
     }
 
     private void registerCommands() {
-        if (pluginLifecycleManager != null) {
-            pluginLifecycleManager.registerCommands();
+        if (getPluginLifecycleManager() != null) {
+            getPluginLifecycleManager().registerCommands();
         }
     }
 

@@ -40,6 +40,23 @@ public class ServiceRegistry {
     }
 
     /**
+     * Registers a service instance using its runtime class.
+     */
+    public ServiceRegistry registerService(Object instance) {
+        if (instance != null) {
+            services.put(instance.getClass(), instance);
+        }
+        return this;
+    }
+
+    /**
+     * Convenient alias for getService(serviceClass).
+     */
+    public <T> T get(Class<T> serviceClass) {
+        return getService(serviceClass);
+    }
+
+    /**
      * Removes a registered service.
      */
     public <T> void unregisterService(Class<T> serviceClass) {

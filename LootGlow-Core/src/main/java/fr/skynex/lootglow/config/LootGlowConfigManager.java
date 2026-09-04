@@ -1,6 +1,7 @@
 package fr.skynex.lootglow.config;
 
 import fr.skynex.lootglow.LootGlow;
+import fr.skynex.lootglow.config.modules.*;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -14,11 +15,21 @@ import org.bukkit.configuration.file.FileConfiguration;
 import java.util.*;
 
 /**
- * Centralized manager holding all plugin configuration values, category mappings, and parsing logic.
+ * Centralized manager holding plugin configuration modules, category mappings, and parsing logic.
  */
 public class LootGlowConfigManager {
 
     private final LootGlow plugin;
+
+    // Sub-config modules
+    private final HologramConfig hologramConfig = new HologramConfig();
+    private final ParticleConfig particleConfig = new ParticleConfig();
+    private final FarmingConfig farmingConfig = new FarmingConfig();
+    private final EconomyConfig economyConfig = new EconomyConfig();
+    private final RpgConfig rpgConfig = new RpgConfig();
+    private final ProtectionConfig protectionConfig = new ProtectionConfig();
+    private final LodConfig lodConfig = new LodConfig();
+    private final BeamConfig beamConfig = new BeamConfig();
 
     // Core Settings
     private boolean isEnabled = true;
@@ -39,112 +50,37 @@ public class LootGlowConfigManager {
     private String containerTitle = "<gradient:gold:white>[Contenu du Butin]</gradient>";
     private boolean containerRequireClick = true;
 
-    // Economy
-    private boolean economyEnabled = true;
-    private String economyFormat = "<prefix><amount>";
-    private String economyPrefix = "&a$&f";
-    private NamedTextColor economyColor = NamedTextColor.GOLD;
-    private Sound economySound = Sound.ENTITY_EXPERIENCE_ORB_PICKUP;
-    private final List<NamespacedKey> economyKeys = new ArrayList<>();
-
-    // Visuals & Lighting
-    private boolean shadowsEnabled = true;
-    private float shadowScale = 0.4f;
+    // Lighting
     private boolean lightingEnabled = true;
+    private int lightColumnHeight = 3;
     private final Light[] cachedLightBlockData = new Light[16];
-
-    // Farming
-    private boolean farmingEnabled = true;
-    private NamedTextColor farmingGlowColor = NamedTextColor.GREEN;
-    private Material farmingMaterial = Material.EMERALD_BLOCK;
-    private float farmingScale = 0.2f;
-    private double farmingOffset = 1.5;
-    private boolean farmingAnimation = true;
-    private double farmingViewDistance = 24.0;
-    private final Set<Material> farmingCrops = new HashSet<>();
-
-    // RPG Drops
-    private boolean rpgDropsEnabled = true;
-    private List<String> rpgEnabledCategories = new ArrayList<>();
-    private float rpgRotation = (float) Math.toRadians(90.0);
-    private float rpgItemScale = 0.6f;
-    private float rpgBlockScale = 0.8f;
-    private final Set<Material> rpgForceFlatMaterials = new HashSet<>();
-    private final Set<Material> rpgForceUprightMaterials = new HashSet<>();
-
-    // Holograms
-    private boolean holoEnabled = true;
-    private double holoOffset = 0.7;
-    private boolean holoSeeThrough = false;
-    private boolean holoBackground = false;
-    private float holoViewDistance = 15.0f;
-    private boolean holoShowAmount = true;
-    private boolean holoShowTimer = true;
-    private boolean holoTimerNewLine = true;
-    private boolean holoHideUncategorized = false;
 
     // WorldGuard
     private boolean wgEnabled = true;
     private List<String> wgBlockedRegions = new ArrayList<>();
 
-    // Performance & LOD
-    private boolean lodEnabled = true;
-    private double lodHoloDistSq = 576.0;
-    private double lodBeamDistSq = 2304.0;
-    private double lodPartDistSq = 1024.0;
-    private int lodInterval = 20;
-
-    // Loot Protection
-    private boolean protectionEnabled = true;
-    private int protectionDuration = 10;
-    private boolean hardLockEnabled = true;
-    private String bypassPermission = "lootglow.bypass.lock";
-
-    private boolean bobbingEnabled = true;
-    private double bobbingAmplitude = 0.05;
-    private double bobbingSpeed = 0.08;
-    private int lightColumnHeight = 3;
-
-    // Beams
-    private boolean beamsEnabled = true;
-    private float beamHeight = 10.0f;
-    private float beamWidth = 0.05f;
-    private List<String> beamCategories = new ArrayList<>();
-    private boolean beamsAnimate = true;
-    private boolean beamsUseCategoryColor = true;
-
-    // Particles
-    private boolean particlesEnabled = true;
-    private int particlesFrequency = 10;
-    private String particleAnimType = "STILL";
-    private double particleSize = 1.0;
-
-    // Animations
+    // Spawn Animation & Magnet & Interaction & Bouncing & Aspiration
     private boolean spawnAnimEnabled = true;
     private double jumpForce = 0.25;
     private int burstAmount = 15;
 
-    // Magnet
     private boolean magnetEnabled = true;
     private boolean magnetEnableForGroups = false;
     private double magnetDistance = 5.0;
     private String magnetPermission = "lootglow.magnet";
     private List<String> magnetCategories = new ArrayList<>();
 
-    // Interaction (RMB)
     private boolean rmbPickupEnabled = false;
     private boolean rmbPickupForce = false;
     private double rmbPickupRange = 3.0;
     private boolean rmbPickupEnableForGroups = false;
 
-    // Bouncing
     private boolean bouncingEnabled = true;
     private int maxBounces = 3;
     private double bounceDamping = 0.6;
     private boolean bouncingOnlyOnSnow = false;
     private final Set<Material> bouncingBlockedBlocks = new HashSet<>();
 
-    // Aspiration
     private boolean aspirationEnabled = true;
     private double aspirationSpeed = 0.15;
 
@@ -171,6 +107,15 @@ public class LootGlowConfigManager {
         this.plugin = plugin;
     }
 
+    public HologramConfig getHologramConfig() { return hologramConfig; }
+    public ParticleConfig getParticleConfig() { return particleConfig; }
+    public FarmingConfig getFarmingConfig() { return farmingConfig; }
+    public EconomyConfig getEconomyConfig() { return economyConfig; }
+    public RpgConfig getRpgConfig() { return rpgConfig; }
+    public ProtectionConfig getProtectionConfig() { return protectionConfig; }
+    public LodConfig getLodConfig() { return lodConfig; }
+    public BeamConfig getBeamConfig() { return beamConfig; }
+
     public void loadAll(FileConfiguration config, MiniMessage miniMessage, Map<String, Component> displayNameOverridesCache) {
         this.isEnabled = config.getBoolean("settings.enabled", true);
         this.onlyPlayerDrops = config.getBoolean("settings.only-player-drops", false);
@@ -178,6 +123,16 @@ public class LootGlowConfigManager {
         loadWorldFiltering(config, filteredWorlds);
         this.despawnTime = config.getInt("settings.despawn-time", 300);
         this.defaultGlow = config.getBoolean("settings.default-glow", true);
+
+        // Sub-configs
+        this.hologramConfig.load(config);
+        this.particleConfig.load(config);
+        this.farmingConfig.load(config, plugin);
+        this.economyConfig.load(config, plugin);
+        this.rpgConfig.load(config);
+        this.protectionConfig.load(config);
+        this.lodConfig.load(config);
+        this.beamConfig.load(config);
 
         // Grouping & Container
         this.groupingEnabled = config.getBoolean("settings.grouping.enabled", true);
@@ -192,20 +147,6 @@ public class LootGlowConfigManager {
         this.containerTitle = config.getString("settings.grouping.container.title", "<gradient:gold:white>[Contenu du Butin]</gradient>");
         this.containerRequireClick = config.getBoolean("settings.grouping.container.require-click", true);
 
-        // Economy
-        this.economyEnabled = config.getBoolean("settings.economy.enabled", true);
-        this.economyFormat = config.getString("settings.economy.format", "<prefix><amount>");
-        this.economyPrefix = config.getString("settings.economy.prefix", "&a$&f");
-        this.economyColor = plugin.parseNamedColor(config.getString("settings.economy.color", "GOLD"));
-        String ecoSoundStr = config.getString("settings.economy.sound", "ENTITY_EXPERIENCE_ORB_PICKUP");
-        this.economySound = plugin.parseSound(ecoSoundStr);
-        if (this.economySound == null) this.economySound = Sound.ENTITY_EXPERIENCE_ORB_PICKUP;
-
-        this.shadowsEnabled = config.getBoolean("settings.rpg-drops.shadows.enabled", true);
-        this.shadowScale = (float) config.getDouble("settings.rpg-drops.shadows.scale", 0.4);
-        this.bobbingEnabled = config.getBoolean("settings.rpg-drops.bobbing.enabled", true);
-        this.bobbingAmplitude = config.getDouble("settings.rpg-drops.bobbing.amplitude", 0.05);
-        this.bobbingSpeed = config.getDouble("settings.rpg-drops.bobbing.speed", 0.08);
         this.lightingEnabled = config.getBoolean("settings.lighting.enabled", true);
         this.lightColumnHeight = config.getInt("settings.lighting.column-height", 3);
         for (int i = 0; i <= 15; i++) {
@@ -215,92 +156,10 @@ public class LootGlowConfigManager {
                 cachedLightBlockData[i] = lightData;
             } catch (Exception ignored) {}
         }
-        loadEconomyKeys(config, economyKeys);
-
-        // Farming
-        this.farmingEnabled = config.getBoolean("settings.farming.enabled", true);
-        this.farmingGlowColor = plugin.parseNamedColor(config.getString("settings.farming.glow-color", "GREEN"));
-        String symbolMatStr = config.getString("settings.farming.symbol-material", "EMERALD_BLOCK");
-        this.farmingMaterial = Material.matchMaterial(symbolMatStr);
-        if (this.farmingMaterial == null || !this.farmingMaterial.isBlock()) {
-            if (symbolMatStr != null && !symbolMatStr.isEmpty()) {
-                plugin.getLogger().warning("[LootGlow] Farming symbol-material '" + symbolMatStr + "' is invalid or not a block! Falling back to EMERALD_BLOCK.");
-            }
-            this.farmingMaterial = Material.EMERALD_BLOCK;
-        }
-        this.farmingScale = (float) config.getDouble("settings.farming.symbol-scale", 0.2);
-        this.farmingOffset = config.getDouble("settings.farming.height-offset", 1.5);
-        this.farmingAnimation = config.getBoolean("settings.farming.animation", true);
-        this.farmingViewDistance = config.getDouble("settings.farming.view-distance", 24.0);
-        loadFarmingCrops(config, farmingCrops);
-
-        // RPG Drops
-        this.rpgDropsEnabled = config.getBoolean("settings.rpg-drops.enabled", true);
-        List<String> rawRpgCats = config.getStringList("settings.rpg-drops.enabled-categories");
-        this.rpgEnabledCategories = new ArrayList<>();
-        if (rawRpgCats != null) {
-            for (String c : rawRpgCats) {
-                if (c != null && !c.isBlank()) this.rpgEnabledCategories.add(c.toLowerCase());
-            }
-        }
-        this.rpgRotation = (float) Math.toRadians(config.getDouble("settings.rpg-drops.rotation-angle", 90.0));
-        this.rpgItemScale = (float) config.getDouble("settings.rpg-drops.item-scale", 0.6);
-        this.rpgBlockScale = (float) config.getDouble("settings.rpg-drops.block-scale", 0.8);
-        loadRpgSettings(config, rpgForceFlatMaterials, rpgForceUprightMaterials);
-
-        if (config.contains("settings.rpg-drops.scale")) {
-            float oldScale = (float) config.getDouble("settings.rpg-drops.scale");
-            if (!config.contains("settings.rpg-drops.item-scale")) this.rpgItemScale = oldScale;
-            if (!config.contains("settings.rpg-drops.block-scale")) this.rpgBlockScale = oldScale;
-        }
-
-        // Holograms
-        this.holoEnabled = config.getBoolean("settings.holograms.enabled", true);
-        this.holoOffset = config.getDouble("settings.holograms.height-offset", 0.7);
-        this.holoSeeThrough = config.getBoolean("settings.holograms.see-through", false);
-        this.holoBackground = config.getBoolean("settings.holograms.background", false);
-        this.holoViewDistance = (float) config.getDouble("settings.holograms.view-distance", 15.0);
-        this.holoShowAmount = config.getBoolean("settings.holograms.show-amount", true);
-        this.holoShowTimer = config.getBoolean("settings.holograms.show-timer", true);
-        this.holoTimerNewLine = config.getBoolean("settings.holograms.timer-on-new-line", true);
-        this.holoHideUncategorized = config.getBoolean("settings.holograms.hide-uncategorized", false);
 
         // WorldGuard
         this.wgEnabled = config.getBoolean("settings.worldguard.enabled", true);
         this.wgBlockedRegions = config.getStringList("settings.worldguard.blocked-regions");
-
-        // LOD
-        this.lodEnabled = config.getBoolean("settings.performance.lod.enabled", true);
-        this.lodHoloDistSq = Math.pow(config.getDouble("settings.performance.lod.hologram-distance", 24.0), 2);
-        this.lodBeamDistSq = Math.pow(config.getDouble("settings.performance.lod.beam-distance", 48.0), 2);
-        this.lodPartDistSq = Math.pow(config.getDouble("settings.performance.lod.particle-distance", 32.0), 2);
-        this.lodInterval = config.getInt("settings.performance.update-interval", 20);
-
-        // Protection
-        this.protectionEnabled = config.getBoolean("settings.loot-protection.enabled", true);
-        this.protectionDuration = config.getInt("settings.loot-protection.display-duration", 10);
-        this.hardLockEnabled = config.getBoolean("settings.loot-protection.hard-lock", true);
-        this.bypassPermission = config.getString("settings.loot-protection.bypass-permission", "lootglow.bypass.lock");
-
-        // Beams
-        this.beamsEnabled = config.getBoolean("settings.beams.enabled", true);
-        this.beamHeight = (float) config.getDouble("settings.beams.height", 10.0);
-        this.beamWidth = (float) config.getDouble("settings.beams.width", 0.05);
-        List<String> rawBeamCats = config.getStringList("settings.beams.enabled-categories");
-        this.beamCategories = new ArrayList<>();
-        if (rawBeamCats != null) {
-            for (String c : rawBeamCats) {
-                if (c != null && !c.isBlank()) this.beamCategories.add(c.toLowerCase());
-            }
-        }
-        this.beamsAnimate = config.getBoolean("settings.beams.animate", true);
-        this.beamsUseCategoryColor = config.getBoolean("settings.beams.use-category-color", true);
-
-        // Particles
-        this.particlesEnabled = config.getBoolean("settings.particles.enabled", true);
-        this.particlesFrequency = config.getInt("settings.particles.frequency", 10);
-        this.particleAnimType = config.getString("settings.particles.animation-type", "STILL");
-        this.particleSize = config.getDouble("settings.particles.size", 1.0);
 
         // Spawn Animation
         this.spawnAnimEnabled = config.getBoolean("settings.spawn-animation.enabled", true);
@@ -335,9 +194,9 @@ public class LootGlowConfigManager {
         this.defaultColor = plugin.parseNamedColor(defColorStr);
         this.defaultDustOptions = new Particle.DustOptions(
                 org.bukkit.Color.fromRGB(defaultColor.red(), defaultColor.green(), defaultColor.blue()),
-                (float) particleSize);
+                (float) particleConfig.getSize());
 
-        loadCategories(config, categoryColors, categoryDustOptions, particleSize, categoryLights, categoryGlow, displayNameOverridesCache, miniMessage, itemCategories, categoryNames, categoryParticles, categoryAnimTypes, particleAnimType, categorySounds);
+        loadCategories(config, categoryColors, categoryDustOptions, particleConfig.getSize(), categoryLights, categoryGlow, displayNameOverridesCache, miniMessage, itemCategories, categoryNames, categoryParticles, categoryAnimTypes, particleConfig.getAnimType(), categorySounds);
     }
 
     public boolean isEnabled() { return isEnabled; }
@@ -357,75 +216,75 @@ public class LootGlowConfigManager {
     public String getContainerTitle() { return containerTitle; }
     public boolean isContainerRequireClick() { return containerRequireClick; }
 
-    public boolean isEconomyEnabled() { return economyEnabled; }
-    public String getEconomyFormat() { return economyFormat; }
-    public String getEconomyPrefix() { return economyPrefix; }
-    public NamedTextColor getEconomyColor() { return economyColor; }
-    public Sound getEconomySound() { return economySound; }
-    public List<NamespacedKey> getEconomyKeys() { return economyKeys; }
+    public boolean isEconomyEnabled() { return economyConfig.isEnabled(); }
+    public String getEconomyFormat() { return economyConfig.getFormat(); }
+    public String getEconomyPrefix() { return economyConfig.getPrefix(); }
+    public NamedTextColor getEconomyColor() { return economyConfig.getColor(); }
+    public Sound getEconomySound() { return economyConfig.getSound(); }
+    public List<NamespacedKey> getEconomyKeys() { return economyConfig.getEconomyKeys(); }
 
-    public boolean isShadowsEnabled() { return shadowsEnabled; }
-    public float getShadowScale() { return shadowScale; }
+    public boolean isShadowsEnabled() { return rpgConfig.isShadowsEnabled(); }
+    public float getShadowScale() { return rpgConfig.getShadowScale(); }
     public boolean isLightingEnabled() { return lightingEnabled; }
     public Light[] getCachedLightBlockData() { return cachedLightBlockData; }
 
-    public boolean isFarmingEnabled() { return farmingEnabled; }
-    public NamedTextColor getFarmingGlowColor() { return farmingGlowColor; }
-    public Material getFarmingMaterial() { return farmingMaterial; }
-    public float getFarmingScale() { return farmingScale; }
-    public double getFarmingOffset() { return farmingOffset; }
-    public boolean isFarmingAnimation() { return farmingAnimation; }
-    public double getFarmingViewDistance() { return farmingViewDistance; }
-    public Set<Material> getFarmingCrops() { return farmingCrops; }
+    public boolean isFarmingEnabled() { return farmingConfig.isEnabled(); }
+    public NamedTextColor getFarmingGlowColor() { return farmingConfig.getGlowColor(); }
+    public Material getFarmingMaterial() { return farmingConfig.getMaterial(); }
+    public float getFarmingScale() { return farmingConfig.getScale(); }
+    public double getFarmingOffset() { return farmingConfig.getOffset(); }
+    public boolean isFarmingAnimation() { return farmingConfig.isAnimation(); }
+    public double getFarmingViewDistance() { return farmingConfig.getViewDistance(); }
+    public Set<Material> getFarmingCrops() { return farmingConfig.getCrops(); }
 
-    public boolean isRpgDropsEnabled() { return rpgDropsEnabled; }
-    public List<String> getRpgEnabledCategories() { return rpgEnabledCategories; }
-    public float getRpgRotation() { return rpgRotation; }
-    public float getRpgItemScale() { return rpgItemScale; }
-    public float getRpgBlockScale() { return rpgBlockScale; }
-    public Set<Material> getRpgForceFlatMaterials() { return rpgForceFlatMaterials; }
-    public Set<Material> getRpgForceUprightMaterials() { return rpgForceUprightMaterials; }
+    public boolean isRpgDropsEnabled() { return rpgConfig.isEnabled(); }
+    public List<String> getRpgEnabledCategories() { return rpgConfig.getEnabledCategories(); }
+    public float getRpgRotation() { return rpgConfig.getRotation(); }
+    public float getRpgItemScale() { return rpgConfig.getItemScale(); }
+    public float getRpgBlockScale() { return rpgConfig.getBlockScale(); }
+    public Set<Material> getRpgForceFlatMaterials() { return rpgConfig.getForceFlatMaterials(); }
+    public Set<Material> getRpgForceUprightMaterials() { return rpgConfig.getForceUprightMaterials(); }
 
-    public boolean isHoloEnabled() { return holoEnabled; }
-    public double getHoloOffset() { return holoOffset; }
-    public boolean isHoloSeeThrough() { return holoSeeThrough; }
-    public boolean isHoloBackground() { return holoBackground; }
-    public float getHoloViewDistance() { return holoViewDistance; }
-    public boolean isHoloShowAmount() { return holoShowAmount; }
-    public boolean isHoloShowTimer() { return holoShowTimer; }
-    public boolean isHoloTimerNewLine() { return holoTimerNewLine; }
-    public boolean isHoloHideUncategorized() { return holoHideUncategorized; }
+    public boolean isHoloEnabled() { return hologramConfig.isEnabled(); }
+    public double getHoloOffset() { return hologramConfig.getOffset(); }
+    public boolean isHoloSeeThrough() { return hologramConfig.isSeeThrough(); }
+    public boolean isHoloBackground() { return hologramConfig.isBackground(); }
+    public float getHoloViewDistance() { return hologramConfig.getViewDistance(); }
+    public boolean isHoloShowAmount() { return hologramConfig.isShowAmount(); }
+    public boolean isHoloShowTimer() { return hologramConfig.isShowTimer(); }
+    public boolean isHoloTimerNewLine() { return hologramConfig.isTimerNewLine(); }
+    public boolean isHoloHideUncategorized() { return hologramConfig.isHideUncategorized(); }
 
     public boolean isWgEnabled() { return wgEnabled; }
     public List<String> getWgBlockedRegions() { return wgBlockedRegions; }
 
-    public boolean isLodEnabled() { return lodEnabled; }
-    public double getLodHoloDistSq() { return lodHoloDistSq; }
-    public double getLodBeamDistSq() { return lodBeamDistSq; }
-    public double getLodPartDistSq() { return lodPartDistSq; }
-    public int getLodInterval() { return lodInterval; }
+    public boolean isLodEnabled() { return lodConfig.isEnabled(); }
+    public double getLodHoloDistSq() { return lodConfig.getHoloDistSq(); }
+    public double getLodBeamDistSq() { return lodConfig.getBeamDistSq(); }
+    public double getLodPartDistSq() { return lodConfig.getPartDistSq(); }
+    public int getLodInterval() { return lodConfig.getInterval(); }
 
-    public boolean isProtectionEnabled() { return protectionEnabled; }
-    public int getProtectionDuration() { return protectionDuration; }
-    public boolean isHardLockEnabled() { return hardLockEnabled; }
-    public String getBypassPermission() { return bypassPermission; }
+    public boolean isProtectionEnabled() { return protectionConfig.isEnabled(); }
+    public int getProtectionDuration() { return protectionConfig.getDuration(); }
+    public boolean isHardLockEnabled() { return protectionConfig.isHardLockEnabled(); }
+    public String getBypassPermission() { return protectionConfig.getBypassPermission(); }
 
-    public boolean isBobbingEnabled() { return bobbingEnabled; }
-    public double getBobbingAmplitude() { return bobbingAmplitude; }
-    public double getBobbingSpeed() { return bobbingSpeed; }
+    public boolean isBobbingEnabled() { return rpgConfig.isBobbingEnabled(); }
+    public double getBobbingAmplitude() { return rpgConfig.getBobbingAmplitude(); }
+    public double getBobbingSpeed() { return rpgConfig.getBobbingSpeed(); }
     public int getLightColumnHeight() { return lightColumnHeight; }
 
-    public boolean isBeamsEnabled() { return beamsEnabled; }
-    public float getBeamHeight() { return beamHeight; }
-    public float getBeamWidth() { return beamWidth; }
-    public List<String> getBeamCategories() { return beamCategories; }
-    public boolean isBeamsAnimate() { return beamsAnimate; }
-    public boolean isBeamsUseCategoryColor() { return beamsUseCategoryColor; }
+    public boolean isBeamsEnabled() { return beamConfig.isEnabled(); }
+    public float getBeamHeight() { return beamConfig.getHeight(); }
+    public float getBeamWidth() { return beamConfig.getWidth(); }
+    public List<String> getBeamCategories() { return beamConfig.getCategories(); }
+    public boolean isBeamsAnimate() { return beamConfig.isAnimate(); }
+    public boolean isBeamsUseCategoryColor() { return beamConfig.isUseCategoryColor(); }
 
-    public boolean isParticlesEnabled() { return particlesEnabled; }
-    public int getParticlesFrequency() { return particlesFrequency; }
-    public String getParticleAnimType() { return particleAnimType; }
-    public double getParticleSize() { return particleSize; }
+    public boolean isParticlesEnabled() { return particleConfig.isEnabled(); }
+    public int getParticlesFrequency() { return particleConfig.getFrequency(); }
+    public String getParticleAnimType() { return particleConfig.getAnimType(); }
+    public double getParticleSize() { return particleConfig.getSize(); }
 
     public boolean isSpawnAnimEnabled() { return spawnAnimEnabled; }
     public double getJumpForce() { return jumpForce; }
@@ -587,46 +446,6 @@ public class LootGlowConfigManager {
         }
     }
 
-    public void loadRpgSettings(FileConfiguration config,
-                                Set<Material> rpgForceFlatMaterials,
-                                Set<Material> rpgForceUprightMaterials) {
-        rpgForceFlatMaterials.clear();
-        List<String> flatMats = config.getStringList("settings.rpg-drops.force-flat-materials");
-        if (flatMats != null) {
-            for (String matStr : flatMats) {
-                if (matStr == null || matStr.trim().isEmpty()) continue;
-                String upper = matStr.trim().toUpperCase();
-                Material m = Material.matchMaterial(upper);
-                if (m != null) {
-                    rpgForceFlatMaterials.add(m);
-                }
-                for (Material mat : Material.values()) {
-                    if (mat.name().equals(upper) || (upper.contains("CANDLE") && mat.name().endsWith("_CANDLE"))) {
-                        rpgForceFlatMaterials.add(mat);
-                    }
-                }
-            }
-        }
-
-        rpgForceUprightMaterials.clear();
-        List<String> uprightMats = config.getStringList("settings.rpg-drops.force-upright-materials");
-        if (uprightMats != null) {
-            for (String matStr : uprightMats) {
-                if (matStr == null || matStr.trim().isEmpty()) continue;
-                String upper = matStr.trim().toUpperCase();
-                Material m = Material.matchMaterial(upper);
-                if (m != null) {
-                    rpgForceUprightMaterials.add(m);
-                }
-                for (Material mat : Material.values()) {
-                    if (mat.name().equals(upper)) {
-                        rpgForceUprightMaterials.add(mat);
-                    }
-                }
-            }
-        }
-    }
-
     public void loadBouncingSettings(FileConfiguration config, Set<Material> bouncingBlockedBlocks) {
         bouncingBlockedBlocks.clear();
         for (String blockName : config.getStringList("settings.spawn-animation.bouncing.blocked-blocks")) {
@@ -634,26 +453,6 @@ public class LootGlowConfigManager {
             if (m != null) {
                 bouncingBlockedBlocks.add(m);
             }
-        }
-    }
-
-    public void loadEconomyKeys(FileConfiguration config, List<NamespacedKey> economyKeys) {
-        economyKeys.clear();
-        for (String keyStr : config.getStringList("settings.economy.custom-keys")) {
-            if (keyStr.contains(":")) {
-                String[] parts = keyStr.split(":");
-                economyKeys.add(new NamespacedKey(parts[0], parts[1]));
-            }
-        }
-    }
-
-    public void loadFarmingCrops(FileConfiguration config, Set<Material> farmingCrops) {
-        farmingCrops.clear();
-        List<String> cropsList = config.getStringList("settings.farming.crops");
-        for (String crop : cropsList) {
-            Material m = Material.matchMaterial(crop);
-            if (m != null)
-                farmingCrops.add(m);
         }
     }
 }

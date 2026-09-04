@@ -37,7 +37,20 @@ public class LootRenderPipeline {
      */
     public void render(Item item, boolean playAnimation) {
         if (item == null || item.isDead()) return;
-        plugin.applyGlow(item, playAnimation);
+        var registry = plugin.getServiceRegistry();
+        var applyService = registry != null ? registry.get(fr.skynex.lootglow.service.ItemGlowApplyService.class) : plugin.getItemGlowApplyService();
+        if (applyService != null) {
+            applyService.applyGlow(item, playAnimation, new fr.skynex.lootglow.model.ItemGlowContext(
+                    plugin.isPluginEnabled(), plugin.getConfigManager().isEconomyEnabled(), plugin.getConfigManager().getEconomyKeys(), plugin.getConfigManager().getEconomyColor(), plugin.getConfigManager().getEconomySound(),
+                    plugin.getTrackedItems().isEmpty() ? java.util.Collections.emptyMap() : java.util.Collections.emptyMap(), plugin.getItemCategories(), plugin.getCategoryNames(), plugin.getConfigManager().getDefaultColor(), plugin.getCategoryParticles(),
+                    plugin.getItemParticlesCache(), plugin.getItemCategoriesCache(), plugin.getConfigManager().getDespawnTime(), plugin.getEntityIdMap(), plugin.getActiveItems(), plugin.getItemsByWorld(),
+                    plugin.getConfigManager().isRpgDropsEnabled(), plugin.getConfigManager().getRpgEnabledCategories(), plugin.getConfigManager().getCategoryGlow(), plugin.getConfigManager().isDefaultGlow(), plugin.getHiddenVanillaItems(),
+                    plugin.getCategorySounds(), plugin.getConfigManager().isHoloEnabled(), plugin.getConfigManager().isHoloHideUncategorized(), plugin.getItemSpawnTimes(), plugin.getBaseNameCache(),
+                    plugin.getConfigManager().isProtectionEnabled(), plugin.getConfigManager().getProtectionDuration(), plugin.getConfigManager().isShadowsEnabled(), plugin.getConfigManager().isBeamsEnabled(), plugin.getConfigManager().getBeamCategories()
+            ));
+        } else {
+            plugin.applyGlow(item, playAnimation);
+        }
     }
 
     /**
@@ -65,8 +78,10 @@ public class LootRenderPipeline {
      */
     public void tickSync() {
         if (!plugin.isPluginEnabled()) return;
-        if (plugin.getItemPhysicsService() != null) {
-            plugin.getItemPhysicsService().tickGlobalSync(
+        var registry = plugin.getServiceRegistry();
+        var physicsService = registry != null ? registry.get(fr.skynex.lootglow.service.ItemPhysicsService.class) : plugin.getItemPhysicsService();
+        if (physicsService != null) {
+            physicsService.tickGlobalSync(
                     plugin.isPluginEnabled(),
                     plugin.getActiveItems(),
                     plugin.getTrackedItems(),

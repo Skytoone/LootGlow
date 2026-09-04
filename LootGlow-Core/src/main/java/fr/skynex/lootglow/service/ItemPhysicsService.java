@@ -3,7 +3,6 @@ package fr.skynex.lootglow.service;
 import fr.skynex.lootglow.LootGlow;
 import fr.skynex.lootglow.model.TrackedItem;
 import fr.skynex.lootglow.managers.SurfaceAlignmentManager.SurfaceState;
-import fr.skynex.lootglow.util.FoliaScheduler;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.BlockDisplay;
