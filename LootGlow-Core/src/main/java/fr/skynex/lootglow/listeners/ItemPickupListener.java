@@ -10,6 +10,7 @@ import org.bukkit.event.entity.EntityPickupItemEvent;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 public class ItemPickupListener implements Listener {
 
@@ -29,12 +30,13 @@ public class ItemPickupListener implements Listener {
             }
 
             var gcMgr = plugin.getService(fr.skynex.lootglow.managers.GroupContainerManager.class);
-            var groupMembers = gcMgr != null ? gcMgr.getGroupMembers() : plugin.getStateRepository().getGroupMembers();
-            var groupedItems = gcMgr != null ? gcMgr.getGroupedItems() : plugin.getStateRepository().getGroupedItems();
+            UUID itemUuid = event.getItem().getUniqueId();
+            boolean isGroupItem = (gcMgr != null && gcMgr.getGroupLeader(itemUuid) != null)
+                    || plugin.getStateRepository().getGroupMembers().containsKey(itemUuid)
+                    || plugin.getStateRepository().getGroupedItems().contains(itemUuid);
 
             if (cfgMgr != null && cfgMgr.isContainerEnabled() && cfgMgr.isContainerRequireClick()) {
-                if (groupMembers.containsKey(event.getItem().getUniqueId()) ||
-                    groupedItems.contains(event.getItem().getUniqueId())) {
+                if (isGroupItem) {
                     event.setCancelled(true);
                     return;
                 }

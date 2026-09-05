@@ -49,6 +49,8 @@ public class ItemTypeClassifierTest {
         assertTrue(ItemTypeClassifier.isUprightItem(Material.PLAYER_HEAD, empty, empty));
         assertTrue(ItemTypeClassifier.isUprightItem(Material.WHITE_BANNER, empty, empty));
         assertTrue(ItemTypeClassifier.isUprightItem(Material.RED_BED, empty, empty));
+        assertFalse(ItemTypeClassifier.isUprightItem(Material.DIAMOND_BLOCK, empty, empty));
+        assertFalse(ItemTypeClassifier.isUprightItem(Material.STONE, empty, empty));
     }
 
     @Test

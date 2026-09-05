@@ -105,6 +105,26 @@ public class LootGlowItemBuilder {
         return this;
     }
 
+    public LootGlowItemBuilder withCategory(@Nullable String category) {
+        return category(category);
+    }
+
+    public LootGlowItemBuilder withLootProtection(@NotNull UUID ownerUuid, long durationSeconds) {
+        return protection(ownerUuid, durationSeconds);
+    }
+
+    public LootGlowItemBuilder withParticle(@Nullable Particle particle) {
+        return particle(particle);
+    }
+
+    public LootGlowItemBuilder withBeaconBeam(boolean enabled, @Nullable Color color) {
+        return beaconBeam(enabled, color);
+    }
+
+    public LootGlowItemBuilder withCustomHologram(@Nullable String hologramText) {
+        return hologram(hologramText);
+    }
+
     public LootGlowItemBuilder dropSound(@Nullable Sound sound, float volume, float pitch) {
         this.dropSound = sound;
         this.soundVolume = volume;

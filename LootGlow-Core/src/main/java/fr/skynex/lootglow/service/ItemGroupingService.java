@@ -1,10 +1,12 @@
 package fr.skynex.lootglow.service;
 
 import fr.skynex.lootglow.LootGlow;
+import fr.skynex.lootglow.managers.TrackedItemManager;
 import fr.skynex.lootglow.model.TrackedItem;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.Item;
+import org.bukkit.entity.ItemDisplay;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -107,17 +109,27 @@ public class ItemGroupingService {
                 }
 
                 if (nearby.size() >= minItems && materials.size() > 1) {
-                    UUID leaderUuid = nearby.get(0).getUniqueId();
-                    tempLeaders.put(leaderUuid, nearby.size());
+                    Item leaderItem = nearby.get(0);
+                    fr.skynex.lootglow.api.events.LootBagGroupEvent groupEvent = new fr.skynex.lootglow.api.events.LootBagGroupEvent(leaderItem, nearby);
+                    org.bukkit.Bukkit.getPluginManager().callEvent(groupEvent);
+                    if (groupEvent.isCancelled()) continue;
+
+                    UUID leaderUuid = leaderItem.getUniqueId();
+                    int totalCount = 0;
                     List<UUID> members = new ArrayList<>();
                     for (int k = 0; k < nearby.size(); k++) {
-                        UUID mUuid = nearby.get(k).getUniqueId();
+                        Item ni = nearby.get(k);
+                        UUID mUuid = ni.getUniqueId();
                         members.add(mUuid);
+                        if (ni != null && ni.isValid() && ni.getItemStack() != null) {
+                            totalCount += ni.getItemStack().getAmount();
+                        }
                         if (k > 0) {
                             tempGrouped.add(mUuid);
                             processed.add(mUuid);
                         }
                     }
+                    tempLeaders.put(leaderUuid, totalCount);
                     tempMembers.put(leaderUuid, members);
                     processed.add(leaderUuid);
                 }
@@ -198,6 +210,54 @@ public class ItemGroupingService {
 
             // Update visual bag model
             if (useVisualBag) {
+                groupLeaders.keySet().forEach(lUuid -> {
+                    Item lItem = activeItems.get(lUuid);
+                    if (lItem != null && lItem.isValid()) {
+                        ItemDisplay visual = activeItemVisuals.get(lUuid);
+                        if (visual == null || !visual.isValid()) {
+                            var spawnSvc = plugin.getService(ItemVisualSpawnService.class);
+                            var cfgMgr = plugin.getConfigManager();
+                            String lCat = itemCategoriesCache.get(lUuid);
+                            net.kyori.adventure.text.format.NamedTextColor lColor = lCat != null ? itemCategories.get(lCat) : defaultColor;
+                            if (spawnSvc != null && cfgMgr != null) {
+                                fr.skynex.lootglow.model.ItemVisualContext ctxVis = new fr.skynex.lootglow.model.ItemVisualContext(
+                                        cfgMgr.isUseVisualBag(), cfgMgr.isRpgDropsEnabled(), plugin.getStateRepository().getGroupLeaders(),
+                                        plugin.getStateRepository().getActiveItemVisuals(), plugin.getStateRepository().getEntityIdMap(), new java.util.HashSet<>(cfgMgr.getRpgEnabledCategories()),
+                                        plugin.getStateRepository().getHiddenVisuals(), plugin.getStateRepository().getVisibleEntities(), cfgMgr.getCategoryGlow(), cfgMgr.isDefaultGlow(),
+                                        cfgMgr.getBagMaterial(), cfgMgr.getBagHeadTexture(), cfgMgr.isUseOwnerHead(), cfgMgr.getBagCustomModelData(),
+                                        cfgMgr.getRpgItemScale(), cfgMgr.getRpgBlockScale(), cfgMgr.getRpgRotation()
+                                );
+                                spawnSvc.spawnItemVisual(lItem, lCat, lColor, ctxVis);
+                            }
+                        }
+                    }
+                });
+
+                groupLeaders.keySet().forEach(lUuid -> {
+                    Item lItem = activeItems.get(lUuid);
+                    if (lItem != null && lItem.isValid()) {
+                        var trackedMgr = plugin.getService(TrackedItemManager.class);
+                        TrackedItem ti = trackedMgr != null ? trackedMgr.getTrackedItem(lUuid) : plugin.getStateRepository().getTrackedItems().get(lUuid);
+                        if (ti == null || ti.label == null || !ti.label.isValid()) {
+                            var holoSvc = plugin.getService(HologramService.class);
+                            var cfgMgr = plugin.getConfigManager();
+                            String lCat = itemCategoriesCache.get(lUuid);
+                            net.kyori.adventure.text.format.NamedTextColor lColor = lCat != null ? itemCategories.get(lCat) : defaultColor;
+                            if (holoSvc != null && cfgMgr != null) {
+                                fr.skynex.lootglow.model.HologramContext ctxHolo = new fr.skynex.lootglow.model.HologramContext(
+                                        cfgMgr.isHoloEnabled(), plugin.getStateRepository().getItemCategoriesCache(), cfgMgr.isHoloHideUncategorized(),
+                                        plugin.getStateRepository().getActiveLabels(), plugin.getStateRepository().getGroupLeaders(), plugin.getStateRepository().getLastHoloState(), plugin.getStateRepository().getBaseNameCache(), plugin.getStateRepository().getDisplayNameOverridesCache(),
+                                        plugin.getStateRepository().getItemMoneyAmounts(), cfgMgr.getEconomyFormat(), cfgMgr.getEconomyPrefix(),
+                                        cfgMgr.isHoloShowAmount(), plugin.getStateRepository().getRawAmountFormat(), cfgMgr.isProtectionEnabled(),
+                                        cfgMgr.getProtectionDuration(), plugin.getStateRepository().getItemSpawnTimes(), plugin.getStateRepository().getRawOwnerFormat(), org.bukkit.Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI"),
+                                        cfgMgr.isHoloShowTimer(), plugin.getStateRepository().getTimerComponentCache(), cfgMgr.isHoloTimerNewLine()
+                                );
+                                holoSvc.updateHologram(lItem, lColor, ctxHolo);
+                            }
+                        }
+                    }
+                });
+
                 activeItemVisuals.forEach((uuid, visual) -> {
                     if (!visual.isValid())
                         return;
@@ -234,7 +294,8 @@ public class ItemGroupingService {
                             visual.setItemDisplayTransform(org.bukkit.entity.ItemDisplay.ItemDisplayTransform.FIXED);
                             org.bukkit.util.Transformation t = visual.getTransformation();
                             t.getLeftRotation().set(new org.joml.Quaternionf());
-                            t.getTranslation().set(0f, 0.30f, 0f);
+                            float bagTransY = fr.skynex.lootglow.service.ItemVisualSpawnService.getBagYOffset(bagMaterial);
+                            t.getTranslation().set(0f, bagTransY, 0f);
                             t.getScale().set(1.0f, 1.0f, 1.0f);
                             visual.setTransformation(t);
                         }

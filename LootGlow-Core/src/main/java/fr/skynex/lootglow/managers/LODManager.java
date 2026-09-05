@@ -74,6 +74,8 @@ public class LODManager {
 
             Set<UUID> newGloballyVisible = new HashSet<>();
             double farmDistSq = farmingViewDistance * farmingViewDistance;
+            double maxDist = Math.sqrt(Math.max(lodBeamDistSq, lodHoloDistSq));
+            int chunkRadius = (int) Math.ceil(maxDist / 16.0);
 
             for (Player p : Bukkit.getOnlinePlayers()) {
                 UUID pUuid = p.getUniqueId();
@@ -83,8 +85,6 @@ public class LODManager {
                 Set<UUID> visibleSet = visibleEntities.computeIfAbsent(pUuid, k -> java.util.concurrent.ConcurrentHashMap.newKeySet());
                 boolean isHiddenToggle = hiddenVisuals.contains(pUuid);
 
-                double maxDist = Math.sqrt(Math.max(lodBeamDistSq, lodHoloDistSq));
-                int chunkRadius = (int) Math.ceil(maxDist / 16.0);
                 var trackedMgr = plugin.getService(TrackedItemManager.class);
                 Set<UUID> nearbyItemUuids = trackedMgr != null
                         ? trackedMgr.getItemsInChunkRadius(pWorld, ((int) px) >> 4, ((int) pz) >> 4, chunkRadius)

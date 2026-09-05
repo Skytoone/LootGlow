@@ -13,6 +13,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.TextDisplay;
 import org.bukkit.util.Transformation;
 
+import fr.skynex.lootglow.managers.HologramManager;
 import fr.skynex.lootglow.managers.HologramRenderer;
 import fr.skynex.lootglow.managers.LODManager;
 import fr.skynex.lootglow.managers.LootProtectionManager;
@@ -232,7 +233,11 @@ public class HologramService {
         String cat = itemCategoriesCache.get(uuid);
         var trackedMgr = plugin.getService(TrackedItemManager.class);
         if (cat == null && trackedMgr != null) cat = trackedMgr.getItemCategory(uuid);
-        if (holoHideUncategorized && cat == null) return;
+        if (holoHideUncategorized && cat == null) {
+            var holoMgr = plugin.getService(HologramManager.class);
+            if (holoMgr != null) holoMgr.removeHologram(uuid);
+            return;
+        }
 
         TextDisplay display = activeLabels.get(uuid);
         if (display == null || !display.isValid()) {
@@ -307,7 +312,11 @@ public class HologramService {
         String cat = itemCategoriesCache.get(uuid);
         var trackedMgr = plugin.getService(TrackedItemManager.class);
         if (cat == null && trackedMgr != null) cat = trackedMgr.getItemCategory(uuid);
-        if (holoHideUncategorized && cat == null) return;
+        if (holoHideUncategorized && cat == null) {
+            var holoMgr = plugin.getService(HologramManager.class);
+            if (holoMgr != null) holoMgr.removeHologram(uuid);
+            return;
+        }
 
         TextDisplay existing = activeLabels.get(uuid);
         if (existing != null && existing.isValid()) return;
@@ -373,8 +382,11 @@ public class HologramService {
             return;
         UUID uuid = item.getUniqueId();
         String cat = itemCategoriesCache.get(uuid);
-        if (holoHideUncategorized && cat == null)
+        if (holoHideUncategorized && cat == null) {
+            var holoMgr = plugin.getService(HologramManager.class);
+            if (holoMgr != null) holoMgr.removeHologram(uuid);
             return;
+        }
         NamedTextColor color = itemCategories.get(cat);
         if (color == null)
             color = defaultColor;

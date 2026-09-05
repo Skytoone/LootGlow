@@ -74,7 +74,14 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
     public void onEnable() {
         saveDefaultConfig();
         File configFile = new File(getDataFolder(), "config.yml");
-        ConfigUpdater.update(this, "config.yml", configFile);
+        if (configFile.exists()) {
+            try {
+                org.bukkit.configuration.file.YamlConfiguration tempCfg = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(configFile);
+                if (tempCfg.getBoolean("settings.auto-update-config", true)) {
+                    ConfigUpdater.update(this, "config.yml", configFile);
+                }
+            } catch (Exception ignored) {}
+        }
 
         initManagersAndServices();
         loadConfiguration();
@@ -152,6 +159,7 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
 
         if (lifecycle != null) {
             lifecycle.setupTeams();
+            lifecycle.startBackgroundTasks();
         }
 
         debugLog("Configuration loaded. Debug mode enabled.");
@@ -307,4 +315,10 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
     @Override public void setMergeAmount(@NotNull Item item, int amount) { apiImpl.setMergeAmount(item, amount); }
     @Override public void addMergeAmount(@NotNull Item item, int amount) { apiImpl.addMergeAmount(item, amount); }
     @Override public void removeMergeAmount(@NotNull Item item, int amount) { apiImpl.removeMergeAmount(item, amount); }
+    @Override public boolean isGrouped(@NotNull Item item) { return apiImpl.isGrouped(item); }
+    @Nullable @Override public Item getLootBagLeader(@NotNull Item item) { return apiImpl.getLootBagLeader(item); }
+    @NotNull @Override public List<Item> getGroupedMembers(@NotNull Item bagItem) { return apiImpl.getGroupedMembers(bagItem); }
+    @Override public void setParticleAnimationType(@NotNull Item item, @Nullable String animationType) { apiImpl.setParticleAnimationType(item, animationType); }
+    @Override public void setCustomLightLevel(@NotNull Item item, int lightLevel) { apiImpl.setCustomLightLevel(item, lightLevel); }
+    @Override public void pullItemsToPlayer(@NotNull Player player, double radius, @Nullable java.util.function.Predicate<Item> filter) { apiImpl.pullItemsToPlayer(player, radius, filter); }
 }

@@ -61,40 +61,14 @@ public class RPGDropManager {
 
     public void spawnShadow(Item item) {
         if (item == null || !item.isValid()) return;
-
-        Display existing = activeShadows.get(item.getUniqueId());
-        if (existing != null) {
-            if (existing.isValid()) return;
-            activeShadows.remove(item.getUniqueId());
-        }
-
-        Location loc = item.getLocation();
         var cfgMgr = plugin.getConfigManager();
-        float shadowScale = cfgMgr != null ? cfgMgr.getShadowScale() : 1.0f;
-        BlockDisplay shadow = item.getWorld().spawn(loc, BlockDisplay.class, ent -> {
-            ent.setShadowRadius(shadowScale * 0.8f);
-            ent.setShadowStrength(1.0f);
-            ent.setPersistent(false);
-        });
+        if (cfgMgr == null || !cfgMgr.isShadowsEnabled()) return;
+        float shadowScale = cfgMgr.getShadowScale();
 
-        activeShadows.put(item.getUniqueId(), shadow);
-
-        var trackedMgr = plugin.getService(TrackedItemManager.class);
-        if (trackedMgr != null) {
-            fr.skynex.lootglow.model.TrackedItem ti = trackedMgr.getOrCreateTrackedItem(item.getUniqueId());
-            ti.shadow = shadow;
-            trackedMgr.registerDisplayEntity(shadow.getUniqueId(), item.getUniqueId());
-        }
-
-        double lodHoloDistSq = cfgMgr != null ? cfgMgr.getLodHoloDistSq() : 0.0;
-        for (Player p : Bukkit.getOnlinePlayers()) {
-            if (!p.getWorld().equals(item.getWorld())) continue;
-            if (plugin.getStateRepository().getHiddenVisuals().contains(p.getUniqueId())
-                    || p.getLocation().distanceSquared(item.getLocation()) >= lodHoloDistSq) {
-                p.hideEntity(plugin, shadow);
-            } else {
-                plugin.getStateRepository().getVisibleEntities().computeIfAbsent(p.getUniqueId(), k -> java.util.concurrent.ConcurrentHashMap.newKeySet()).add(shadow.getUniqueId());
-            }
+        ItemDisplay visual = plugin.getStateRepository().getActiveItemVisuals().get(item.getUniqueId());
+        if (visual != null && visual.isValid()) {
+            visual.setShadowRadius(shadowScale * 0.8f);
+            visual.setShadowStrength(1.0f);
         }
     }
 

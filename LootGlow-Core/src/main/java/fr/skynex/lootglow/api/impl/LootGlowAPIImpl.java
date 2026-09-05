@@ -507,4 +507,75 @@ public class LootGlowAPIImpl implements LootGlowAPI {
             mergeMgr.removeMergeAmount(item, amount);
         }
     }
+
+    @Override
+    public boolean isGrouped(@NotNull Item item) {
+        if (item == null || plugin.getStateRepository() == null) return false;
+        return plugin.getStateRepository().getGroupedItems().contains(item.getUniqueId());
+    }
+
+    @Nullable
+    @Override
+    public Item getLootBagLeader(@NotNull Item item) {
+        if (item == null || plugin.getStateRepository() == null) return null;
+        UUID uuid = item.getUniqueId();
+        var stateRepo = plugin.getStateRepository();
+        if (stateRepo.getGroupLeaders().containsKey(uuid)) return item;
+        for (var entry : stateRepo.getGroupMembers().entrySet()) {
+            if (entry.getValue() != null && entry.getValue().contains(uuid)) {
+                return stateRepo.getActiveItems().get(entry.getKey());
+            }
+        }
+        return null;
+    }
+
+    @NotNull
+    @Override
+    public List<Item> getGroupedMembers(@NotNull Item bagItem) {
+        if (bagItem == null || plugin.getStateRepository() == null) return List.of();
+        List<UUID> memberUuids = plugin.getStateRepository().getGroupMembers().get(bagItem.getUniqueId());
+        if (memberUuids == null || memberUuids.isEmpty()) return List.of();
+        List<Item> members = new ArrayList<>();
+        var activeItems = plugin.getStateRepository().getActiveItems();
+        for (UUID mUuid : memberUuids) {
+            Item mItem = activeItems.get(mUuid);
+            if (mItem != null && mItem.isValid()) {
+                members.add(mItem);
+            }
+        }
+        return members;
+    }
+
+    @Override
+    public void setParticleAnimationType(@NotNull Item item, @Nullable String animationType) {
+        if (item == null || !item.isValid() || plugin.getStateRepository() == null) return;
+        if (animationType != null) {
+            plugin.getConfigManager().getCategoryAnimTypes().put("custom_" + item.getUniqueId(), animationType);
+        }
+    }
+
+    @Override
+    public void setCustomLightLevel(@NotNull Item item, int lightLevel) {
+        if (item == null || !item.isValid() || plugin.getStateRepository() == null) return;
+        plugin.getStateRepository().getActiveLights().put(item.getUniqueId(), item.getLocation());
+    }
+
+    @Override
+    public void pullItemsToPlayer(@NotNull Player player, double radius, @Nullable java.util.function.Predicate<Item> filter) {
+        if (player == null || !player.isOnline() || player.getWorld() == null) return;
+        var magMgr = plugin.getService(fr.skynex.lootglow.managers.ItemMagnetManager.class);
+        if (magMgr != null) {
+            if (filter == null) {
+                magMgr.pullItemsToPlayer(player, radius);
+            } else {
+                double radiusSq = radius * radius;
+                Location pLoc = player.getLocation();
+                for (Item item : getNearbyGlowingItems(pLoc, radius)) {
+                    if (item.isValid() && filter.test(item) && item.getLocation().distanceSquared(pLoc) <= radiusSq) {
+                        item.teleport(pLoc);
+                    }
+                }
+            }
+        }
+    }
 }

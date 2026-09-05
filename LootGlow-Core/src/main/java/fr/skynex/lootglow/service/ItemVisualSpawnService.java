@@ -110,8 +110,9 @@ public class ItemVisualSpawnService {
                 }
                 ent.setItemStack(bag);
                 ent.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
+                float bagTransY = getBagYOffset(bagMaterial);
                 ent.setTransformation(new org.bukkit.util.Transformation(
-                        new org.joml.Vector3f(0f, 0.30f, 0f),
+                        new org.joml.Vector3f(0f, bagTransY, 0f),
                         new org.joml.Quaternionf(),
                         new org.joml.Vector3f(1.0f, 1.0f, 1.0f),
                         new org.joml.Quaternionf()));
@@ -137,6 +138,12 @@ public class ItemVisualSpawnService {
             ent.setTeleportDuration(2);
             ent.setPersistent(false);
         });
+
+        var cfgMgr = plugin.getConfigManager();
+        if (cfgMgr != null && cfgMgr.isShadowsEnabled()) {
+            display.setShadowRadius(cfgMgr.getShadowScale() * 0.8f);
+            display.setShadowStrength(1.0f);
+        }
 
         boolean shouldGlow = categoryGlow.getOrDefault(category, defaultGlow);
         if (shouldGlow) display.setGlowing(true);
@@ -177,5 +184,13 @@ public class ItemVisualSpawnService {
                 if (debugMode) plugin.getLogger().info("[LootGlow Debug] applyVisibility SHOW display " + display.getUniqueId() + " for " + p.getName() + " canSee=" + p.canSee(display));
             }
         }
+    }
+
+    public static float getBagYOffset(Material bagMaterial) {
+        if (bagMaterial == null) return 0.30f;
+        String name = bagMaterial.name();
+        if (name.contains("BUNDLE")) return 0.42f;
+        if (name.contains("CHEST") || name.contains("BARREL") || name.contains("SHULKER_BOX")) return 0.18f;
+        return 0.30f;
     }
 }

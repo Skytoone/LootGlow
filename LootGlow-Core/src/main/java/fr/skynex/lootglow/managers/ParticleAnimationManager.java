@@ -165,6 +165,8 @@ public class ParticleAnimationManager {
 
         double lodPartDistSq = particleDist * particleDist;
         double partDistSq = lodPartDistSq;
+        double maxPartDist = Math.sqrt(lodPartDistSq);
+        int chunkRadius = (int) Math.ceil(maxPartDist / 16.0);
 
         particleTask = FoliaScheduler.runTimer(plugin, () -> {
             if (!isEnabled || !particleLoopEnabled) return;
@@ -182,22 +184,22 @@ public class ParticleAnimationManager {
                 double py = p.getY();
                 double pz = p.getZ();
 
-                double maxPartDist = Math.sqrt(lodPartDistSq);
-                int chunkRadius = (int) Math.ceil(maxPartDist / 16.0);
                 var trackedMgr = plugin.getService(TrackedItemManager.class);
                 Set<UUID> nearbyItemUuids = trackedMgr != null
                         ? trackedMgr.getItemsInChunkRadius(pWorld, ((int) px) >> 4, ((int) pz) >> 4, chunkRadius)
                         : Collections.emptySet();
                 if (nearbyItemUuids == null || nearbyItemUuids.isEmpty()) continue;
 
+                var gcMgr = plugin.getService(GroupContainerManager.class);
+                Set<UUID> groupedItems = gcMgr != null ? gcMgr.getGroupedItems() : plugin.getStateRepository().getGroupedItems();
+
                 for (UUID uuid : nearbyItemUuids) {
+                    if (groupedItems.contains(uuid)) continue;
                     Item item = activeItems.get(uuid);
                     if (item == null || item.isDead() || !item.isValid()) continue;
 
                     Particle particle = itemParticlesCache.get(uuid);
-                    if (particle == null) {
-                        particle = Particle.END_ROD;
-                    }
+                    if (particle == null) continue;
 
                     Location loc = item.getLocation();
                     double ix = loc.getX();

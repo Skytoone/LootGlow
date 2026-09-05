@@ -46,7 +46,9 @@ public class TrackedItemManager {
         this.activeItems = activeItems != null ? activeItems : new ConcurrentHashMap<>();
         this.entityIdMap = entityIdMap != null ? entityIdMap : new ConcurrentHashMap<>();
         this.globallyVisibleEntities = globallyVisibleEntities != null ? globallyVisibleEntities : ConcurrentHashMap.newKeySet();
-        this.itemCategoriesCache = plugin.getStateRepository().getItemCategoriesCache();
+        this.itemCategoriesCache = (plugin != null && plugin.getStateRepository() != null)
+                ? plugin.getStateRepository().getItemCategoriesCache()
+                : new ConcurrentHashMap<>();
     }
 
     public static long getChunkKey(int chunkX, int chunkZ) {

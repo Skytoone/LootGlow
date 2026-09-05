@@ -42,7 +42,8 @@ public class RpgConfig {
         this.bobbingSpeed = config.getDouble("settings.rpg-drops.bobbing.speed", 0.08);
 
         this.forceFlatMaterials.clear();
-        List<String> flatList = config.getStringList("settings.rpg-drops.force-flat-items");
+        List<String> flatList = config.getStringList("settings.rpg-drops.force-flat-materials");
+        if (flatList.isEmpty()) flatList = config.getStringList("settings.rpg-drops.force-flat-items");
         if (flatList != null) {
             for (String matStr : flatList) {
                 Material mat = Material.matchMaterial(matStr);
@@ -51,7 +52,8 @@ public class RpgConfig {
         }
 
         this.forceUprightMaterials.clear();
-        List<String> uprightList = config.getStringList("settings.rpg-drops.force-upright-items");
+        List<String> uprightList = config.getStringList("settings.rpg-drops.force-upright-materials");
+        if (uprightList.isEmpty()) uprightList = config.getStringList("settings.rpg-drops.force-upright-items");
         if (uprightList != null) {
             for (String matStr : uprightList) {
                 Material mat = Material.matchMaterial(matStr);

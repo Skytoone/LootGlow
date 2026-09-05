@@ -76,7 +76,13 @@ public class LootProtectionManager {
         if (item == null || !item.isValid()) return false;
         Long expiry = protectionExpiry.get(item.getUniqueId());
         if (expiry != null) {
-            return expiry < 0 || System.currentTimeMillis() <= expiry;
+            boolean active = expiry < 0 || System.currentTimeMillis() <= expiry;
+            if (!active) {
+                UUID owner = lootOwners.remove(item.getUniqueId());
+                protectionExpiry.remove(item.getUniqueId());
+                org.bukkit.Bukkit.getPluginManager().callEvent(new fr.skynex.lootglow.api.events.LootProtectionExpireEvent(item, owner));
+            }
+            return active;
         }
         org.bukkit.persistence.PersistentDataContainer pdc = item.getPersistentDataContainer();
         Long protectUntil = pdc.get(protectUntilKey, org.bukkit.persistence.PersistentDataType.LONG);

@@ -86,9 +86,9 @@ public class ItemInteractionListener implements Listener {
             UUID leaderUuid = gcMgr != null ? gcMgr.getGroupLeader(targetItem.getUniqueId()) : null;
             boolean isGroup = (leaderUuid != null);
             if (isGroup && (cfgMgr == null || !cfgMgr.isRmbPickupEnableForGroups())) {
+                event.setCancelled(true);
                 if (cfgMgr != null && cfgMgr.isContainerEnabled() && gcMgr != null) {
                     gcMgr.openLootContainer(player, leaderUuid, cfgMgr.isContainerEnabled(), cfgMgr.getContainerTitle(), plugin.getStateRepository().getActiveItemVisuals(), cfgMgr.getRpgBlockScale(), net.kyori.adventure.text.minimessage.MiniMessage.miniMessage());
-                    event.setCancelled(true);
                 }
                 return;
             }

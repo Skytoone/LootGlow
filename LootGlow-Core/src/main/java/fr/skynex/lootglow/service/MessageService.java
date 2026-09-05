@@ -38,7 +38,10 @@ public class MessageService {
         if (!messagesFile.exists()) {
             plugin.saveResource("messages.yml", false);
         } else {
-            ConfigUpdater.update(plugin, "messages.yml", messagesFile);
+            boolean autoUpdate = plugin.getConfig().getBoolean("settings.auto-update-config", true);
+            if (autoUpdate) {
+                ConfigUpdater.update(plugin, "messages.yml", messagesFile);
+            }
         }
         this.messagesConfig = YamlConfiguration.loadConfiguration(messagesFile);
 

@@ -25,13 +25,11 @@ public class ItemTypeClassifier {
     public static boolean isUprightItem(Material mat, Set<Material> forceFlatMaterials, Set<Material> forceUprightMaterials) {
         if (mat == null || mat == Material.AIR) return false;
         if (isFlatItemOrBlock(mat, forceFlatMaterials, forceUprightMaterials)) return false;
-        try {
-            if (mat.isBlock()) return true;
-        } catch (Throwable ignored) {}
+        if (forceUprightMaterials != null && forceUprightMaterials.contains(mat)) return true;
         String name = mat.name();
         return name.endsWith("_HEAD") || name.endsWith("_SKULL")
                 || name.endsWith("_BANNER") || name.endsWith("_BED")
-                || mat == Material.ARMOR_STAND || mat == Material.END_CRYSTAL;
+                || mat == Material.ARMOR_STAND;
     }
 
     public static boolean isFishItem(Material mat) {

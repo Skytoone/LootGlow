@@ -462,5 +462,56 @@ public interface LootGlowAPI {
      * @param amount Amount to remove
      */
     void removeMergeAmount(@NotNull Item item, int amount);
+
+    /**
+     * Checks if a dropped item entity is currently grouped inside a Loot Bag container.
+     *
+     * @param item Target dropped item entity
+     * @return True if grouped
+     */
+    boolean isGrouped(@NotNull Item item);
+
+    /**
+     * Gets the main leader item entity of the Loot Bag containing this item.
+     *
+     * @param item Target dropped item entity
+     * @return Leader Item entity or null if not grouped
+     */
+    @Nullable
+    Item getLootBagLeader(@NotNull Item item);
+
+    /**
+     * Retrieves all member dropped item entities grouped inside a Loot Bag leader.
+     *
+     * @param bagItem Leader dropped item entity of the Loot Bag
+     * @return List of member Item entities
+     */
+    @NotNull
+    List<Item> getGroupedMembers(@NotNull Item bagItem);
+
+    /**
+     * Sets a custom particle animation type for a dropped item entity (e.g. "CIRCLE", "SPIRAL", "DEFAULT").
+     *
+     * @param item Target dropped item entity
+     * @param animationType Animation type name or null for default
+     */
+    void setParticleAnimationType(@NotNull Item item, @Nullable String animationType);
+
+    /**
+     * Sets a custom light emission level for a dropped item entity.
+     *
+     * @param item Target dropped item entity
+     * @param lightLevel Light level (0 to 15)
+     */
+    void setCustomLightLevel(@NotNull Item item, int lightLevel);
+
+    /**
+     * Manually triggers item attraction towards a player within a specified radius with an optional predicate filter.
+     *
+     * @param player Target player
+     * @param radius Radius in blocks to pull items
+     * @param filter Predicate filter to select eligible items (or null for all)
+     */
+    void pullItemsToPlayer(@NotNull Player player, double radius, @Nullable java.util.function.Predicate<Item> filter);
 }
 

@@ -245,11 +245,9 @@ public class ItemGlowApplyService {
             }
             if (part == null) {
                 String partStr = plugin.getConfig().getString("categories." + category + ".particle");
+                var parser = plugin.getService(ConfigParser.class);
                 if (partStr != null) {
-                    try {
-                        NamespacedKey particleKey = NamespacedKey.minecraft(partStr.toLowerCase());
-                        part = Registry.PARTICLE_TYPE.get(particleKey);
-                    } catch (Exception ignored) {}
+                    part = parser != null ? parser.parseParticle(partStr) : new ConfigParser().parseParticle(partStr);
                 }
             }
 
@@ -257,6 +255,19 @@ public class ItemGlowApplyService {
                 categoryParticles.put(category, part);
                 itemParticlesCache.put(item.getUniqueId(), part);
             }
+        }
+
+        org.bukkit.Color rgbColor = color != null ? org.bukkit.Color.fromRGB(color.red(), color.green(), color.blue()) : null;
+        fr.skynex.lootglow.api.events.LootGlowApplyEvent applyEvent = new fr.skynex.lootglow.api.events.LootGlowApplyEvent(item, category, rgbColor);
+        Bukkit.getPluginManager().callEvent(applyEvent);
+        if (applyEvent.isCancelled()) return;
+
+        if (applyEvent.getCategory() != null) {
+            category = applyEvent.getCategory();
+        }
+        if (applyEvent.getGlowColor() != null) {
+            org.bukkit.Color evtCol = applyEvent.getGlowColor();
+            color = NamedTextColor.nearestTo(net.kyori.adventure.text.format.TextColor.color(evtCol.asRGB()));
         }
 
         final NamedTextColor finalColor = color;

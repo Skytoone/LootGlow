@@ -69,13 +69,7 @@ public class CategoryConfig {
             }
 
             String partStr = config.getString("categories." + key + ".particle");
-            Particle particle = null;
-            if (partStr != null) {
-                try {
-                    NamespacedKey particleKey = NamespacedKey.minecraft(partStr.toLowerCase());
-                    particle = Registry.PARTICLE_TYPE.get(particleKey);
-                } catch (Exception ignored) {}
-            }
+            Particle particle = configParser.parseParticle(partStr);
 
             String soundStr = config.getString("categories." + key + ".sound");
             Sound sound = null;

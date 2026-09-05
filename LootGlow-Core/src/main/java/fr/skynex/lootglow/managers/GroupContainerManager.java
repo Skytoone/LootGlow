@@ -20,35 +20,32 @@ import java.util.concurrent.ConcurrentHashMap;
 public class GroupContainerManager {
 
     private final LootGlow plugin;
-    private final Map<UUID, List<UUID>> groupMembers = new ConcurrentHashMap<>();
-    private final Map<UUID, UUID> openContainers = new ConcurrentHashMap<>();
-    private final Set<UUID> groupedItems = ConcurrentHashMap.newKeySet();
-    private final Set<UUID> groupLeaders = ConcurrentHashMap.newKeySet();
 
     public GroupContainerManager(LootGlow plugin) {
         this.plugin = plugin;
     }
 
     public Map<UUID, List<UUID>> getGroupMembers() {
-        return groupMembers;
+        return plugin.getStateRepository().getGroupMembers();
     }
 
     public Map<UUID, UUID> getOpenContainers() {
-        return openContainers;
+        return plugin.getStateRepository().getOpenContainers();
     }
 
     public Set<UUID> getGroupedItems() {
-        return groupedItems;
+        return plugin.getStateRepository().getGroupedItems();
     }
 
     public Set<UUID> getGroupLeaders() {
-        return groupLeaders;
+        return plugin.getStateRepository().getGroupLeaders().keySet();
     }
 
     public UUID getGroupLeader(UUID itemUuid) {
         if (itemUuid == null) return null;
-        if (groupMembers.containsKey(itemUuid)) return itemUuid;
-        for (Map.Entry<UUID, List<UUID>> entry : groupMembers.entrySet()) {
+        var members = getGroupMembers();
+        if (members.containsKey(itemUuid)) return itemUuid;
+        for (Map.Entry<UUID, List<UUID>> entry : members.entrySet()) {
             if (entry.getValue() != null && entry.getValue().contains(itemUuid)) {
                 return entry.getKey();
             }
@@ -59,13 +56,16 @@ public class GroupContainerManager {
     public void transferLeaderVisuals(UUID oldLeader, UUID newLeader) {
         if (oldLeader == null || newLeader == null) return;
         
-        groupLeaders.remove(oldLeader);
-        groupLeaders.add(newLeader);
-        groupedItems.remove(newLeader);
+        var stateRepo = plugin.getStateRepository();
+        Integer count = stateRepo.getGroupLeaders().remove(oldLeader);
+        if (count != null) {
+            stateRepo.getGroupLeaders().put(newLeader, count);
+        }
+        stateRepo.getGroupedItems().remove(newLeader);
 
-        List<UUID> members = groupMembers.remove(oldLeader);
+        List<UUID> members = stateRepo.getGroupMembers().remove(oldLeader);
         if (members != null) {
-            groupMembers.put(newLeader, members);
+            stateRepo.getGroupMembers().put(newLeader, members);
         }
 
         var trackedMgr = plugin.getService(TrackedItemManager.class);
@@ -93,7 +93,7 @@ public class GroupContainerManager {
 
     public void openLootContainer(Player player, UUID leaderUuid, boolean containerEnabled, String containerTitle, Map<UUID, ItemDisplay> activeItemVisuals, float rpgBlockScale, MiniMessage miniMessage) {
         if (!containerEnabled) return;
-        List<UUID> members = groupMembers.get(leaderUuid);
+        List<UUID> members = getGroupMembers().get(leaderUuid);
         if (members == null || members.isEmpty()) return;
 
         var trackedMgr = plugin.getService(TrackedItemManager.class);
@@ -147,14 +147,15 @@ public class GroupContainerManager {
             }
 
             player.openInventory(gui);
-            openContainers.put(player.getUniqueId(), leaderUuid);
+            getOpenContainers().put(player.getUniqueId(), leaderUuid);
         }, 8L);
     }
 
     public void clearAll() {
-        groupMembers.clear();
-        openContainers.clear();
-        groupedItems.clear();
-        groupLeaders.clear();
+        var stateRepo = plugin.getStateRepository();
+        stateRepo.getGroupMembers().clear();
+        stateRepo.getOpenContainers().clear();
+        stateRepo.getGroupedItems().clear();
+        stateRepo.getGroupLeaders().clear();
     }
 }
