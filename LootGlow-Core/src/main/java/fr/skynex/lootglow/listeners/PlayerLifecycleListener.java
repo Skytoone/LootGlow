@@ -49,7 +49,7 @@ public class PlayerLifecycleListener implements Listener {
                     }
                 }
             }
-        }, 40L);
+        }, 5L);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -78,7 +78,7 @@ public class PlayerLifecycleListener implements Listener {
                     }
                 }
             }
-        }, 20L);
+        }, 5L);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

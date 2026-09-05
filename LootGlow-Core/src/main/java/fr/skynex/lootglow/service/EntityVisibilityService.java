@@ -107,7 +107,7 @@ public class EntityVisibilityService {
             double dz = pz - item.getZ();
             double dSq = dx * dx + dy * dy + dz * dz;
             boolean isGrouped = groupedItems.contains(uuid);
-            if (isGrouped && showVisuals) {
+            if (isGrouped) {
                 player.hideEntity(plugin, item);
             }
 
@@ -160,27 +160,31 @@ public class EntityVisibilityService {
 
         var trackedMgr = plugin.getService(TrackedItemManager.class);
 
-        if (shouldSee && !currentlyVisible) {
-            if (!p.canSee(entity)) {
-                p.showEntity(plugin, entity);
+        if (shouldSee) {
+            if (!currentlyVisible || !p.canSee(entity)) {
+                if (!p.canSee(entity)) {
+                    p.showEntity(plugin, entity);
+                }
+                entity.getPassengers().forEach(pass -> {
+                    if (!p.canSee(pass)) p.showEntity(plugin, pass);
+                });
+                visibleSet.add(entUuid);
+                if (trackedMgr != null) {
+                    trackedMgr.registerDisplayViewer(entUuid, p.getUniqueId());
+                }
             }
-            entity.getPassengers().forEach(pass -> {
-                if (!p.canSee(pass)) p.showEntity(plugin, pass);
-            });
-            visibleSet.add(entUuid);
-            if (trackedMgr != null) {
-                trackedMgr.registerDisplayViewer(entUuid, p.getUniqueId());
-            }
-        } else if (!shouldSee && currentlyVisible) {
-            if (p.canSee(entity)) {
-                p.hideEntity(plugin, entity);
-            }
-            entity.getPassengers().forEach(pass -> {
-                if (p.canSee(pass)) p.hideEntity(plugin, pass);
-            });
-            visibleSet.remove(entUuid);
-            if (trackedMgr != null) {
-                trackedMgr.unregisterDisplayViewer(entUuid, p.getUniqueId());
+        } else {
+            if (currentlyVisible || p.canSee(entity)) {
+                if (p.canSee(entity)) {
+                    p.hideEntity(plugin, entity);
+                }
+                entity.getPassengers().forEach(pass -> {
+                    if (p.canSee(pass)) p.hideEntity(plugin, pass);
+                });
+                boolean wasTracked = visibleSet.remove(entUuid);
+                if (wasTracked && trackedMgr != null) {
+                    trackedMgr.unregisterDisplayViewer(entUuid, p.getUniqueId());
+                }
             }
         }
     }
