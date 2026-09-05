@@ -38,10 +38,15 @@ public class PlayerLifecycleListener implements Listener {
             if (visSvc != null) {
                 visSvc.refreshGlowForPlayer(p, !plugin.getStateRepository().getHiddenVisuals().contains(p.getUniqueId()), plugin.getStateRepository().getHiddenVanillaItems(), plugin.getStateRepository().getEntityIdMap(), plugin.getStateRepository().getVisibleEntities(), cfgMgr.getFarmingViewDistance(), activeItems, plugin.getStateRepository().getGroupedItems(), cfgMgr.getLodHoloDistSq(), cfgMgr.getLodBeamDistSq(), plugin.getStateRepository().getActiveCropSymbols());
             }
+            var groupedItems = plugin.getStateRepository().getGroupedItems();
             for (org.bukkit.entity.Item item : activeItems.values()) {
-                if (item.getWorld().equals(p.getWorld()) && !plugin.getStateRepository().getHiddenVanillaItems().contains(item.getEntityId())) {
-                    p.hideEntity(plugin, item);
-                    p.showEntity(plugin, item);
+                if (item.getWorld().equals(p.getWorld())) {
+                    if (groupedItems.contains(item.getUniqueId())) {
+                        p.hideEntity(plugin, item);
+                    } else if (!plugin.getStateRepository().getHiddenVanillaItems().contains(item.getEntityId())) {
+                        p.hideEntity(plugin, item);
+                        p.showEntity(plugin, item);
+                    }
                 }
             }
         }, 40L);
@@ -61,10 +66,15 @@ public class PlayerLifecycleListener implements Listener {
                 if (visSvc != null) {
                     visSvc.refreshGlowForPlayer(player, !plugin.getStateRepository().getHiddenVisuals().contains(player.getUniqueId()), plugin.getStateRepository().getHiddenVanillaItems(), plugin.getStateRepository().getEntityIdMap(), plugin.getStateRepository().getVisibleEntities(), cfgMgr.getFarmingViewDistance(), activeItems, plugin.getStateRepository().getGroupedItems(), cfgMgr.getLodHoloDistSq(), cfgMgr.getLodBeamDistSq(), plugin.getStateRepository().getActiveCropSymbols());
                 }
+                var groupedItems = plugin.getStateRepository().getGroupedItems();
                 for (org.bukkit.entity.Item item : activeItems.values()) {
-                    if (item.getWorld().equals(player.getWorld()) && !plugin.getStateRepository().getHiddenVanillaItems().contains(item.getEntityId())) {
-                        player.hideEntity(plugin, item);
-                        player.showEntity(plugin, item);
+                    if (item.getWorld().equals(player.getWorld())) {
+                        if (groupedItems.contains(item.getUniqueId())) {
+                            player.hideEntity(plugin, item);
+                        } else if (!plugin.getStateRepository().getHiddenVanillaItems().contains(item.getEntityId())) {
+                            player.hideEntity(plugin, item);
+                            player.showEntity(plugin, item);
+                        }
                     }
                 }
             }
