@@ -2,10 +2,8 @@ package fr.skynex.lootglow.managers;
 
 import fr.skynex.lootglow.LootGlow;
 import fr.skynex.lootglow.util.FoliaScheduler;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.ItemDisplay;

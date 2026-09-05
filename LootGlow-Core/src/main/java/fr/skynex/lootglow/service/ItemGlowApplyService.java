@@ -10,7 +10,6 @@ import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
-import org.bukkit.Registry;
 import org.bukkit.Sound;
 import org.bukkit.entity.Item;
 import org.bukkit.inventory.ItemStack;

@@ -12,8 +12,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-
 /**
  * Manages item grouping, visual bags, and group loot container interactions.
  */

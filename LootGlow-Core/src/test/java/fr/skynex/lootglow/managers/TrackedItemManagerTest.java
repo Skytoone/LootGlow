@@ -4,8 +4,6 @@ import fr.skynex.lootglow.model.TrackedItem;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.ConcurrentModificationException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
