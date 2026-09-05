@@ -258,9 +258,10 @@ public class ParticleAnimationManager {
                         if (distSq < closestDistSq) {
                             fr.skynex.lootglow.model.TrackedItem ti = trackedMgr != null ? trackedMgr.getTrackedItem(u) : null;
                             fr.skynex.lootglow.managers.RarityManager.ItemRarity rarity = ti != null ? ti.rarity : null;
-                            if (rarity == null) {
+                            if (rarity == null && trackedMgr != null && itemObj.getItemStack() != null) {
+                                ti = trackedMgr.getOrCreateTrackedItem(u);
                                 rarity = rarityMgr.detectRarity(itemObj.getItemStack());
-                                if (ti != null) ti.rarity = rarity;
+                                ti.rarity = rarity;
                             }
                             if (rarity == fr.skynex.lootglow.managers.RarityManager.ItemRarity.LEGENDARY || rarity == fr.skynex.lootglow.managers.RarityManager.ItemRarity.MYTHIC) {
                                 closestDistSq = distSq;

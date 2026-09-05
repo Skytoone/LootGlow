@@ -33,9 +33,9 @@ public class RPGDropManager {
 
     private final LootGlow plugin;
     private final Map<UUID, Display> activeShadows = new ConcurrentHashMap<>();
-    private final Map<UUID, Integer> bounceCounts = new HashMap<>();
+    private final Map<UUID, Integer> bounceCounts = new ConcurrentHashMap<>();
     private final Set<UUID> recentlyBounced = ConcurrentHashMap.newKeySet();
-    private final Map<UUID, VisualAnimation> flyingVisuals = new HashMap<>();
+    private final Map<UUID, VisualAnimation> flyingVisuals = new ConcurrentHashMap<>();
 
     public RPGDropManager(LootGlow plugin) {
         this.plugin = plugin;

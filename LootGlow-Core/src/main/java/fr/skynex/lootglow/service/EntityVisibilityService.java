@@ -97,9 +97,23 @@ public class EntityVisibilityService {
         double pz = player.getZ();
         double farmDistSq = farmingViewDistance * farmingViewDistance;
 
-        for (Map.Entry<UUID, Item> entry : activeItems.entrySet()) {
-            UUID uuid = entry.getKey();
-            Item item = entry.getValue();
+        double maxLodDist = Math.sqrt(Math.max(lodHoloDistSq, lodBeamDistSq));
+        int chunkRadius = (int) Math.ceil(maxLodDist / 16.0);
+
+        var trackedMgr = plugin.getService(TrackedItemManager.class);
+        var spatialSvc = plugin.getService(fr.skynex.lootglow.spatial.LootSpatialIndexService.class);
+
+        Set<UUID> nearbyUuids = new java.util.HashSet<>();
+        if (trackedMgr != null) {
+            trackedMgr.getItemsInChunkRadius(world, ((int) px) >> 4, ((int) pz) >> 4, chunkRadius, nearbyUuids);
+        } else if (spatialSvc != null) {
+            spatialSvc.getNearbyItemUuids(player.getLocation(), maxLodDist, nearbyUuids);
+        }
+
+        Iterable<UUID> targetUuids = !nearbyUuids.isEmpty() ? nearbyUuids : activeItems.keySet();
+
+        for (UUID uuid : targetUuids) {
+            Item item = activeItems.get(uuid);
             if (item == null || !item.isValid() || !item.getWorld().equals(world)) continue;
 
             double dx = px - item.getX();

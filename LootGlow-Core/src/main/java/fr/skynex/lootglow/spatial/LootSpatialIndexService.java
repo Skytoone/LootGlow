@@ -109,29 +109,75 @@ public class LootSpatialIndexService {
      */
     public List<UUID> getNearbyItemUuids(Location center, double radius) {
         if (center == null || center.getWorld() == null || radius <= 0) return Collections.emptyList();
+        List<UUID> result = new ArrayList<>();
+        getNearbyItemUuids(center, radius, result);
+        return result;
+    }
+
+    /**
+     * Queries item UUIDs within a given radius into a destination collection to eliminate allocations.
+     */
+    public void getNearbyItemUuids(Location center, double radius, Collection<UUID> destination) {
+        if (center == null || center.getWorld() == null || radius <= 0 || destination == null) return;
 
         String worldName = center.getWorld().getName();
         Map<Long, Set<UUID>> chunkMap = worldSpatialIndex.get(worldName);
-        if (chunkMap == null || chunkMap.isEmpty()) return Collections.emptyList();
+        if (chunkMap == null || chunkMap.isEmpty()) return;
 
         int minChunkX = (center.getBlockX() - (int) Math.ceil(radius)) >> 4;
         int maxChunkX = (center.getBlockX() + (int) Math.ceil(radius)) >> 4;
         int minChunkZ = (center.getBlockZ() - (int) Math.ceil(radius)) >> 4;
         int maxChunkZ = (center.getBlockZ() + (int) Math.ceil(radius)) >> 4;
 
-        List<UUID> result = new ArrayList<>();
-
         for (int cx = minChunkX; cx <= maxChunkX; cx++) {
             for (int cz = minChunkZ; cz <= maxChunkZ; cz++) {
                 long key = toChunkKey(cx, cz);
                 Set<UUID> itemsInChunk = chunkMap.get(key);
                 if (itemsInChunk != null && !itemsInChunk.isEmpty()) {
-                    result.addAll(itemsInChunk);
+                    destination.addAll(itemsInChunk);
                 }
             }
         }
+    }
 
-        return result;
+    /**
+     * Queries item UUIDs in a chunk radius into a destination collection.
+     */
+    public void getItemsInChunkRadius(org.bukkit.World world, int centerChunkX, int centerChunkZ, int chunkRadius, Collection<UUID> destination) {
+        if (world == null || destination == null) return;
+        Map<Long, Set<UUID>> chunkMap = worldSpatialIndex.get(world.getName());
+        if (chunkMap == null || chunkMap.isEmpty()) return;
+
+        for (int cx = centerChunkX - chunkRadius; cx <= centerChunkX + chunkRadius; cx++) {
+            for (int cz = centerChunkZ - chunkRadius; cz <= centerChunkZ + chunkRadius; cz++) {
+                long key = toChunkKey(cx, cz);
+                Set<UUID> itemsInChunk = chunkMap.get(key);
+                if (itemsInChunk != null && !itemsInChunk.isEmpty()) {
+                    destination.addAll(itemsInChunk);
+                }
+            }
+        }
+    }
+
+    /**
+     * Returns a set of all item UUIDs in a specified world.
+     */
+    public Set<UUID> getItemsInWorld(String worldName) {
+        if (worldName == null) return Collections.emptySet();
+        Map<Long, Set<UUID>> chunkMap = worldSpatialIndex.get(worldName);
+        if (chunkMap == null || chunkMap.isEmpty()) return Collections.emptySet();
+
+        Set<UUID> worldItems = new HashSet<>();
+        for (Set<UUID> chunkSet : chunkMap.values()) {
+            if (chunkSet != null) {
+                worldItems.addAll(chunkSet);
+            }
+        }
+        return worldItems;
+    }
+
+    public Map<String, Map<Long, Set<UUID>>> getWorldSpatialIndex() {
+        return worldSpatialIndex;
     }
 
     /**

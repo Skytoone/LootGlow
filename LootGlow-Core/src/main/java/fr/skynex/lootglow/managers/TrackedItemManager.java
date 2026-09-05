@@ -60,20 +60,30 @@ public class TrackedItemManager {
     }
 
     public Set<UUID> getItemsInChunkRadius(org.bukkit.World world, int centerChunkX, int centerChunkZ, int chunkRadius) {
-        if (world == null) return Collections.emptySet();
-        Map<Long, Set<UUID>> worldChunks = itemsByChunk.get(world.getName());
-        if (worldChunks == null || worldChunks.isEmpty()) return Collections.emptySet();
-
         Set<UUID> result = new HashSet<>();
+        getItemsInChunkRadius(world, centerChunkX, centerChunkZ, chunkRadius, result);
+        return result;
+    }
+
+    public void getItemsInChunkRadius(org.bukkit.World world, int centerChunkX, int centerChunkZ, int chunkRadius, Collection<UUID> destination) {
+        if (world == null || destination == null) return;
+        var spatialSvc = plugin != null ? plugin.getService(fr.skynex.lootglow.spatial.LootSpatialIndexService.class) : null;
+        if (spatialSvc != null) {
+            spatialSvc.getItemsInChunkRadius(world, centerChunkX, centerChunkZ, chunkRadius, destination);
+            return;
+        }
+
+        Map<Long, Set<UUID>> worldChunks = itemsByChunk.get(world.getName());
+        if (worldChunks == null || worldChunks.isEmpty()) return;
+
         for (int cx = centerChunkX - chunkRadius; cx <= centerChunkX + chunkRadius; cx++) {
             for (int cz = centerChunkZ - chunkRadius; cz <= centerChunkZ + chunkRadius; cz++) {
                 Set<UUID> chunkItems = worldChunks.get(getChunkKey(cx, cz));
                 if (chunkItems != null && !chunkItems.isEmpty()) {
-                    result.addAll(chunkItems);
+                    destination.addAll(chunkItems);
                 }
             }
         }
-        return result;
     }
 
     public void registerDisplayViewer(UUID displayUuid, UUID playerUuid) {
@@ -189,9 +199,19 @@ public class TrackedItemManager {
         int cZ = item.getLocation().getBlockZ() >> 4;
         itemsByChunk.computeIfAbsent(worldName, k -> new ConcurrentHashMap<>())
                 .computeIfAbsent(getChunkKey(cX, cZ), k -> ConcurrentHashMap.newKeySet()).add(uuid);
-        var spatialSvc = plugin.getService(fr.skynex.lootglow.spatial.LootSpatialIndexService.class);
+        var spatialSvc = plugin != null ? plugin.getService(fr.skynex.lootglow.spatial.LootSpatialIndexService.class) : null;
         if (spatialSvc != null) {
             spatialSvc.register(item.getLocation(), uuid);
+        }
+
+        if (plugin != null) {
+            var rarityMgr = plugin.getService(RarityManager.class);
+            if (rarityMgr != null && item.getItemStack() != null) {
+                TrackedItem ti = getOrCreateTrackedItem(uuid);
+                if (ti.rarity == null) {
+                    ti.rarity = rarityMgr.detectRarity(item.getItemStack());
+                }
+            }
         }
     }
 

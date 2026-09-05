@@ -90,6 +90,10 @@ public class ItemPhysicsService {
             }
 
             if (itemActuallyMoved) {
+                var spatialSvc = plugin.getService(fr.skynex.lootglow.spatial.LootSpatialIndexService.class);
+                if (spatialSvc != null) {
+                    spatialSvc.updatePosition(null, item.getLocation(), itemUuid);
+                }
                 if ((globalSyncTick - ti.lastRayTraceTick) >= 4) {
                     if (surfMgr != null) surfMgr.updateSurfaceAlignment(item, null);
                     ti.lastRayTraceTick = globalSyncTick;

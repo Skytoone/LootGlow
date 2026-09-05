@@ -42,16 +42,16 @@ public class LootStateRepository {
     private final Map<String, Component> displayNameOverridesCache = new HashMap<>();
     private final Map<String, Integer> categoryLights = new HashMap<>();
     private final Set<Integer> hiddenVanillaItems = ConcurrentHashMap.newKeySet();
-    private final Map<UUID, Location> activeLights = new HashMap<>();
+    private final Map<UUID, Location> activeLights = new ConcurrentHashMap<>();
     private final Set<UUID> hiddenVisuals = ConcurrentHashMap.newKeySet();
     private final Set<UUID> disabledMagnets = ConcurrentHashMap.newKeySet();
-    private final Map<Block, CropSymbol> activeCropSymbols = new HashMap<>();
-    private final Map<UUID, Location> lastFarmingScanLocations = new HashMap<>();
+    private final Map<Block, CropSymbol> activeCropSymbols = new ConcurrentHashMap<>();
+    private final Map<UUID, Location> lastFarmingScanLocations = new ConcurrentHashMap<>();
     private final Map<UUID, Display> activeShadows;
     private final Map<UUID, ItemDisplay> activeItemVisuals;
     private final Map<UUID, Item> activeItems = new ConcurrentHashMap<>();
 
-    private final Map<Integer, Component> timerComponentCache = new HashMap<>();
+    private final Map<Integer, Component> timerComponentCache = new ConcurrentHashMap<>();
     private final Map<UUID, Set<UUID>> visibleEntities = new ConcurrentHashMap<>();
     private final Map<String, DustOptions> categoryDustOptions = new HashMap<>();
     private DustOptions defaultDustOptions;
@@ -68,10 +68,10 @@ public class LootStateRepository {
     private String rawBundleFormat;
 
     private final Map<Integer, UUID> entityIdMap = new ConcurrentHashMap<>();
-    private final Map<UUID, List<UUID>> groupMembers = new HashMap<>();
-    private final Map<UUID, UUID> openContainers = new HashMap<>();
-    private final Set<UUID> groupedItems = new HashSet<>();
-    private final Map<UUID, Integer> groupLeaders = new HashMap<>();
+    private final Map<UUID, List<UUID>> groupMembers = new ConcurrentHashMap<>();
+    private final Map<UUID, UUID> openContainers = new ConcurrentHashMap<>();
+    private final Set<UUID> groupedItems = ConcurrentHashMap.newKeySet();
+    private final Map<UUID, Integer> groupLeaders = new ConcurrentHashMap<>();
 
     public LootStateRepository() {
         this.activeLabels = new DelegatingMap<>(trackedItems, ti -> ti.label, (ti, v) -> ti.label = v, 

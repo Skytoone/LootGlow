@@ -78,52 +78,109 @@ public class ItemMagnetManager {
         if (!magnetEnabled) return;
 
         double dist = magnetDistance;
+        double distSq = dist * dist;
         String perm = magnetPermission;
         List<String> magnetCats = magnetCategories;
+        int chunkRadius = (int) Math.ceil(dist / 16.0);
+
+        var trackedMgr = plugin.getService(TrackedItemManager.class);
+        var spatialSvc = plugin.getService(fr.skynex.lootglow.spatial.LootSpatialIndexService.class);
+
+        Set<UUID> nearbyUuids = new java.util.HashSet<>();
 
         for (Player p : Bukkit.getOnlinePlayers()) {
             if (disabledMagnets.contains(p.getUniqueId()) || !p.hasPermission(perm)) continue;
 
-            double px = p.getX(), py = p.getY() + 1.0, pz = p.getZ();
+            Location pLoc = p.getLocation();
+            double px = pLoc.getX(), py = pLoc.getY() + 1.0, pz = pLoc.getZ();
+            nearbyUuids.clear();
 
-            for (Entity ent : p.getWorld().getNearbyEntities(p.getLocation(), dist, dist, dist, e -> e instanceof Item)) {
-                Item item = (Item) ent;
-                if (!item.isValid() || item.getPickupDelay() > 0) continue;
+            if (trackedMgr != null) {
+                trackedMgr.getItemsInChunkRadius(p.getWorld(), pLoc.getBlockX() >> 4, pLoc.getBlockZ() >> 4, chunkRadius, nearbyUuids);
+            } else if (spatialSvc != null) {
+                spatialSvc.getNearbyItemUuids(pLoc, dist, nearbyUuids);
+            }
 
-                UUID itemUuid = item.getUniqueId();
-                if (!magnetEnableForGroups && (groupLeaders.containsKey(itemUuid) || groupMembers.containsKey(itemUuid) || groupedItems.contains(itemUuid)))
-                    continue;
+            if (!nearbyUuids.isEmpty()) {
+                Map<UUID, Item> activeItems = trackedMgr != null ? trackedMgr.getActiveItems() : plugin.getStateRepository().getActiveItems();
+                for (UUID uuid : nearbyUuids) {
+                    Item item = activeItems.get(uuid);
+                    if (item == null || !item.isValid() || item.getPickupDelay() > 0) continue;
 
-                String category = itemCategoriesCache.get(itemUuid);
-                if (!magnetCats.isEmpty() && (category == null || !magnetCats.contains(category.toLowerCase())))
-                    continue;
+                    double dx = px - item.getX();
+                    double dy = py - item.getY();
+                    double dz = pz - item.getZ();
+                    double d2 = dx * dx + dy * dy + dz * dz;
 
-                UUID owner = item.getThrower();
-                if (owner != null && !owner.equals(p.getUniqueId()) && protectionEnabled) {
-                    long spawnTime = itemSpawnTimes.getOrDefault(itemUuid, System.currentTimeMillis());
-                    if (System.currentTimeMillis() - spawnTime < (protectionDuration * 1000L)) {
-                        if (!p.hasPermission("lootglow.bypass.lock")) continue;
+                    if (d2 < 0.04 || d2 > distSq) continue;
+
+                    if (!magnetEnableForGroups && (groupLeaders.containsKey(uuid) || groupMembers.containsKey(uuid) || groupedItems.contains(uuid)))
+                        continue;
+
+                    String category = itemCategoriesCache.get(uuid);
+                    if (!magnetCats.isEmpty() && (category == null || !magnetCats.contains(category.toLowerCase())))
+                        continue;
+
+                    UUID owner = item.getThrower();
+                    if (owner != null && !owner.equals(p.getUniqueId()) && protectionEnabled) {
+                        long spawnTime = itemSpawnTimes.getOrDefault(uuid, System.currentTimeMillis());
+                        if (System.currentTimeMillis() - spawnTime < (protectionDuration * 1000L)) {
+                            if (!p.hasPermission("lootglow.bypass.lock")) continue;
+                        }
                     }
+
+                    if (!canFit(p.getInventory(), item.getItemStack())) continue;
+
+                    double d = Math.sqrt(d2);
+                    if (d < 0.01) continue;
+                    double speed = 0.4;
+                    Vector vel = new Vector((dx / d) * speed, (dy / d) * speed, (dz / d) * speed);
+                    FoliaScheduler.runAtEntity(plugin, item, () -> {
+                        if (item.isValid()) {
+                            item.setVelocity(vel);
+                        }
+                    });
                 }
+            } else if (trackedMgr == null && spatialSvc == null) {
+                for (Entity ent : p.getWorld().getNearbyEntities(pLoc, dist, dist, dist, e -> e instanceof Item)) {
+                    Item item = (Item) ent;
+                    if (!item.isValid() || item.getPickupDelay() > 0) continue;
 
-                if (!canFit(p.getInventory(), item.getItemStack())) continue;
+                    double dx = px - item.getX();
+                    double dy = py - item.getY();
+                    double dz = pz - item.getZ();
+                    double d2 = dx * dx + dy * dy + dz * dz;
 
-                double dx = px - item.getX();
-                double dy = py - item.getY();
-                double dz = pz - item.getZ();
-                double d2 = dx * dx + dy * dy + dz * dz;
+                    if (d2 < 0.04 || d2 > distSq) continue;
 
-                if (d2 < 0.04 || d2 > dist * dist) continue;
+                    UUID itemUuid = item.getUniqueId();
+                    if (!magnetEnableForGroups && (groupLeaders.containsKey(itemUuid) || groupMembers.containsKey(itemUuid) || groupedItems.contains(itemUuid)))
+                        continue;
 
-                double d = Math.sqrt(d2);
-                if (d < 0.01) continue;
-                double speed = 0.4;
-                Vector vel = new Vector((dx / d) * speed, (dy / d) * speed, (dz / d) * speed);
-                FoliaScheduler.runAtEntity(plugin, item, () -> {
-                    if (item.isValid()) {
-                        item.setVelocity(vel);
+                    String category = itemCategoriesCache.get(itemUuid);
+                    if (!magnetCats.isEmpty() && (category == null || !magnetCats.contains(category.toLowerCase())))
+                        continue;
+
+                    UUID owner = item.getThrower();
+                    if (owner != null && !owner.equals(p.getUniqueId()) && protectionEnabled) {
+                        long spawnTime = itemSpawnTimes.getOrDefault(itemUuid, System.currentTimeMillis());
+                        if (System.currentTimeMillis() - spawnTime < (protectionDuration * 1000L)) {
+                            if (!p.hasPermission("lootglow.bypass.lock")) continue;
+                        }
                     }
-                });
+
+                    if (!canFit(p.getInventory(), item.getItemStack())) continue;
+
+                    double d = Math.sqrt(d2);
+                    if (d < 0.01) continue;
+                    double speed = 0.4;
+                    Vector vel = new Vector((dx / d) * speed, (dy / d) * speed, (dz / d) * speed);
+                    FoliaScheduler.runAtEntity(plugin, item, () -> {
+                        if (item.isValid()) {
+                            item.setVelocity(vel);
+                        }
+                    });
+                }
             }
         }
     }
