@@ -18,12 +18,18 @@ public class VisualSpawner {
 
     public void removeGlow(UUID itemUuid) {
         if (itemUuid == null) return;
-        plugin.getTrackedItemManager().untrackItem(itemUuid);
-        plugin.getVisualDisplayManager().removeVisual(itemUuid);
-        plugin.getHologramManager().removeHologram(itemUuid);
-        plugin.getBeamManager().removeBeam(itemUuid);
-        plugin.getRpgDropManager().removeShadow(itemUuid);
-        plugin.getLootProtectionManager().removeProtection(itemUuid);
+        var trackedMgr = plugin.getService(TrackedItemManager.class);
+        if (trackedMgr != null) trackedMgr.untrackItem(itemUuid);
+        var visDispMgr = plugin.getService(VisualDisplayManager.class);
+        if (visDispMgr != null) visDispMgr.removeVisual(itemUuid);
+        var holoMgr = plugin.getService(HologramManager.class);
+        if (holoMgr != null) holoMgr.removeHologram(itemUuid);
+        var beamMgr = plugin.getService(BeamManager.class);
+        if (beamMgr != null) beamMgr.removeBeam(itemUuid);
+        var rpgMgr = plugin.getService(RPGDropManager.class);
+        if (rpgMgr != null) rpgMgr.removeShadow(itemUuid);
+        var protMgr = plugin.getService(LootProtectionManager.class);
+        if (protMgr != null) protMgr.removeProtection(itemUuid);
     }
 
     public void removeGlowKeepDisplays(UUID uuid) {
@@ -37,20 +43,23 @@ public class VisualSpawner {
                 itemTeam.removeEntry(itemEntry);
         } catch (Exception ignored) {}
 
-        if (plugin.getBeamManager() != null) plugin.getBeamManager().getActiveBeamConfigs().remove(uuid);
-        if (plugin.getTrackedItemManager() != null) {
-            plugin.getTrackedItemManager().getTrackedItems().remove(uuid);
+        var beamMgr = plugin.getService(BeamManager.class);
+        if (beamMgr != null) beamMgr.getActiveBeamConfigs().remove(uuid);
+        var trackedMgr = plugin.getService(TrackedItemManager.class);
+        if (trackedMgr != null) {
+            trackedMgr.getTrackedItems().remove(uuid);
         }
-        if (plugin.getSurfaceAlignmentManager() != null) {
-            plugin.getSurfaceAlignmentManager().getWaterLogCache().remove(uuid);
-            plugin.getSurfaceAlignmentManager().getSurfaceStates().remove(uuid);
+        var surfMgr = plugin.getService(SurfaceAlignmentManager.class);
+        if (surfMgr != null) {
+            surfMgr.getWaterLogCache().remove(uuid);
+            surfMgr.getSurfaceStates().remove(uuid);
         }
 
-        Item item = plugin.getActiveItems().remove(uuid);
+        Item item = plugin.getStateRepository().getActiveItems().remove(uuid);
         if (item != null) {
             int entityId = item.getEntityId();
-            plugin.getEntityIdMap().remove(entityId);
-            plugin.getHiddenVanillaItems().remove(entityId);
+            plugin.getStateRepository().getEntityIdMap().remove(entityId);
+            plugin.getStateRepository().getHiddenVanillaItems().remove(entityId);
         }
     }
 }

@@ -47,8 +47,9 @@ public class LootGlowAPIImpl implements LootGlowAPI {
         if (event.isCancelled())
             return;
         Color finalColor = event.getNewColor() != null ? event.getNewColor() : color;
-        if (plugin.getGlowManager() != null) {
-            plugin.getGlowManager().setGlowColor(item, finalColor);
+        var glowMgr = plugin.getService(fr.skynex.lootglow.managers.GlowManager.class);
+        if (glowMgr != null) {
+            glowMgr.setGlowColor(item, finalColor);
         }
         item.setGlowing(true);
     }
@@ -62,8 +63,9 @@ public class LootGlowAPIImpl implements LootGlowAPI {
         if (event.isCancelled())
             return;
         Color finalColor = event.getNewColor() != null ? event.getNewColor() : color;
-        if (plugin.getGlowManager() != null) {
-            plugin.getGlowManager().setGlowColor(item, finalColor, player);
+        var glowMgr = plugin.getService(fr.skynex.lootglow.managers.GlowManager.class);
+        if (glowMgr != null) {
+            glowMgr.setGlowColor(item, finalColor, player);
         }
         item.setGlowing(true);
     }
@@ -72,8 +74,9 @@ public class LootGlowAPIImpl implements LootGlowAPI {
     public void resetGlowColor(@NotNull Item item) {
         if (item == null || !item.isValid())
             return;
-        if (plugin.getGlowManager() != null) {
-            plugin.getGlowManager().resetGlowColor(item);
+        var glowMgr = plugin.getService(fr.skynex.lootglow.managers.GlowManager.class);
+        if (glowMgr != null) {
+            glowMgr.resetGlowColor(item);
         }
         item.setGlowing(true);
     }
@@ -89,50 +92,66 @@ public class LootGlowAPIImpl implements LootGlowAPI {
     public void setCustomHologram(@NotNull Item item, @Nullable String text) {
         if (item == null || !item.isValid())
             return;
-        if (plugin.getHologramRenderer() != null) {
+        var holoRenderer = plugin.getService(fr.skynex.lootglow.managers.HologramRenderer.class);
+        if (holoRenderer != null) {
             if (text == null || text.isEmpty()) {
-                plugin.getHologramRenderer().removeCustomHologram(item);
+                holoRenderer.removeCustomHologram(item);
             } else {
-                plugin.getHologramRenderer().setCustomHologram(item, text, (net.kyori.adventure.text.minimessage.MiniMessage) null);
+                holoRenderer.setCustomHologram(item, text, (net.kyori.adventure.text.minimessage.MiniMessage) null);
             }
         }
-        plugin.getBaseNameCache().remove(item.getUniqueId());
-        plugin.getLastHoloState().remove(item.getUniqueId());
+        var stateRepo = plugin.getStateRepository();
+        if (stateRepo != null) {
+            stateRepo.getBaseNameCache().remove(item.getUniqueId());
+            stateRepo.getLastHoloState().remove(item.getUniqueId());
+        }
     }
 
     @Override
     public void setCustomHologram(@NotNull Item item, @Nullable String text, @NotNull Player player) {
         if (item == null || !item.isValid() || player == null || !player.isOnline())
             return;
-        if (plugin.getHologramRenderer() != null) {
+        var holoRenderer = plugin.getService(fr.skynex.lootglow.managers.HologramRenderer.class);
+        if (holoRenderer != null) {
             if (text == null || text.isEmpty()) {
-                plugin.getHologramRenderer().removeCustomHologram(item, player);
+                holoRenderer.removeCustomHologram(item, player);
             } else {
-                plugin.getHologramRenderer().setCustomHologram(item, text, player);
+                holoRenderer.setCustomHologram(item, text, player);
             }
         }
-        plugin.getBaseNameCache().remove(item.getUniqueId());
-        plugin.getLastHoloState().remove(item.getUniqueId());
+        var stateRepo = plugin.getStateRepository();
+        if (stateRepo != null) {
+            stateRepo.getBaseNameCache().remove(item.getUniqueId());
+            stateRepo.getLastHoloState().remove(item.getUniqueId());
+        }
     }
 
     @Override
     public void removeCustomHologram(@NotNull Item item) {
         if (item == null || !item.isValid()) return;
-        if (plugin.getHologramRenderer() != null) {
-            plugin.getHologramRenderer().removeCustomHologram(item);
+        var holoRenderer = plugin.getService(fr.skynex.lootglow.managers.HologramRenderer.class);
+        if (holoRenderer != null) {
+            holoRenderer.removeCustomHologram(item);
         }
-        plugin.getBaseNameCache().remove(item.getUniqueId());
-        plugin.getLastHoloState().remove(item.getUniqueId());
+        var stateRepo = plugin.getStateRepository();
+        if (stateRepo != null) {
+            stateRepo.getBaseNameCache().remove(item.getUniqueId());
+            stateRepo.getLastHoloState().remove(item.getUniqueId());
+        }
     }
 
     @Override
     public void removeCustomHologram(@NotNull Item item, @NotNull Player player) {
         if (item == null || !item.isValid() || player == null) return;
-        if (plugin.getHologramRenderer() != null) {
-            plugin.getHologramRenderer().removeCustomHologram(item, player);
+        var holoRenderer = plugin.getService(fr.skynex.lootglow.managers.HologramRenderer.class);
+        if (holoRenderer != null) {
+            holoRenderer.removeCustomHologram(item, player);
         }
-        plugin.getBaseNameCache().remove(item.getUniqueId());
-        plugin.getLastHoloState().remove(item.getUniqueId());
+        var stateRepo = plugin.getStateRepository();
+        if (stateRepo != null) {
+            stateRepo.getBaseNameCache().remove(item.getUniqueId());
+            stateRepo.getLastHoloState().remove(item.getUniqueId());
+        }
     }
 
     @Override
@@ -150,83 +169,93 @@ public class LootGlowAPIImpl implements LootGlowAPI {
             return;
         boolean finalEnabled = event.isEnabled();
         Color finalColor = event.getBeamColor();
+        var stateRepo = plugin.getStateRepository();
         if (!finalEnabled) {
-            BlockDisplay beam = plugin.getActiveBeams().remove(item.getUniqueId());
+            BlockDisplay beam = stateRepo != null ? stateRepo.getActiveBeams().remove(item.getUniqueId()) : null;
             if (beam != null && beam.isValid())
                 beam.remove();
         } else {
             NamedTextColor textColor = finalColor != null
                     ? NamedTextColor.nearestTo(net.kyori.adventure.text.format.TextColor.color(finalColor.asRGB()))
                     : NamedTextColor.WHITE;
-            plugin.spawnBeam(item, null, textColor);
+            var beamMgr = plugin.getService(fr.skynex.lootglow.managers.BeamManager.class);
+            if (beamMgr != null) beamMgr.spawnBeam(item, null, textColor);
         }
     }
 
     @Override
     public void setLootProtection(@NotNull Item item, @NotNull UUID ownerUuid, long durationSeconds) {
-        if (plugin.getLootProtectionManager() != null) {
-            plugin.getLootProtectionManager().setLootProtection(item, ownerUuid, durationSeconds);
+        var protMgr = plugin.getService(fr.skynex.lootglow.managers.LootProtectionManager.class);
+        if (protMgr != null) {
+            protMgr.setLootProtection(item, ownerUuid, durationSeconds);
         }
     }
 
     @Override
     public void resetLootProtection(@NotNull Item item) {
-        if (plugin.getLootProtectionManager() != null) {
-            plugin.getLootProtectionManager().resetLootProtection(item);
+        var protMgr = plugin.getService(fr.skynex.lootglow.managers.LootProtectionManager.class);
+        if (protMgr != null) {
+            protMgr.resetLootProtection(item);
         }
     }
 
     @Override
     public boolean isLootProtected(@NotNull Item item) {
-        return plugin.getLootProtectionManager() != null ? plugin.getLootProtectionManager().isLootProtected(item)
-                : false;
+        var protMgr = plugin.getService(fr.skynex.lootglow.managers.LootProtectionManager.class);
+        return protMgr != null && protMgr.isLootProtected(item);
     }
 
     @Override
     public boolean isPlayerAllowedToPickup(@NotNull Player player, @NotNull Item item) {
-        return plugin.getLootProtectionManager() != null
-                ? plugin.getLootProtectionManager().isPlayerAllowedToPickup(player, item)
-                : true;
+        var protMgr = plugin.getService(fr.skynex.lootglow.managers.LootProtectionManager.class);
+        return protMgr == null || protMgr.isPlayerAllowedToPickup(player, item);
     }
 
     @Override
     public UUID getLootOwner(@NotNull Item item) {
-        return plugin.getLootProtectionManager() != null ? plugin.getLootProtectionManager().getLootOwner(item) : null;
+        var protMgr = plugin.getService(fr.skynex.lootglow.managers.LootProtectionManager.class);
+        return protMgr != null ? protMgr.getLootOwner(item) : null;
     }
 
     @Override
     public boolean isMagnetEnabled(@NotNull Player player) {
-        return plugin.getItemMagnetManager() != null && plugin.getItemMagnetManager().isMagnetEnabled(player);
+        var magMgr = plugin.getService(fr.skynex.lootglow.managers.ItemMagnetManager.class);
+        return magMgr != null && magMgr.isMagnetEnabled(player);
     }
 
     @Override
     public void setMagnetEnabled(@NotNull Player player, boolean enabled) {
-        if (plugin.getItemMagnetManager() != null) {
-            plugin.getItemMagnetManager().setMagnetEnabled(player, enabled);
+        var magMgr = plugin.getService(fr.skynex.lootglow.managers.ItemMagnetManager.class);
+        if (magMgr != null) {
+            magMgr.setMagnetEnabled(player, enabled);
         }
     }
 
     @Override
     public void pullItemsToPlayer(@NotNull Player player, double radius) {
-        if (plugin.getItemMagnetManager() != null) {
-            plugin.getItemMagnetManager().pullItemsToPlayer(player, radius);
+        var magMgr = plugin.getService(fr.skynex.lootglow.managers.ItemMagnetManager.class);
+        if (magMgr != null) {
+            magMgr.pullItemsToPlayer(player, radius);
         }
     }
 
     @Override
     public boolean isVisualsHidden(@NotNull Player player) {
-        return player != null && plugin.getHiddenVisuals().contains(player.getUniqueId());
+        var stateRepo = plugin.getStateRepository();
+        return player != null && stateRepo != null && stateRepo.getHiddenVisuals().contains(player.getUniqueId());
     }
 
     @Override
     public void setVisualsHidden(@NotNull Player player, boolean hidden) {
         if (player == null)
             return;
-        boolean previous = plugin.getHiddenVisuals().contains(player.getUniqueId());
+        var stateRepo = plugin.getStateRepository();
+        if (stateRepo == null) return;
+        boolean previous = stateRepo.getHiddenVisuals().contains(player.getUniqueId());
         if (hidden) {
-            plugin.getHiddenVisuals().add(player.getUniqueId());
+            stateRepo.getHiddenVisuals().add(player.getUniqueId());
         } else {
-            plugin.getHiddenVisuals().remove(player.getUniqueId());
+            stateRepo.getHiddenVisuals().remove(player.getUniqueId());
         }
         if (previous != hidden) {
             Bukkit.getPluginManager().callEvent(new LootGlowPlayerToggleVisualsEvent(player, hidden));
@@ -235,8 +264,8 @@ public class LootGlowAPIImpl implements LootGlowAPI {
 
     @Override
     public boolean hasLineOfSight(@NotNull Player player, @NotNull Item item, double maxDistance) {
-        return plugin.getOcclusionManager() != null
-                && plugin.getOcclusionManager().hasLineOfSight(player, item, maxDistance);
+        var occlMgr = plugin.getService(fr.skynex.lootglow.managers.OcclusionManager.class);
+        return occlMgr != null && occlMgr.hasLineOfSight(player, item, maxDistance);
     }
 
     @Override
@@ -250,14 +279,16 @@ public class LootGlowAPIImpl implements LootGlowAPI {
     public void setParticleEffect(@NotNull Item item, @Nullable Particle particle) {
         if (item == null || !item.isValid())
             return;
-        plugin.getItemParticlesCache().put(item.getUniqueId(), particle);
+        var stateRepo = plugin.getStateRepository();
+        if (stateRepo != null) stateRepo.getItemParticlesCache().put(item.getUniqueId(), particle);
     }
 
     @Override
     public void clearParticleEffect(@NotNull Item item) {
         if (item == null || !item.isValid())
             return;
-        plugin.getItemParticlesCache().remove(item.getUniqueId());
+        var stateRepo = plugin.getStateRepository();
+        if (stateRepo != null) stateRepo.getItemParticlesCache().remove(item.getUniqueId());
     }
 
     @Override
@@ -269,28 +300,32 @@ public class LootGlowAPIImpl implements LootGlowAPI {
 
     @Override
     public void triggerPopAnimation(@NotNull Item item, double jumpVelocity) {
-        if (plugin.getParticleAnimationManager() != null) {
-            plugin.getParticleAnimationManager().triggerPopAnimation(item, jumpVelocity);
+        var particleAnimMgr = plugin.getService(fr.skynex.lootglow.managers.ParticleAnimationManager.class);
+        if (particleAnimMgr != null) {
+            particleAnimMgr.triggerPopAnimation(item, jumpVelocity);
         }
     }
 
     @Override
     public void setBouncingEnabled(@NotNull Item item, boolean bouncing) {
-        if (plugin.getParticleAnimationManager() != null) {
-            plugin.getParticleAnimationManager().setBouncingEnabled(item, bouncing, plugin.getRecentlyBounced());
+        var particleAnimMgr = plugin.getService(fr.skynex.lootglow.managers.ParticleAnimationManager.class);
+        if (particleAnimMgr != null) {
+            particleAnimMgr.setBouncingEnabled(item, bouncing, plugin.getStateRepository() != null ? plugin.getStateRepository().getRecentlyBounced() : null);
         }
     }
 
     @Override
     public void setCropHighlight(@NotNull Block cropBlock, boolean highlight) {
-        if (plugin.getFarmingManager() != null) {
-            plugin.getFarmingManager().setCropHighlight(cropBlock, highlight);
+        var farmMgr = plugin.getService(fr.skynex.lootglow.managers.FarmingManager.class);
+        if (farmMgr != null) {
+            farmMgr.setCropHighlight(cropBlock, highlight);
         }
     }
 
     @Override
     public boolean isCropHighlighted(@NotNull Block cropBlock) {
-        return plugin.getFarmingManager() != null && plugin.getFarmingManager().isCropHighlighted(cropBlock);
+        var farmMgr = plugin.getService(fr.skynex.lootglow.managers.FarmingManager.class);
+        return farmMgr != null && farmMgr.isCropHighlighted(cropBlock);
     }
 
     @Override
@@ -302,8 +337,9 @@ public class LootGlowAPIImpl implements LootGlowAPI {
         if (event.isCancelled())
             return;
         String finalCategory = event.getCategory() != null ? event.getCategory() : category;
-        if (plugin.getTrackedItemManager() != null) {
-            plugin.getTrackedItemManager().setItemCategory(item.getUniqueId(), finalCategory);
+        var trackedMgr = plugin.getService(fr.skynex.lootglow.managers.TrackedItemManager.class);
+        if (trackedMgr != null) {
+            trackedMgr.setItemCategory(item.getUniqueId(), finalCategory);
         }
     }
 
@@ -312,17 +348,15 @@ public class LootGlowAPIImpl implements LootGlowAPI {
     public String getItemCategory(@NotNull Item item) {
         if (item == null)
             return null;
-        return plugin.getTrackedItemManager() != null
-                ? plugin.getTrackedItemManager().getItemCategory(item.getUniqueId())
-                : null;
+        var trackedMgr = plugin.getService(fr.skynex.lootglow.managers.TrackedItemManager.class);
+        return trackedMgr != null ? trackedMgr.getItemCategory(item.getUniqueId()) : null;
     }
 
     @NotNull
     @Override
     public List<Item> getNearbyGlowingItems(@NotNull Location location, double radius) {
-        return plugin.getTrackedItemManager() != null
-                ? plugin.getTrackedItemManager().getNearbyGlowingItems(location, radius)
-                : List.of();
+        var trackedMgr = plugin.getService(fr.skynex.lootglow.managers.TrackedItemManager.class);
+        return trackedMgr != null ? trackedMgr.getNearbyGlowingItems(location, radius) : List.of();
     }
 
     @NotNull
@@ -342,37 +376,43 @@ public class LootGlowAPIImpl implements LootGlowAPI {
     public void refreshVisuals(@NotNull Item item, @NotNull Player player) {
         if (item == null || !item.isValid() || player == null || !player.isOnline())
             return;
-        if (plugin.getEntityVisibilityService() != null && plugin.getTrackedItemManager() != null) {
-            plugin.getEntityVisibilityService().refreshGlowForPlayer(
+        var entityVisSvc = plugin.getService(fr.skynex.lootglow.service.EntityVisibilityService.class);
+        var trackedMgr = plugin.getService(fr.skynex.lootglow.managers.TrackedItemManager.class);
+        var vanillaVisMgr = plugin.getService(fr.skynex.lootglow.managers.VanillaItemVisibilityManager.class);
+        var stateRepo = plugin.getStateRepository();
+        var lodMgr = plugin.getService(fr.skynex.lootglow.managers.LODManager.class);
+        var farmMgr = plugin.getService(fr.skynex.lootglow.managers.FarmingManager.class);
+        var cfgMgr = plugin.getConfigManager();
+        if (entityVisSvc != null && trackedMgr != null) {
+            entityVisSvc.refreshGlowForPlayer(
                     player,
                     !isVisualsHidden(player),
-                    plugin.getVanillaItemVisibilityManager() != null
-                            ? plugin.getVanillaItemVisibilityManager().getHiddenVanillaItems()
-                            : Set.of(),
-                    plugin.getTrackedItemManager().getEntityIdMap(),
-                    plugin.getVisibleEntities(),
-                    plugin.getFarmingViewDistance(),
-                    plugin.getTrackedItemManager().getActiveItems(),
-                    plugin.getGroupedItems(),
-                    plugin.getLodHoloDistSq(),
-                    plugin.getLodBeamDistSq(),
-                    plugin.getActiveCropSymbols());
+                    vanillaVisMgr != null ? vanillaVisMgr.getHiddenVanillaItems() : Set.of(),
+                    trackedMgr.getEntityIdMap(),
+                    stateRepo != null ? stateRepo.getVisibleEntities() : java.util.Collections.emptyMap(),
+                    cfgMgr != null ? cfgMgr.getFarmingViewDistance() : 24.0,
+                    trackedMgr.getActiveItems(),
+                    stateRepo != null ? stateRepo.getGroupedItems() : Set.of(),
+                    lodMgr != null ? lodMgr.getLodHoloDistanceSquared() : 1024.0,
+                    lodMgr != null ? lodMgr.getLodBeamDistanceSquared() : 1024.0,
+                    farmMgr != null ? farmMgr.getActiveCropSymbols() : java.util.Collections.emptyMap());
         }
     }
 
     @Override
     public boolean isTracked(@NotNull Item item) {
-        return item != null && plugin.getTrackedItemManager() != null
-                && plugin.getTrackedItemManager().getActiveItems().containsKey(item.getUniqueId());
+        var trackedMgr = plugin.getService(fr.skynex.lootglow.managers.TrackedItemManager.class);
+        return item != null && trackedMgr != null && trackedMgr.getActiveItems().containsKey(item.getUniqueId());
     }
 
     @NotNull
     @Override
     public List<Item> getTrackedItemsInChunk(@NotNull Chunk chunk) {
-        if (chunk == null || plugin.getTrackedItemManager() == null)
+        var trackedMgr = plugin.getService(fr.skynex.lootglow.managers.TrackedItemManager.class);
+        if (chunk == null || trackedMgr == null)
             return List.of();
         List<Item> result = new ArrayList<>();
-        for (Item item : plugin.getTrackedItemManager().getActiveItems().values()) {
+        for (Item item : trackedMgr.getActiveItems().values()) {
             if (item != null && item.isValid() && item.getLocation().getChunk().equals(chunk)) {
                 result.add(item);
             }
@@ -382,31 +422,34 @@ public class LootGlowAPIImpl implements LootGlowAPI {
 
     @Override
     public void addLootSharer(@NotNull Item item, @NotNull UUID playerUuid) {
-        if (plugin.getLootProtectionManager() != null) {
-            plugin.getLootProtectionManager().addLootSharer(item, playerUuid);
+        var protMgr = plugin.getService(fr.skynex.lootglow.managers.LootProtectionManager.class);
+        if (protMgr != null) {
+            protMgr.addLootSharer(item, playerUuid);
         }
     }
 
     @Override
     public void removeLootSharer(@NotNull Item item, @NotNull UUID playerUuid) {
-        if (plugin.getLootProtectionManager() != null) {
-            plugin.getLootProtectionManager().removeLootSharer(item, playerUuid);
+        var protMgr = plugin.getService(fr.skynex.lootglow.managers.LootProtectionManager.class);
+        if (protMgr != null) {
+            protMgr.removeLootSharer(item, playerUuid);
         }
     }
 
     @NotNull
     @Override
     public Set<UUID> getLootSharers(@NotNull Item item) {
-        return plugin.getLootProtectionManager() != null ? plugin.getLootProtectionManager().getLootSharers(item)
-                : Set.of();
+        var protMgr = plugin.getService(fr.skynex.lootglow.managers.LootProtectionManager.class);
+        return protMgr != null ? protMgr.getLootSharers(item) : Set.of();
     }
 
     @NotNull
     @Override
     public String detectItemRarity(@NotNull ItemStack itemStack) {
-        if (itemStack == null || plugin.getRarityManager() == null)
+        var rarityMgr = plugin.getService(fr.skynex.lootglow.managers.RarityManager.class);
+        if (itemStack == null || rarityMgr == null)
             return "COMMON";
-        return plugin.getRarityManager().detectRarity(itemStack).name();
+        return rarityMgr.detectRarity(itemStack).name();
     }
 
     @NotNull
@@ -419,42 +462,49 @@ public class LootGlowAPIImpl implements LootGlowAPI {
 
     @Override
     public boolean canMerge(@NotNull Item item1, @NotNull Item item2) {
-        return plugin.getItemMergeManager() != null && plugin.getItemMergeManager().canMerge(item1, item2);
+        var mergeMgr = plugin.getService(fr.skynex.lootglow.managers.ItemMergeManager.class);
+        return mergeMgr != null && mergeMgr.canMerge(item1, item2);
     }
 
     @Override
     public boolean mergeAmount(@NotNull Item item1, @NotNull Item item2) {
-        return plugin.getItemMergeManager() != null && plugin.getItemMergeManager().mergeAmount(item1, item2);
+        var mergeMgr = plugin.getService(fr.skynex.lootglow.managers.ItemMergeManager.class);
+        return mergeMgr != null && mergeMgr.mergeAmount(item1, item2);
     }
 
     @Override
     public boolean unMergeAmount(@NotNull Item item, int amount) {
-        return plugin.getItemMergeManager() != null && plugin.getItemMergeManager().unMergeAmount(item, amount);
+        var mergeMgr = plugin.getService(fr.skynex.lootglow.managers.ItemMergeManager.class);
+        return mergeMgr != null && mergeMgr.unMergeAmount(item, amount);
     }
 
     @Override
     public int getMergeAmount(@NotNull Item item) {
-        return plugin.getItemMergeManager() != null ? plugin.getItemMergeManager().getMergeAmount(item) : 0;
+        var mergeMgr = plugin.getService(fr.skynex.lootglow.managers.ItemMergeManager.class);
+        return mergeMgr != null ? mergeMgr.getMergeAmount(item) : 0;
     }
 
     @Override
     public void setMergeAmount(@NotNull Item item, int amount) {
-        if (plugin.getItemMergeManager() != null) {
-            plugin.getItemMergeManager().setMergeAmount(item, amount);
+        var mergeMgr = plugin.getService(fr.skynex.lootglow.managers.ItemMergeManager.class);
+        if (mergeMgr != null) {
+            mergeMgr.setMergeAmount(item, amount);
         }
     }
 
     @Override
     public void addMergeAmount(@NotNull Item item, int amount) {
-        if (plugin.getItemMergeManager() != null) {
-            plugin.getItemMergeManager().addMergeAmount(item, amount);
+        var mergeMgr = plugin.getService(fr.skynex.lootglow.managers.ItemMergeManager.class);
+        if (mergeMgr != null) {
+            mergeMgr.addMergeAmount(item, amount);
         }
     }
 
     @Override
     public void removeMergeAmount(@NotNull Item item, int amount) {
-        if (plugin.getItemMergeManager() != null) {
-            plugin.getItemMergeManager().removeMergeAmount(item, amount);
+        var mergeMgr = plugin.getService(fr.skynex.lootglow.managers.ItemMergeManager.class);
+        if (mergeMgr != null) {
+            mergeMgr.removeMergeAmount(item, amount);
         }
     }
 }

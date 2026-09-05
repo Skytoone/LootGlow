@@ -42,25 +42,34 @@ public class FarmingManager {
         return cropBlock != null && activeCropSymbols.containsKey(cropBlock);
     }
 
+    public void relinkCropSymbol(Block block, BlockDisplay bd) {
+        CropSymbol cs = activeCropSymbols.computeIfAbsent(block, k -> new CropSymbol(bd.getLocation()));
+        if (!cs.contains(bd)) {
+            cs.add(bd);
+        }
+    }
+
     public boolean isFarmingAllowed(Location loc) {
-        if (!plugin.isUseWorldGuard() || !plugin.isWgEnabled()) return true;
-        if (plugin.isInBlockedRegion(loc)) return false;
+        var cfgMgr = plugin.getConfigManager();
+        if (!plugin.isUseWorldGuard() || cfgMgr == null || !cfgMgr.isWgEnabled()) return true;
+        if (cfgMgr.isWgEnabled() && fr.skynex.lootglow.integration.WorldGuardHook.isInBlockedRegion(loc, cfgMgr.getWgBlockedRegions())) return false;
         return fr.skynex.lootglow.integration.WorldGuardHook.isFarmingAllowed(loc);
     }
 
     public void spawnCropSymbol(Block block) {
-        if (!plugin.isFarmingEnabled() || activeCropSymbols.containsKey(block)) return;
+        var cfgMgr = plugin.getConfigManager();
+        if (cfgMgr == null || !cfgMgr.isFarmingEnabled() || activeCropSymbols.containsKey(block)) return;
         if (!isFarmingAllowed(block.getLocation())) return;
 
-        Material farmingMat = plugin.getFarmingMaterial();
+        Material farmingMat = cfgMgr.getFarmingMaterial();
         if (farmingMat == null || !farmingMat.isBlock()) {
             farmingMat = Material.EMERALD_BLOCK;
         }
 
-        Location loc = block.getLocation().add(0.5, plugin.getFarmingOffset(), 0.5);
+        Location loc = block.getLocation().add(0.5, cfgMgr.getFarmingOffset(), 0.5);
         CropSymbol cs = new CropSymbol(loc.clone());
 
-        float scale = plugin.getFarmingScale();
+        float scale = cfgMgr.getFarmingScale();
         final Material finalMat = farmingMat;
 
         BlockDisplay bar = block.getWorld().spawn(loc, BlockDisplay.class, bd -> {
@@ -164,8 +173,9 @@ public class FarmingManager {
                 }
             }
 
+            var cfgMgr = plugin.getConfigManager();
             for (org.bukkit.entity.Player p : org.bukkit.Bukkit.getOnlinePlayers()) {
-                if (!plugin.isWorldAllowed(p.getWorld().getName()))
+                if (cfgMgr != null && !cfgMgr.isWorldAllowed(p.getWorld().getName()))
                     continue;
 
                 Location loc = p.getLocation();

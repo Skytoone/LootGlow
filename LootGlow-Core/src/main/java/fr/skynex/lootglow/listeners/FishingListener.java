@@ -24,12 +24,13 @@ public class FishingListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerFish(PlayerFishEvent event) {
-        if (!plugin.isEnabled()) return;
+        var cfgMgr = plugin.getConfigManager();
+        if (cfgMgr == null || !cfgMgr.isEnabled()) return;
         PlayerFishEvent.State state = event.getState();
         if (state == PlayerFishEvent.State.CAUGHT_FISH || state == PlayerFishEvent.State.CAUGHT_ENTITY) {
             if (event.getCaught() instanceof Item item && item.isValid()) {
                 Location loc = item.getLocation();
-                if (!plugin.isWorldAllowed(loc.getWorld().getName())) return;
+                if (!cfgMgr.isWorldAllowed(loc.getWorld().getName())) return;
 
                 FoliaScheduler.runAtEntity(plugin, item, () -> {
                     if (!item.isValid()) return;

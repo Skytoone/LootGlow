@@ -49,8 +49,10 @@ public class PacketEventsProvider extends PacketListenerAbstract implements Pack
         if (event.getPacketType() == PacketType.Play.Server.SPAWN_ENTITY) {
             WrapperPlayServerSpawnEntity wrapper = new WrapperPlayServerSpawnEntity(event);
             int entityId = wrapper.getEntityId();
-            if (plugin.isRpgDropsEnabled() && plugin.getHiddenVanillaItems().contains(entityId)) {
-                if (!plugin.getHiddenVisuals().contains(player.getUniqueId())) {
+            var cfgMgr = plugin.getConfigManager();
+            boolean rpgEnabled = cfgMgr != null && cfgMgr.isRpgDropsEnabled();
+            if (rpgEnabled && plugin.getStateRepository().getHiddenVanillaItems().contains(entityId)) {
+                if (!plugin.getStateRepository().getHiddenVisuals().contains(player.getUniqueId())) {
                     event.setCancelled(true);
                 }
             }
@@ -58,11 +60,12 @@ public class PacketEventsProvider extends PacketListenerAbstract implements Pack
             WrapperPlayServerEntityMetadata wrapper = new WrapperPlayServerEntityMetadata(event);
             int entityId = wrapper.getEntityId();
 
-            if (!plugin.getEntityIdMap().containsKey(entityId))
+            if (!plugin.getStateRepository().getEntityIdMap().containsKey(entityId))
                 return;
 
-            boolean isHiddenVanilla = plugin.isRpgDropsEnabled() && plugin.getHiddenVanillaItems().contains(entityId);
-            boolean isHiddenToggle = plugin.getHiddenVisuals().contains(player.getUniqueId());
+            var cfgMgr = plugin.getConfigManager();
+            boolean isHiddenVanilla = cfgMgr != null && cfgMgr.isRpgDropsEnabled() && plugin.getStateRepository().getHiddenVanillaItems().contains(entityId);
+            boolean isHiddenToggle = plugin.getStateRepository().getHiddenVisuals().contains(player.getUniqueId());
 
             boolean needsInvisible = isHiddenVanilla && !isHiddenToggle;
             boolean needsNoGlow = isHiddenToggle;

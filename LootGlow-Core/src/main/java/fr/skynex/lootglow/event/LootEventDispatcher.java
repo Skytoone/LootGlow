@@ -34,8 +34,9 @@ public class LootEventDispatcher {
         }
 
         // Record loot statistics in Database
-        if (plugin.getDatabaseManager() != null) {
-            plugin.getDatabaseManager().incrementLootStat(player.getUniqueId(), category != null ? category : "DEFAULT", itemStack.getAmount());
+        var db = plugin.getService(fr.skynex.lootglow.database.DatabaseManager.class);
+        if (db != null) {
+            db.incrementLootStat(player.getUniqueId(), category != null ? category : "DEFAULT", itemStack.getAmount());
         }
 
         // Trigger actionbar notification & pickup sound
@@ -52,7 +53,8 @@ public class LootEventDispatcher {
             return;
         }
 
-        String itemCat = category != null ? category : (plugin.getTrackedItemManager() != null ? plugin.getTrackedItemManager().getItemCategory(item.getUniqueId()) : null);
+        var trackedMgr = plugin.getService(fr.skynex.lootglow.managers.TrackedItemManager.class);
+        String itemCat = category != null ? category : (trackedMgr != null ? trackedMgr.getItemCategory(item.getUniqueId()) : null);
         if (itemCat == null) return;
 
         List<String> enabledCategories = plugin.getConfig().getStringList("settings.wow-effects.pickup-actionbar.categories");
@@ -61,13 +63,15 @@ public class LootEventDispatcher {
         }
 
         String format = plugin.getConfig().getString("settings.wow-effects.pickup-actionbar.format", "<gradient:#FF0055:#FF8800><b>✦ BUTIN <category> ✦</b></gradient> <gray>—</gray> <white><item></white>");
-        Component itemComp = plugin.getItemNameFormatter() != null ? plugin.getItemNameFormatter().getItemName(itemStack) : Component.text(itemStack.getType().name());
+        var nameFormatter = plugin.getService(fr.skynex.lootglow.util.ItemNameFormatter.class);
+        Component itemComp = nameFormatter != null ? nameFormatter.getItemName(itemStack) : Component.text(itemStack.getType().name());
         Component headerComp = fr.skynex.lootglow.util.ColorUtil.parse(format.replace("<category>", itemCat.toUpperCase()));
         Component actionbarComp = headerComp.replaceText(b -> b.matchLiteral("<item>").replacement(itemComp));
         player.sendActionBar(actionbarComp);
 
         String soundStr = plugin.getConfig().getString("settings.wow-effects.pickup-actionbar.sound", "UI_TOAST_CHALLENGE_COMPLETE");
-        Sound sound = plugin.parseSound(soundStr);
+        var parser = plugin.getService(fr.skynex.lootglow.config.ConfigParser.class);
+        Sound sound = parser != null ? parser.parseSound(soundStr) : null;
         if (sound != null) {
             player.playSound(player.getLocation(), sound, 0.8f, 1.2f);
         }

@@ -68,20 +68,26 @@ public class GroupContainerManager {
             groupMembers.put(newLeader, members);
         }
 
-        fr.skynex.lootglow.model.TrackedItem tiOld = plugin.getTrackedItemManager().getTrackedItems().remove(oldLeader);
-        if (tiOld != null) {
-            plugin.getTrackedItemManager().getTrackedItems().put(newLeader, tiOld);
+        var trackedMgr = plugin.getService(TrackedItemManager.class);
+        if (trackedMgr != null) {
+            fr.skynex.lootglow.model.TrackedItem tiOld = trackedMgr.getTrackedItems().remove(oldLeader);
+            if (tiOld != null) {
+                trackedMgr.getTrackedItems().put(newLeader, tiOld);
+            }
         }
 
-        Long spawnTime = plugin.getItemSpawnTimes().remove(oldLeader);
+        Long spawnTime = plugin.getStateRepository().getItemSpawnTimes().remove(oldLeader);
         if (spawnTime != null) {
-            plugin.getItemSpawnTimes().put(newLeader, spawnTime);
+            plugin.getStateRepository().getItemSpawnTimes().put(newLeader, spawnTime);
         }
 
         // Instantly refresh hologram label for the new leader
-        Item newLeaderItem = plugin.getActiveItems().get(newLeader);
-        if (newLeaderItem != null && newLeaderItem.isValid()) {
-            plugin.refreshHologram(newLeaderItem);
+        var activeItems = trackedMgr != null ? trackedMgr.getActiveItems() : plugin.getStateRepository().getActiveItems();
+        Item newLeaderItem = activeItems.get(newLeader);
+        var holoSvc = plugin.getService(fr.skynex.lootglow.service.HologramService.class);
+        var cfgMgr = plugin.getConfigManager();
+        if (newLeaderItem != null && newLeaderItem.isValid() && holoSvc != null && cfgMgr != null) {
+            holoSvc.refreshHologram(newLeaderItem, cfgMgr.isHoloEnabled(), cfgMgr.isHoloHideUncategorized(), plugin.getStateRepository().getItemCategoriesCache(), plugin.getStateRepository().getItemCategories(), cfgMgr.getDefaultColor(), plugin.getStateRepository().getLastHoloState());
         }
     }
 
@@ -90,7 +96,9 @@ public class GroupContainerManager {
         List<UUID> members = groupMembers.get(leaderUuid);
         if (members == null || members.isEmpty()) return;
 
-        Item leaderItem = plugin.getTrackedItemManager().getActiveItems().get(leaderUuid);
+        var trackedMgr = plugin.getService(TrackedItemManager.class);
+        var activeItems = trackedMgr != null ? trackedMgr.getActiveItems() : plugin.getStateRepository().getActiveItems();
+        Item leaderItem = activeItems.get(leaderUuid);
         if (leaderItem != null && leaderItem.isValid()) {
             Location loc = leaderItem.getLocation();
             loc.getWorld().playSound(loc, Sound.ENTITY_PLAYER_LEVELUP, 0.5f, 2.0f);
@@ -132,7 +140,7 @@ public class GroupContainerManager {
 
             Inventory gui = Bukkit.createInventory(null, size, fr.skynex.lootglow.util.ColorUtil.parse(containerTitle));
             for (int i = 0; i < Math.min(members.size(), 54); i++) {
-                Item item = plugin.getTrackedItemManager().getActiveItems().get(members.get(i));
+                Item item = activeItems.get(members.get(i));
                 if (item != null && item.isValid()) {
                     gui.setItem(i, item.getItemStack());
                 }

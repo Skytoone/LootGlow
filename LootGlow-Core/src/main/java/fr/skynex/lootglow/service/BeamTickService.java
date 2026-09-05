@@ -83,7 +83,8 @@ public class BeamTickService {
                 Particle part = itemParticlesCache.get(itemUuid);
                 if (part != null) {
                     double heightOffset = (angle * 5) % beamHeight;
-                    double maxDistSq = plugin.getConfigManager() != null ? plugin.getConfigManager().getLodPartDistSq() : 1024.0;
+                    var cfgMgr = plugin.getService(fr.skynex.lootglow.config.LootGlowConfigManager.class);
+                    double maxDistSq = cfgMgr != null ? cfgMgr.getLodPartDistSq() : 1024.0;
                     FoliaScheduler.runAtEntity(plugin, beam, () -> {
                         if (!beam.isValid()) return;
                         double bx = beam.getX();
@@ -94,7 +95,7 @@ public class BeamTickService {
                         if (worldPlayers.isEmpty()) return;
 
                         for (org.bukkit.entity.Player p : worldPlayers) {
-                            if (plugin.getHiddenVisuals().contains(p.getUniqueId())) continue;
+                            if (plugin.getStateRepository().getHiddenVisuals().contains(p.getUniqueId())) continue;
                             double dx = p.getX() - bx;
                             double dy = p.getY() - by;
                             double dz = p.getZ() - bz;

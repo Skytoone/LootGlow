@@ -69,27 +69,31 @@ public class RPGDropManager {
         }
 
         Location loc = item.getLocation();
+        var cfgMgr = plugin.getConfigManager();
+        float shadowScale = cfgMgr != null ? cfgMgr.getShadowScale() : 1.0f;
         BlockDisplay shadow = item.getWorld().spawn(loc, BlockDisplay.class, ent -> {
-            ent.setShadowRadius(plugin.getShadowScale() * 0.8f);
+            ent.setShadowRadius(shadowScale * 0.8f);
             ent.setShadowStrength(1.0f);
             ent.setPersistent(false);
         });
 
         activeShadows.put(item.getUniqueId(), shadow);
 
-        if (plugin.getTrackedItemManager() != null) {
-            fr.skynex.lootglow.model.TrackedItem ti = plugin.getTrackedItemManager().getOrCreateTrackedItem(item.getUniqueId());
+        var trackedMgr = plugin.getService(TrackedItemManager.class);
+        if (trackedMgr != null) {
+            fr.skynex.lootglow.model.TrackedItem ti = trackedMgr.getOrCreateTrackedItem(item.getUniqueId());
             ti.shadow = shadow;
-            plugin.getTrackedItemManager().registerDisplayEntity(shadow.getUniqueId(), item.getUniqueId());
+            trackedMgr.registerDisplayEntity(shadow.getUniqueId(), item.getUniqueId());
         }
 
+        double lodHoloDistSq = cfgMgr != null ? cfgMgr.getLodHoloDistSq() : 0.0;
         for (Player p : Bukkit.getOnlinePlayers()) {
             if (!p.getWorld().equals(item.getWorld())) continue;
-            if (plugin.getHiddenVisuals().contains(p.getUniqueId())
-                    || p.getLocation().distanceSquared(item.getLocation()) >= plugin.getLodHoloDistSq()) {
+            if (plugin.getStateRepository().getHiddenVisuals().contains(p.getUniqueId())
+                    || p.getLocation().distanceSquared(item.getLocation()) >= lodHoloDistSq) {
                 p.hideEntity(plugin, shadow);
             } else {
-                plugin.getVisibleEntities().computeIfAbsent(p.getUniqueId(), k -> java.util.concurrent.ConcurrentHashMap.newKeySet()).add(shadow.getUniqueId());
+                plugin.getStateRepository().getVisibleEntities().computeIfAbsent(p.getUniqueId(), k -> java.util.concurrent.ConcurrentHashMap.newKeySet()).add(shadow.getUniqueId());
             }
         }
     }
@@ -100,8 +104,9 @@ public class RPGDropManager {
         if (d != null && d.isValid()) {
             d.remove();
         }
-        if (plugin.getTrackedItemManager() != null) {
-            fr.skynex.lootglow.model.TrackedItem ti = plugin.getTrackedItemManager().getTrackedItems().get(uuid);
+        var trackedMgr2 = plugin.getService(TrackedItemManager.class);
+        if (trackedMgr2 != null) {
+            fr.skynex.lootglow.model.TrackedItem ti = trackedMgr2.getTrackedItems().get(uuid);
             if (ti != null && ti.shadow != null) {
                 if (ti.shadow.isValid()) {
                     ti.shadow.remove();

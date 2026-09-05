@@ -28,26 +28,29 @@ public class HologramManager {
 
     public void removeHologram(Item item) {
         if (item == null) return;
-        if (plugin.getHologramRenderer() != null) {
-            plugin.getHologramRenderer().removeCustomHologram(item);
+        var renderer = plugin.getService(HologramRenderer.class);
+        if (renderer != null) {
+            renderer.removeCustomHologram(item);
         }
         removeHologram(item.getUniqueId());
     }
 
     public void removeHologram(Item item, Player player) {
         if (item == null) return;
-        if (plugin.getHologramRenderer() != null) {
-            plugin.getHologramRenderer().removeCustomHologram(item, player);
+        var renderer = plugin.getService(HologramRenderer.class);
+        if (renderer != null) {
+            renderer.removeCustomHologram(item, player);
         }
     }
 
     public void removeHologram(UUID uuid) {
         if (uuid == null) return;
-        org.bukkit.entity.TextDisplay activeLabel = plugin.getActiveLabels().remove(uuid);
+        org.bukkit.entity.TextDisplay activeLabel = plugin.getStateRepository().getActiveLabels().remove(uuid);
         if (activeLabel != null && activeLabel.isValid()) {
             activeLabel.remove();
         }
-        TrackedItem ti = plugin.getTrackedItemManager().getTrackedItems().get(uuid);
+        var trackedMgr = plugin.getService(TrackedItemManager.class);
+        TrackedItem ti = trackedMgr != null ? trackedMgr.getTrackedItems().get(uuid) : plugin.getStateRepository().getTrackedItems().get(uuid);
         if (ti != null) {
             if (ti.label != null && ti.label.isValid()) {
                 ti.label.remove();

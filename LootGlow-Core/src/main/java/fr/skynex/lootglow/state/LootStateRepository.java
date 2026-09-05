@@ -137,6 +137,9 @@ public class LootStateRepository {
     public Set<UUID> getGloballyVisibleEntities() { return globallyVisibleEntities; }
     public void setGloballyVisibleEntities(Set<UUID> entities) { this.globallyVisibleEntities = entities; }
 
+    private final Set<UUID> recentlyBounced = ConcurrentHashMap.newKeySet();
+    public Set<UUID> getRecentlyBounced() { return recentlyBounced; }
+
     public Map<UUID, Long> getLastHoloState() { return lastHoloState; }
     public Map<UUID, Component> getBaseNameCache() { return baseNameCache; }
     public Map<UUID, String> getItemCategoriesCache() { return itemCategoriesCache; }

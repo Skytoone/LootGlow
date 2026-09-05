@@ -11,6 +11,7 @@ import org.bukkit.World;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -119,7 +120,8 @@ public class ParticleAnimationManager {
             }, (r - 1) * 2L);
         }
 
-        Sound sound = plugin.parseSound(soundStr);
+        var parser = plugin.getService(fr.skynex.lootglow.config.ConfigParser.class);
+        Sound sound = parser != null ? parser.parseSound(soundStr) : null;
         if (sound != null) {
             world.playSound(loc, sound, 1.0f, 1.2f);
         }
@@ -136,9 +138,20 @@ public class ParticleAnimationManager {
 
     private org.bukkit.scheduler.BukkitTask particleTask;
 
+    public void stopParticleTask() {
+        if (particleTask != null) {
+            particleTask.cancel();
+            particleTask = null;
+        }
+    }
+
+    public org.bukkit.scheduler.BukkitTask getParticleTask() {
+        return particleTask;
+    }
+
     public void startParticleTask(boolean isEnabled,
-                                  boolean particlesEnabled,
-                                  double lodPartDistSq,
+                                  boolean particleLoopEnabled,
+                                  double particleDist,
                                   Map<UUID, Item> activeItems,
                                   Map<UUID, Particle> itemParticlesCache,
                                   Map<UUID, String> itemCategoriesCache,
@@ -148,38 +161,33 @@ public class ParticleAnimationManager {
                                   Map<String, String> categoryAnimTypes,
                                   String particleAnimType,
                                   int particlesFrequency) {
+        stopParticleTask();
 
-        if (particleTask != null) {
-            particleTask.cancel();
-            particleTask = null;
-        }
+        double lodPartDistSq = particleDist * particleDist;
+        double partDistSq = lodPartDistSq;
 
         particleTask = FoliaScheduler.runTimer(plugin, () -> {
-            if (!isEnabled) return;
-
+            if (!isEnabled || !particleLoopEnabled) return;
             particleTick++;
-            if (plugin.getGroundAuraManager() != null) {
-                plugin.getGroundAuraManager().tickAuras(activeItems, itemCategoriesCache);
+            var auraMgr = plugin.getService(GroundAuraManager.class);
+            if (auraMgr != null) {
+                auraMgr.tickAuras(activeItems, itemCategoriesCache);
             }
-
-            if (!particlesEnabled) return;
-
-            double partDistSq = lodPartDistSq;
 
             for (Player p : Bukkit.getOnlinePlayers()) {
                 if (hiddenVisuals.contains(p.getUniqueId())) continue;
 
                 World pWorld = p.getWorld();
-                String worldName = pWorld.getName();
                 double px = p.getX();
                 double py = p.getY();
                 double pz = p.getZ();
 
                 double maxPartDist = Math.sqrt(lodPartDistSq);
                 int chunkRadius = (int) Math.ceil(maxPartDist / 16.0);
-                Set<UUID> nearbyItemUuids = plugin.getTrackedItemManager() != null
-                        ? plugin.getTrackedItemManager().getItemsInChunkRadius(pWorld, ((int) px) >> 4, ((int) pz) >> 4, chunkRadius)
-                        : plugin.getItemsByWorld().get(worldName);
+                var trackedMgr = plugin.getService(TrackedItemManager.class);
+                Set<UUID> nearbyItemUuids = trackedMgr != null
+                        ? trackedMgr.getItemsInChunkRadius(pWorld, ((int) px) >> 4, ((int) pz) >> 4, chunkRadius)
+                        : Collections.emptySet();
                 if (nearbyItemUuids == null || nearbyItemUuids.isEmpty()) continue;
 
                 for (UUID uuid : nearbyItemUuids) {
@@ -188,42 +196,40 @@ public class ParticleAnimationManager {
 
                     Particle particle = itemParticlesCache.get(uuid);
                     if (particle == null) {
-                        particle = Particle.DUST;
+                        particle = Particle.END_ROD;
                     }
 
-                    double ix = item.getX();
-                    double iy = item.getY();
-                    double iz = item.getZ();
+                    Location loc = item.getLocation();
+                    double ix = loc.getX();
+                    double iy = loc.getY();
+                    double iz = loc.getZ();
 
                     double dx = px - ix;
                     double dy = py - iy;
                     double dz = pz - iz;
-                    if ((dx * dx + dy * dy + dz * dz) >= partDistSq) continue;
+                    if ((dx * dx + dy * dy + dz * dz) > partDistSq) continue;
 
-                    String category = itemCategoriesCache.get(uuid);
-                    String rawAnimType = (category != null)
-                            ? categoryAnimTypes.getOrDefault(category, particleAnimType)
-                            : particleAnimType;
-                    AnimType animType = AnimType.fromString(rawAnimType);
-
-                    double xCoord = ix;
-                    double yCoord = iy + 0.2;
-                    double zCoord = iz;
+                    String cat = itemCategoriesCache.get(uuid);
+                    String animType = cat != null ? categoryAnimTypes.getOrDefault(cat, particleAnimType) : particleAnimType;
 
                     Object data = null;
                     if (particle.getDataType() == Particle.DustOptions.class) {
-                        data = category != null ? categoryDustOptions.getOrDefault(category, defaultDustOptions)
+                        data = cat != null ? categoryDustOptions.getOrDefault(cat, defaultDustOptions)
                                 : defaultDustOptions;
                     }
 
-                    switch (animType) {
-                        case CIRCLE -> {
+                    double xCoord = ix;
+                    double yCoord = iy + 0.5;
+                    double zCoord = iz;
+
+                    switch (animType != null ? animType.toUpperCase() : "") {
+                        case "CIRCLE" -> {
                             double radius = 0.4;
                             double x = Math.cos(particleTick * 0.2) * radius;
                             double z = Math.sin(particleTick * 0.2) * radius;
                             p.spawnParticle(particle, xCoord + x, yCoord, zCoord + z, 1, 0, 0, 0, 0, data);
                         }
-                        case SPIRAL -> {
+                        case "SPIRAL" -> {
                             double radius = 0.3;
                             double x = Math.cos(particleTick * 0.3) * radius;
                             double z = Math.sin(particleTick * 0.3) * radius;
@@ -235,7 +241,8 @@ public class ParticleAnimationManager {
                 }
 
                 // Actionbar Loot Compass Indicator for rare items
-                if (particleTick % 2 == 0 && plugin.getRarityManager() != null) {
+                var rarityMgr = plugin.getService(RarityManager.class);
+                if (particleTick % 2 == 0 && rarityMgr != null) {
                     double closestDistSq = 900.0; // 30 blocks radius
                     Item rarestItem = null;
                     for (UUID u : nearbyItemUuids) {
@@ -247,10 +254,10 @@ public class ParticleAnimationManager {
                         double dz = pz - itemObj.getZ();
                         double distSq = dx * dx + dy * dy + dz * dz;
                         if (distSq < closestDistSq) {
-                            fr.skynex.lootglow.model.TrackedItem ti = plugin.getTrackedItemManager().getTrackedItem(u);
+                            fr.skynex.lootglow.model.TrackedItem ti = trackedMgr != null ? trackedMgr.getTrackedItem(u) : null;
                             fr.skynex.lootglow.managers.RarityManager.ItemRarity rarity = ti != null ? ti.rarity : null;
                             if (rarity == null) {
-                                rarity = plugin.getRarityManager().detectRarity(itemObj.getItemStack());
+                                rarity = rarityMgr.detectRarity(itemObj.getItemStack());
                                 if (ti != null) ti.rarity = rarity;
                             }
                             if (rarity == fr.skynex.lootglow.managers.RarityManager.ItemRarity.LEGENDARY || rarity == fr.skynex.lootglow.managers.RarityManager.ItemRarity.MYTHIC) {
@@ -318,6 +325,7 @@ public class ParticleAnimationManager {
     }
 
     public void clearAll() {
+        stopParticleTask();
         customParticles.clear();
     }
 }

@@ -15,6 +15,7 @@ import org.bukkit.scoreboard.Team;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import fr.skynex.lootglow.managers.VisualDisplayManager;
 
 public class ItemVisualSpawnService {
 
@@ -86,13 +87,14 @@ public class ItemVisualSpawnService {
         ItemStack visualStack = item.getItemStack().clone();
 
         ItemDisplay display = item.getWorld().spawn(spawnLoc, ItemDisplay.class, ent -> {
+            var visDispMgr = plugin.getService(VisualDisplayManager.class);
             if (isGroupVisual) {
                 ItemStack bag;
                 if (bagMaterial == Material.PLAYER_HEAD) {
                     if (useOwnerHead && item.getThrower() != null) {
-                        bag = plugin.getVisualDisplayManager().getOwnerHead(item.getThrower());
+                        bag = visDispMgr != null ? visDispMgr.getOwnerHead(item.getThrower()) : new ItemStack(Material.PLAYER_HEAD);
                     } else if (!bagHeadTexture.isEmpty()) {
-                        bag = plugin.getVisualDisplayManager().createTexturedHead(bagHeadTexture);
+                        bag = visDispMgr != null ? visDispMgr.createTexturedHead(bagHeadTexture) : new ItemStack(Material.PLAYER_HEAD);
                     } else {
                         bag = new ItemStack(bagMaterial);
                     }
@@ -102,7 +104,7 @@ public class ItemVisualSpawnService {
                 if (bagCustomModelData != 0) {
                     org.bukkit.inventory.meta.ItemMeta bMeta = bag.getItemMeta();
                     if (bMeta != null) {
-                        bMeta.getCustomModelDataComponent().setFloats(java.util.List.of((float) bagCustomModelData));
+                        bMeta.setCustomModelData(bagCustomModelData);
                         bag.setItemMeta(bMeta);
                     }
                 }
@@ -116,10 +118,11 @@ public class ItemVisualSpawnService {
             } else {
                 ent.setItemStack(visualStack);
                 Material mat = visualStack.getType();
-                boolean isCustom = plugin.isCustomItem(visualStack);
-                boolean isUpright = plugin.isUprightItem(mat);
+                var cfgMgr = plugin.getConfigManager();
+                boolean isCustom = fr.skynex.lootglow.util.ItemTypeClassifier.isCustomItem(visualStack);
+                boolean isUpright = fr.skynex.lootglow.util.ItemTypeClassifier.isUprightItem(mat, cfgMgr != null ? cfgMgr.getRpgForceFlatMaterials() : java.util.Collections.emptySet(), cfgMgr != null ? cfgMgr.getRpgForceUprightMaterials() : java.util.Collections.emptySet());
                 float baseScale = isUpright ? rpgBlockScale : rpgItemScale;
-                if (plugin.isFishItem(mat)) baseScale *= 0.55f;
+                if (fr.skynex.lootglow.util.ItemTypeClassifier.isFishItem(mat)) baseScale *= 0.55f;
                 float rotX = (isCustom || isUpright) ? 0f : rpgRotation;
                 float transY = isCustom ? 0.18f : 0.15f;
                 if (mat == Material.TRIDENT) transY += 0.35f;
@@ -145,10 +148,11 @@ public class ItemVisualSpawnService {
             if (team != null) team.addEntry(display.getUniqueId().toString());
         } catch (Throwable ignored) {}
         activeItemVisuals.put(item.getUniqueId(), display);
-        if (plugin.getTrackedItemManager() != null) {
-            fr.skynex.lootglow.model.TrackedItem ti = plugin.getTrackedItemManager().getOrCreateTrackedItem(item.getUniqueId());
+        var trackedMgr = plugin.getService(fr.skynex.lootglow.managers.TrackedItemManager.class);
+        if (trackedMgr != null) {
+            fr.skynex.lootglow.model.TrackedItem ti = trackedMgr.getOrCreateTrackedItem(item.getUniqueId());
             ti.visual = display;
-            plugin.getTrackedItemManager().registerDisplayEntity(display.getUniqueId(), item.getUniqueId());
+            trackedMgr.registerDisplayEntity(display.getUniqueId(), item.getUniqueId());
         }
 
         if (plugin.getConfig().getBoolean("settings.debug", false)) {

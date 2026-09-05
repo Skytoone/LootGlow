@@ -136,10 +136,11 @@ public class ItemMagnetManager {
         double pz = loc.getZ();
         double radiusSq = radius * radius;
         int chunkRadius = (int) Math.ceil(radius / 16.0);
-        Set<UUID> nearbyItems = plugin.getTrackedItemManager().getItemsInChunkRadius(player.getWorld(), ((int) px) >> 4, ((int) pz) >> 4, chunkRadius);
+        var trackedMgr = plugin.getService(TrackedItemManager.class);
+        Set<UUID> nearbyItems = trackedMgr != null ? trackedMgr.getItemsInChunkRadius(player.getWorld(), ((int) px) >> 4, ((int) pz) >> 4, chunkRadius) : null;
         if (nearbyItems != null && !nearbyItems.isEmpty()) {
             for (UUID uuid : nearbyItems) {
-                Item item = plugin.getTrackedItemManager().getActiveItems().get(uuid);
+                Item item = trackedMgr != null ? trackedMgr.getActiveItems().get(uuid) : null;
                 if (item != null && item.isValid()) {
                     double dx = px - item.getX();
                     double dy = py - item.getY();

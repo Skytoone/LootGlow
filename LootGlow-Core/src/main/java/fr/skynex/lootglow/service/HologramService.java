@@ -13,6 +13,14 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.TextDisplay;
 import org.bukkit.util.Transformation;
 
+import fr.skynex.lootglow.managers.HologramRenderer;
+import fr.skynex.lootglow.managers.LODManager;
+import fr.skynex.lootglow.managers.LootProtectionManager;
+import fr.skynex.lootglow.managers.RarityManager;
+import fr.skynex.lootglow.managers.TrackedItemManager;
+import fr.skynex.lootglow.util.ItemNameFormatter;
+import fr.skynex.lootglow.util.ItemTypeClassifier;
+
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -35,14 +43,15 @@ public class HologramService {
                                        Map<UUID, Double> itemMoneyAmounts,
                                        String economyFormat,
                                        String economyPrefix) {
-        if (plugin.getHologramRenderer() != null) {
-            Component customHolo = plugin.getHologramRenderer().getCustomHologram(item, null);
+        var holoRen = plugin.getService(HologramRenderer.class);
+        if (holoRen != null) {
+            Component customHolo = holoRen.getCustomHologram(item, null);
             if (customHolo != null) {
                 return customHolo.decoration(TextDecoration.ITALIC, false);
             }
         }
 
-        String customId = plugin.getInternalId(item.getItemStack());
+        String customId = ItemTypeClassifier.getInternalId(item.getItemStack());
         String matName = item.getItemStack().getType().name();
 
         Component name = displayNameOverridesCache.get(customId);
@@ -70,7 +79,8 @@ public class HologramService {
         }
 
         if (name == null) {
-            name = plugin.getItemNameFormatter() != null ? plugin.getItemNameFormatter().getItemName(item.getItemStack()) : Component.text(matName);
+            var nameFmt = plugin.getService(ItemNameFormatter.class);
+            name = nameFmt != null ? nameFmt.getItemName(item.getItemStack()) : Component.text(matName);
         }
 
         if (name.color() == null && !name.children().stream().anyMatch(c -> c.color() != null)) {
@@ -94,14 +104,16 @@ public class HologramService {
 
         Component result = baseName;
 
-        if (plugin.getRarityManager() != null) {
-            fr.skynex.lootglow.model.TrackedItem ti = plugin.getTrackedItemManager() != null ? plugin.getTrackedItemManager().getTrackedItem(item.getUniqueId()) : null;
+        var rarityMgr = plugin.getService(RarityManager.class);
+        var trackedMgr = plugin.getService(TrackedItemManager.class);
+        if (rarityMgr != null) {
+            fr.skynex.lootglow.model.TrackedItem ti = trackedMgr != null ? trackedMgr.getTrackedItem(item.getUniqueId()) : null;
             fr.skynex.lootglow.managers.RarityManager.ItemRarity rarity = ti != null ? ti.rarity : null;
             if (rarity == null) {
-                rarity = plugin.getRarityManager().detectRarity(item.getItemStack());
+                rarity = rarityMgr.detectRarity(item.getItemStack());
                 if (ti != null) ti.rarity = rarity;
             }
-            Component rarityHeader = plugin.getRarityManager().getRarityHeaderComponent(rarity);
+            Component rarityHeader = rarityMgr.getRarityHeaderComponent(rarity);
             if (rarityHeader != null) {
                 result = rarityHeader.append(Component.newline()).append(result);
             }
@@ -117,11 +129,12 @@ public class HologramService {
             if (spawnTime != null) {
                 long elapsed = (System.currentTimeMillis() - spawnTime) / 1000;
                 long remaining = protectionDuration - elapsed;
-                UUID ownerUuid = plugin.getLootProtectionManager() != null ? plugin.getLootProtectionManager().getLootOwner(item) : null;
+                var lootProtMgr = plugin.getService(LootProtectionManager.class);
+                UUID ownerUuid = lootProtMgr != null ? lootProtMgr.getLootOwner(item) : null;
                 if (ownerUuid == null) {
                     ownerUuid = item.getThrower();
                 }
-                boolean isProtected = (plugin.getLootProtectionManager() != null && plugin.getLootProtectionManager().isLootProtected(item)) || ownerUuid != null;
+                boolean isProtected = (lootProtMgr != null && lootProtMgr.isLootProtected(item)) || ownerUuid != null;
                 if (isProtected && remaining > 0) {
                     String defaultOwnerName = plugin.getConfig().getString("settings.loot-protection.default-owner-name", "Inconnu");
                     String ownerName = defaultOwnerName;
@@ -166,7 +179,8 @@ public class HologramService {
             int remaining = Math.max(0, (6000 - item.getTicksLived()) / 20);
             Component timerComp = timerComponentCache.get(remaining);
             if (timerComp == null) {
-                timerComp = fr.skynex.lootglow.util.ColorUtil.parse(plugin.getMessageService() != null ? plugin.getMessageService().getRawTimerFormat().replace("<time>", String.valueOf(remaining)) : "");
+                var msgSvc = plugin.getService(MessageService.class);
+                timerComp = fr.skynex.lootglow.util.ColorUtil.parse(msgSvc != null ? msgSvc.getRawTimerFormat().replace("<time>", String.valueOf(remaining)) : "");
             }
             if (timerComp != null) {
                 if (holoTimerNewLine) {
@@ -216,7 +230,8 @@ public class HologramService {
 
         UUID uuid = item.getUniqueId();
         String cat = itemCategoriesCache.get(uuid);
-        if (cat == null && plugin.getTrackedItemManager() != null) cat = plugin.getTrackedItemManager().getItemCategory(uuid);
+        var trackedMgr = plugin.getService(TrackedItemManager.class);
+        if (cat == null && trackedMgr != null) cat = trackedMgr.getItemCategory(uuid);
         if (holoHideUncategorized && cat == null) return;
 
         TextDisplay display = activeLabels.get(uuid);
@@ -226,13 +241,16 @@ public class HologramService {
             double viewDistance = plugin.getConfigManager() != null ? plugin.getConfigManager().getHoloViewDistance() : plugin.getConfig().getDouble("settings.holograms.view-distance", 48.0);
             boolean background = plugin.getConfigManager() != null ? plugin.getConfigManager().isHoloBackground() : plugin.getConfig().getBoolean("settings.holograms.background", false);
             double offset = plugin.getConfigManager() != null ? plugin.getConfigManager().getHoloOffset() : plugin.getConfig().getDouble("settings.holograms.offset", 0.6);
+            var lodMgr = plugin.getService(LODManager.class);
+            var stateRepo = plugin.getStateRepository();
             spawnHologram(item, color, holoEnabled, itemCategoriesCache, holoHideUncategorized,
                     activeLabels, seeThrough, viewDistance, background, offset,
                     baseNameCache, displayNameOverridesCache, itemMoneyAmounts, economyFormat, economyPrefix,
                     holoShowAmount, rawAmountFormat, protectionEnabled, protectionDuration, itemSpawnTimes,
                     rawOwnerFormat, usePapi, holoShowTimer, timerComponentCache, holoTimerNewLine,
-                    plugin.getLodManager() != null ? plugin.getLodManager().getLodHoloDistanceSquared() : 1024.0,
-                    plugin.getHiddenVisuals(), plugin.getVisibleEntities());
+                    lodMgr != null ? lodMgr.getLodHoloDistanceSquared() : 1024.0,
+                    stateRepo != null ? stateRepo.getHiddenVisuals() : java.util.Collections.emptySet(),
+                    stateRepo != null ? stateRepo.getVisibleEntities() : java.util.Collections.emptyMap());
             return;
         }
 
@@ -287,7 +305,8 @@ public class HologramService {
 
         UUID uuid = item.getUniqueId();
         String cat = itemCategoriesCache.get(uuid);
-        if (cat == null && plugin.getTrackedItemManager() != null) cat = plugin.getTrackedItemManager().getItemCategory(uuid);
+        var trackedMgr = plugin.getService(TrackedItemManager.class);
+        if (cat == null && trackedMgr != null) cat = trackedMgr.getItemCategory(uuid);
         if (holoHideUncategorized && cat == null) return;
 
         TextDisplay existing = activeLabels.get(uuid);
@@ -322,10 +341,10 @@ public class HologramService {
         });
 
         activeLabels.put(uuid, label);
-        if (plugin.getTrackedItemManager() != null) {
-            fr.skynex.lootglow.model.TrackedItem ti = plugin.getTrackedItemManager().getOrCreateTrackedItem(uuid);
+        if (trackedMgr != null) {
+            fr.skynex.lootglow.model.TrackedItem ti = trackedMgr.getOrCreateTrackedItem(uuid);
             ti.label = label;
-            plugin.getTrackedItemManager().registerDisplayEntity(label.getUniqueId(), uuid);
+            trackedMgr.registerDisplayEntity(label.getUniqueId(), uuid);
         }
 
         if (plugin.getConfig().getBoolean("settings.debug", false)) {
@@ -361,7 +380,32 @@ public class HologramService {
             color = defaultColor;
 
         if (lastHoloState != null) lastHoloState.remove(uuid);
-        plugin.updateHologram(item, color);
+        var cfgMgr = plugin.getConfigManager();
+        var stateRepo = plugin.getStateRepository();
+        if (cfgMgr != null && stateRepo != null) {
+            updateHologram(item, color,
+                    cfgMgr.isHoloEnabled(),
+                    itemCategoriesCache,
+                    cfgMgr.isHoloHideUncategorized(),
+                    stateRepo.getActiveLabels(),
+                    stateRepo.getGroupLeaders(),
+                    lastHoloState,
+                    stateRepo.getBaseNameCache(),
+                    stateRepo.getDisplayNameOverridesCache(),
+                    stateRepo.getItemMoneyAmounts(),
+                    cfgMgr.getEconomyFormat(),
+                    cfgMgr.getEconomyPrefix(),
+                    cfgMgr.isHoloShowAmount(),
+                    stateRepo.getRawAmountFormat(),
+                    cfgMgr.isProtectionEnabled(),
+                    cfgMgr.getProtectionDuration(),
+                    stateRepo.getItemSpawnTimes(),
+                    stateRepo.getRawOwnerFormat(),
+                    cfgMgr.isUsePapi(),
+                    cfgMgr.isHoloShowTimer(),
+                    stateRepo.getTimerComponentCache(),
+                    cfgMgr.isHoloTimerNewLine());
+        }
     }
 
     private String buildProgressBar(long remaining, long totalDuration) {

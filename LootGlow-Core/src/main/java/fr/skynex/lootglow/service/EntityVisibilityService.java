@@ -11,6 +11,7 @@ import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TextDisplay;
 
+import fr.skynex.lootglow.managers.TrackedItemManager;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -106,11 +107,14 @@ public class EntityVisibilityService {
             double dz = pz - item.getZ();
             double dSq = dx * dx + dy * dy + dz * dz;
             boolean isGrouped = groupedItems.contains(uuid);
+            if (isGrouped && showVisuals) {
+                player.hideEntity(plugin, item);
+            }
 
-            TextDisplay label = plugin.getActiveLabels().get(uuid);
-            BlockDisplay beam = plugin.getActiveBeams().get(uuid);
-            ItemDisplay visual = plugin.getActiveItemVisuals().get(uuid);
-            Entity shadow = plugin.getActiveShadows().get(uuid);
+            TextDisplay label = plugin.getStateRepository().getActiveLabels().get(uuid);
+            BlockDisplay beam = plugin.getStateRepository().getActiveBeams().get(uuid);
+            ItemDisplay visual = plugin.getStateRepository().getActiveItemVisuals().get(uuid);
+            Entity shadow = plugin.getStateRepository().getActiveShadows().get(uuid);
 
             if (showVisuals) {
                 if (label != null && label.isValid()) {
@@ -154,6 +158,8 @@ public class EntityVisibilityService {
         UUID entUuid = entity.getUniqueId();
         boolean currentlyVisible = visibleSet.contains(entUuid);
 
+        var trackedMgr = plugin.getService(TrackedItemManager.class);
+
         if (shouldSee && !currentlyVisible) {
             if (!p.canSee(entity)) {
                 p.showEntity(plugin, entity);
@@ -162,8 +168,8 @@ public class EntityVisibilityService {
                 if (!p.canSee(pass)) p.showEntity(plugin, pass);
             });
             visibleSet.add(entUuid);
-            if (plugin.getTrackedItemManager() != null) {
-                plugin.getTrackedItemManager().registerDisplayViewer(entUuid, p.getUniqueId());
+            if (trackedMgr != null) {
+                trackedMgr.registerDisplayViewer(entUuid, p.getUniqueId());
             }
         } else if (!shouldSee && currentlyVisible) {
             if (p.canSee(entity)) {
@@ -173,8 +179,8 @@ public class EntityVisibilityService {
                 if (p.canSee(pass)) p.hideEntity(plugin, pass);
             });
             visibleSet.remove(entUuid);
-            if (plugin.getTrackedItemManager() != null) {
-                plugin.getTrackedItemManager().unregisterDisplayViewer(entUuid, p.getUniqueId());
+            if (trackedMgr != null) {
+                trackedMgr.unregisterDisplayViewer(entUuid, p.getUniqueId());
             }
         }
     }

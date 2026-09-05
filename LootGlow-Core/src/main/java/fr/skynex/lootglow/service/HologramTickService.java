@@ -8,6 +8,9 @@ import org.bukkit.entity.TextDisplay;
 import java.util.Map;
 import java.util.UUID;
 
+import fr.skynex.lootglow.managers.TrackedItemManager;
+import fr.skynex.lootglow.managers.GroupContainerManager;
+
 /**
  * Manages periodic hologram distance checks and text updates.
  */
@@ -20,8 +23,12 @@ public class HologramTickService {
     }
 
     public void tickHolograms(int numPlayers, World[] pWorlds, double[] px, double[] py, double[] pz, double holoDistSq) {
-        Map<UUID, TrackedItem> trackedItems = plugin.getTrackedItemManager().getTrackedItems();
+        var trackedMgr = plugin.getService(TrackedItemManager.class);
+        if (trackedMgr == null) return;
+        Map<UUID, TrackedItem> trackedItems = trackedMgr.getTrackedItems();
         if (trackedItems.isEmpty()) return;
+
+        var gcMgr = plugin.getService(GroupContainerManager.class);
 
         for (Map.Entry<UUID, TrackedItem> entry : trackedItems.entrySet()) {
             UUID uuid = entry.getKey();
@@ -47,8 +54,8 @@ public class HologramTickService {
                 }
             }
 
-            boolean isGroupLeader = plugin.getGroupContainerManager().getGroupLeaders().contains(uuid);
-            boolean isGrouped = plugin.getGroupContainerManager().getGroupedItems().contains(uuid);
+            boolean isGroupLeader = gcMgr != null && gcMgr.getGroupLeaders().contains(uuid);
+            boolean isGrouped = gcMgr != null && gcMgr.getGroupedItems().contains(uuid);
 
             if (!hasPlayerNearby && !isGroupLeader && !isGrouped) {
                 continue;

@@ -36,7 +36,10 @@ public class ItemInteractionListener implements Listener {
         if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
 
         Player player = event.getPlayer();
-        double range = plugin.isRmbPickupEnabled() ? plugin.getRmbPickupRange() : 4.0;
+        var cfgMgr = plugin.getConfigManager();
+        var trackedMgr = plugin.getService(fr.skynex.lootglow.managers.TrackedItemManager.class);
+        var gcMgr = plugin.getService(fr.skynex.lootglow.managers.GroupContainerManager.class);
+        double range = (cfgMgr != null && cfgMgr.isRmbPickupEnabled()) ? cfgMgr.getRmbPickupRange() : 4.0;
         
         Item targetItem = null;
         double bestDist = range * range;
@@ -53,9 +56,9 @@ public class ItemInteractionListener implements Listener {
             if (ent instanceof Item i) {
                 item = i;
             } else if (ent instanceof ItemDisplay display) {
-                item = plugin.getItemForDisplay(display);
+                item = trackedMgr != null ? trackedMgr.getItemForDisplay(display) : null;
             } else if (ent instanceof TextDisplay label) {
-                item = plugin.getItemForLabel(label);
+                item = trackedMgr != null ? trackedMgr.getItemForLabel(label) : null;
             }
             if (item == null || !item.isValid() || item.isDead()) continue;
             
@@ -80,27 +83,27 @@ public class ItemInteractionListener implements Listener {
         }
 
         if (targetItem != null) {
-            UUID leaderUuid = plugin.getGroupLeader(targetItem.getUniqueId());
+            UUID leaderUuid = gcMgr != null ? gcMgr.getGroupLeader(targetItem.getUniqueId()) : null;
             boolean isGroup = (leaderUuid != null);
-            if (isGroup && !plugin.isRmbPickupEnableForGroups()) {
-                if (plugin.isContainerEnabled()) {
-                    plugin.openLootContainer(player, leaderUuid);
+            if (isGroup && (cfgMgr == null || !cfgMgr.isRmbPickupEnableForGroups())) {
+                if (cfgMgr != null && cfgMgr.isContainerEnabled() && gcMgr != null) {
+                    gcMgr.openLootContainer(player, leaderUuid, cfgMgr.isContainerEnabled(), cfgMgr.getContainerTitle(), plugin.getStateRepository().getActiveItemVisuals(), cfgMgr.getRpgBlockScale(), net.kyori.adventure.text.minimessage.MiniMessage.miniMessage());
                     event.setCancelled(true);
                 }
                 return;
             }
 
-            if (plugin.isHardLockEnabled() && targetItem.getThrower() != null) {
-                if (!targetItem.getThrower().equals(player.getUniqueId()) && !player.hasPermission(plugin.getBypassPermission())) {
-                    long spawnTime = plugin.getItemSpawnTimes().getOrDefault(targetItem.getUniqueId(), 0L);
+            if (cfgMgr != null && cfgMgr.isHardLockEnabled() && targetItem.getThrower() != null) {
+                if (!targetItem.getThrower().equals(player.getUniqueId()) && !player.hasPermission(cfgMgr.getBypassPermission())) {
+                    long spawnTime = plugin.getStateRepository().getItemSpawnTimes().getOrDefault(targetItem.getUniqueId(), 0L);
                     long elapsed = (System.currentTimeMillis() - spawnTime) / 1000L;
-                    if (elapsed < plugin.getProtectionDuration()) {
+                    if (elapsed < cfgMgr.getProtectionDuration()) {
                         return; 
                     }
                 }
             }
 
-            if (!plugin.isRmbPickupEnabled()) return;
+            if (cfgMgr == null || !cfgMgr.isRmbPickupEnabled()) return;
 
             if (targetItem.isValid() && !targetItem.isDead()) {
                 final Item finalTargetItem = targetItem;
@@ -108,8 +111,10 @@ public class ItemInteractionListener implements Listener {
                     if (!finalTargetItem.isValid() || finalTargetItem.isDead()) return;
                     HashMap<Integer, ItemStack> leftovers = player.getInventory().addItem(finalTargetItem.getItemStack());
                     if (leftovers.isEmpty()) {
-                        plugin.playAspirationAnimation(finalTargetItem, player);
-                        plugin.removeGlow(finalTargetItem);
+                        var rpgMgr = plugin.getService(fr.skynex.lootglow.managers.RPGDropManager.class);
+                        if (rpgMgr != null) rpgMgr.playAspirationAnimation(finalTargetItem, player, plugin.getStateRepository().getActiveItemVisuals(), cfgMgr.isAspirationEnabled());
+                        var spawner = plugin.getService(fr.skynex.lootglow.managers.VisualSpawner.class);
+                        if (spawner != null) spawner.removeGlow(finalTargetItem.getUniqueId());
                         finalTargetItem.remove();
                         player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 0.5f, 1.5f);
                     } else {

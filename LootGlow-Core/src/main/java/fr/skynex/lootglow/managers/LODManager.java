@@ -85,12 +85,15 @@ public class LODManager {
 
                 double maxDist = Math.sqrt(Math.max(lodBeamDistSq, lodHoloDistSq));
                 int chunkRadius = (int) Math.ceil(maxDist / 16.0);
-                Set<UUID> nearbyItemUuids = plugin.getTrackedItemManager() != null
-                        ? plugin.getTrackedItemManager().getItemsInChunkRadius(pWorld, ((int) px) >> 4, ((int) pz) >> 4, chunkRadius)
+                var trackedMgr = plugin.getService(TrackedItemManager.class);
+                Set<UUID> nearbyItemUuids = trackedMgr != null
+                        ? trackedMgr.getItemsInChunkRadius(pWorld, ((int) px) >> 4, ((int) pz) >> 4, chunkRadius)
                         : null;
                 if (nearbyItemUuids == null || nearbyItemUuids.isEmpty()) {
                     nearbyItemUuids = itemsByWorld.get(worldName);
                 }
+
+                var visSvc = plugin.getService(fr.skynex.lootglow.service.EntityVisibilityService.class);
 
                 if (nearbyItemUuids != null && !nearbyItemUuids.isEmpty()) {
                     for (UUID uuid : nearbyItemUuids) {
@@ -105,26 +108,26 @@ public class LODManager {
                         TextDisplay label = activeLabels.get(uuid);
                         if (label != null && label.isValid()) {
                             boolean shouldSee = !isHiddenToggle && !isGrouped && dSq <= lodHoloDistSq;
-                            plugin.updateEntityVisibility(p, label, shouldSee, visibleSet);
+                            if (visSvc != null) visSvc.updateEntityVisibility(p, label, shouldSee, visibleSet);
                         }
 
                         BlockDisplay beam = activeBeams.get(uuid);
                         if (beam != null && beam.isValid()) {
                             boolean shouldSee = !isHiddenToggle && !isGrouped && dSq <= lodBeamDistSq;
-                            plugin.updateEntityVisibility(p, beam, shouldSee, visibleSet);
+                            if (visSvc != null) visSvc.updateEntityVisibility(p, beam, shouldSee, visibleSet);
                             if (shouldSee) newGloballyVisible.add(uuid);
                         }
 
                         ItemDisplay visual = activeItemVisuals.get(uuid);
                         if (visual != null && visual.isValid()) {
                             boolean shouldSee = !isHiddenToggle && !isGrouped && dSq <= lodHoloDistSq;
-                            plugin.updateEntityVisibility(p, visual, shouldSee, visibleSet);
+                            if (visSvc != null) visSvc.updateEntityVisibility(p, visual, shouldSee, visibleSet);
                         }
 
                         Display shadow = activeShadows.get(uuid);
                         if (shadow != null && shadow.isValid()) {
                             boolean shouldSee = !isHiddenToggle && !isGrouped && dSq <= lodHoloDistSq;
-                            plugin.updateEntityVisibility(p, shadow, shouldSee, visibleSet);
+                            if (visSvc != null) visSvc.updateEntityVisibility(p, shadow, shouldSee, visibleSet);
                         }
                     }
                 }
@@ -142,7 +145,7 @@ public class LODManager {
 
                         for (BlockDisplay bd : entry.getValue()) {
                             if (bd.isValid()) {
-                                plugin.updateEntityVisibility(p, bd, shouldSee, visibleSet);
+                                if (visSvc != null) visSvc.updateEntityVisibility(p, bd, shouldSee, visibleSet);
                                 if (shouldSee) newGloballyVisible.add(bd.getUniqueId());
                             }
                         }

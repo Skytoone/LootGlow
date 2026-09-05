@@ -25,7 +25,9 @@ public class ItemTypeClassifier {
     public static boolean isUprightItem(Material mat, Set<Material> forceFlatMaterials, Set<Material> forceUprightMaterials) {
         if (mat == null || mat == Material.AIR) return false;
         if (isFlatItemOrBlock(mat, forceFlatMaterials, forceUprightMaterials)) return false;
-        if (mat.isBlock()) return true;
+        try {
+            if (mat.isBlock()) return true;
+        } catch (Throwable ignored) {}
         String name = mat.name();
         return name.endsWith("_HEAD") || name.endsWith("_SKULL")
                 || name.endsWith("_BANNER") || name.endsWith("_BED")
@@ -48,5 +50,17 @@ public class ItemTypeClassifier {
             }
         }
         return false;
+    }
+
+    public static String getInternalId(ItemStack stack) {
+        if (stack == null || !stack.hasItemMeta()) return null;
+        org.bukkit.persistence.PersistentDataContainer pdc = stack.getItemMeta().getPersistentDataContainer();
+        for (org.bukkit.NamespacedKey key : pdc.getKeys()) {
+            String ns = key.getNamespace();
+            if (ns.equalsIgnoreCase("oraxen") || ns.equalsIgnoreCase("itemsadder") || ns.equalsIgnoreCase("nexo") || key.getKey().equalsIgnoreCase("custom_item")) {
+                return pdc.get(key, org.bukkit.persistence.PersistentDataType.STRING);
+            }
+        }
+        return null;
     }
 }

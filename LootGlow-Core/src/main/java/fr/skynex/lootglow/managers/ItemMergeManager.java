@@ -1,7 +1,6 @@
 package fr.skynex.lootglow.managers;
 
 import fr.skynex.lootglow.LootGlow;
-import fr.skynex.lootglow.api.events.ItemMergeEvent;
 import fr.skynex.lootglow.util.FoliaScheduler;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
@@ -10,7 +9,16 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * Manages item stack merging, splitting, loot protection safety checks, and auto-stacking logic.
@@ -76,7 +84,7 @@ public class ItemMergeManager {
         if (!isSimilarIgnorePdc(stack1, stack2)) return false;
 
         // Check loot protection matching
-        LootProtectionManager lpm = plugin.getLootProtectionManager();
+        LootProtectionManager lpm = plugin.getService(LootProtectionManager.class);
         if (lpm != null) {
             boolean prot1 = lpm.isLootProtected(item1);
             boolean prot2 = lpm.isLootProtected(item2);
@@ -97,8 +105,15 @@ public class ItemMergeManager {
         return true;
     }
 
+    public boolean isIgnoreAllUuidKeys() {
+        return ignoreAllUuidKeys;
+    }
+
+    public Set<String> getIgnoredPdcKeys() {
+        return Collections.unmodifiableSet(ignoredPdcKeys);
+    }
+
     public boolean isSimilarIgnorePdc(@NotNull ItemStack stack1, @NotNull ItemStack stack2) {
-        if (stack1.isSimilar(stack2)) return true;
         if (stack1.getType() != stack2.getType()) return false;
         if (!stack1.hasItemMeta() && !stack2.hasItemMeta()) return true;
         if (stack1.hasItemMeta() != stack2.hasItemMeta()) return false;
@@ -109,32 +124,35 @@ public class ItemMergeManager {
         org.bukkit.persistence.PersistentDataContainer pdc1 = meta1.getPersistentDataContainer();
         org.bukkit.persistence.PersistentDataContainer pdc2 = meta2.getPersistentDataContainer();
 
-        for (org.bukkit.NamespacedKey key : new HashSet<>(pdc1.getKeys())) {
-            String keyStr = key.toString().toLowerCase();
-            String keyName = key.getKey().toLowerCase();
-            if (ignoreAllUuidKeys && (keyStr.contains("uuid") || keyName.contains("uuid"))) {
-                pdc1.remove(key);
-            } else if (ignoredPdcKeys.contains(keyStr) || ignoredPdcKeys.contains(keyName)) {
-                pdc1.remove(key);
+        filterPdcKeys(pdc1);
+        filterPdcKeys(pdc2);
+
+        return Objects.equals(meta1, meta2);
+    }
+
+    private void filterPdcKeys(@NotNull org.bukkit.persistence.PersistentDataContainer pdc) {
+        for (org.bukkit.NamespacedKey key : new ArrayList<>(pdc.getKeys())) {
+            if (shouldIgnorePdcKey(key)) {
+                pdc.remove(key);
+            }
+        }
+    }
+
+    private boolean shouldIgnorePdcKey(@NotNull org.bukkit.NamespacedKey key) {
+        String keyName = key.getKey().toLowerCase();
+        String fullKey = key.toString().toLowerCase();
+
+        if (ignoredPdcKeys.contains(keyName) || ignoredPdcKeys.contains(fullKey)) {
+            return true;
+        }
+
+        if (ignoreAllUuidKeys) {
+            if (keyName.contains("uuid") || keyName.contains("guid")) {
+                return true;
             }
         }
 
-        for (org.bukkit.NamespacedKey key : new HashSet<>(pdc2.getKeys())) {
-            String keyStr = key.toString().toLowerCase();
-            String keyName = key.getKey().toLowerCase();
-            if (ignoreAllUuidKeys && (keyStr.contains("uuid") || keyName.contains("uuid"))) {
-                pdc2.remove(key);
-            } else if (ignoredPdcKeys.contains(keyStr) || ignoredPdcKeys.contains(keyName)) {
-                pdc2.remove(key);
-            }
-        }
-
-        ItemStack clone1 = stack1.clone();
-        clone1.setItemMeta(meta1);
-        ItemStack clone2 = stack2.clone();
-        clone2.setItemMeta(meta2);
-
-        return clone1.isSimilar(clone2);
+        return false;
     }
 
     /**
@@ -142,18 +160,11 @@ public class ItemMergeManager {
      */
     public boolean mergeAmount(@NotNull Item item1, @NotNull Item item2) {
         if (!canMerge(item1, item2)) return false;
-
-        ItemMergeEvent event = new ItemMergeEvent(item2, item1);
-        Bukkit.getPluginManager().callEvent(event);
-        if (event.isCancelled()) return false;
-
         ItemStack stack1 = item1.getItemStack();
         ItemStack stack2 = item2.getItemStack();
 
-        int amount1 = stack1.getAmount();
-        int amount2 = stack2.getAmount();
         int maxStack = stack1.getMaxStackSize();
-        int total = amount1 + amount2;
+        int total = stack1.getAmount() + stack2.getAmount();
 
         if (total <= maxStack) {
             stack1.setAmount(total);
@@ -166,8 +177,8 @@ public class ItemMergeManager {
             item2.setItemStack(stack2);
         }
 
-        plugin.getLastHoloState().remove(item1.getUniqueId());
-        plugin.getBaseNameCache().remove(item1.getUniqueId());
+        plugin.getStateRepository().getLastHoloState().remove(item1.getUniqueId());
+        plugin.getStateRepository().getBaseNameCache().remove(item1.getUniqueId());
 
         return true;
     }
@@ -184,15 +195,15 @@ public class ItemMergeManager {
         stack.setAmount(currentAmount - amount);
         item.setItemStack(stack);
 
-        plugin.getLastHoloState().remove(item.getUniqueId());
-        plugin.getBaseNameCache().remove(item.getUniqueId());
+        plugin.getStateRepository().getLastHoloState().remove(item.getUniqueId());
+        plugin.getStateRepository().getBaseNameCache().remove(item.getUniqueId());
 
         ItemStack splitStack = stack.clone();
         splitStack.setAmount(amount);
 
         Item splitItem = item.getWorld().dropItem(item.getLocation(), splitStack);
 
-        LootProtectionManager lpm = plugin.getLootProtectionManager();
+        LootProtectionManager lpm = plugin.getService(LootProtectionManager.class);
         if (lpm != null && lpm.isLootProtected(item)) {
             UUID owner = lpm.getLootOwner(item);
             if (owner != null) {
@@ -221,8 +232,8 @@ public class ItemMergeManager {
         stack.setAmount(amount);
         item.setItemStack(stack);
 
-        plugin.getLastHoloState().remove(item.getUniqueId());
-        plugin.getBaseNameCache().remove(item.getUniqueId());
+        plugin.getStateRepository().getLastHoloState().remove(item.getUniqueId());
+        plugin.getStateRepository().getBaseNameCache().remove(item.getUniqueId());
     }
 
     public void addMergeAmount(@NotNull Item item, int amount) {

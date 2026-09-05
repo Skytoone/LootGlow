@@ -172,7 +172,8 @@ public class ItemGroupingService {
             boolean byCategory = plugin.getConfig().getBoolean("settings.grouping.group-by-category", true);
 
             double radiusSq = radius * radius;
-            double holoDistSq = plugin.getLodManager() != null ? plugin.getLodManager().getLodHoloDistanceSquared() : 576.0;
+            var lodMgr = plugin.getService(fr.skynex.lootglow.managers.LODManager.class);
+            double holoDistSq = lodMgr != null ? lodMgr.getLodHoloDistanceSquared() : 576.0;
 
             groupedItems.clear();
             groupLeaders.clear();
@@ -209,11 +210,12 @@ public class ItemGroupingService {
                     if (isLeader) {
                         if (currentStack == null || currentStack.getType() != bagMaterial) {
                             org.bukkit.inventory.ItemStack bag;
+                            var visDispMgr = plugin.getService(fr.skynex.lootglow.managers.VisualDisplayManager.class);
                             if (bagMaterial == Material.PLAYER_HEAD) {
                                 if (useOwnerHead && item.getThrower() != null) {
-                                    bag = plugin.getOwnerHead(item.getThrower());
+                                    bag = visDispMgr != null ? visDispMgr.getOwnerHead(item.getThrower()) : new org.bukkit.inventory.ItemStack(Material.PLAYER_HEAD);
                                 } else if (!bagHeadTexture.isEmpty()) {
-                                    bag = plugin.createTexturedHead(bagHeadTexture);
+                                    bag = visDispMgr != null ? visDispMgr.createTexturedHead(bagHeadTexture) : new org.bukkit.inventory.ItemStack(Material.PLAYER_HEAD);
                                 } else {
                                     bag = new org.bukkit.inventory.ItemStack(bagMaterial);
                                 }
@@ -224,7 +226,7 @@ public class ItemGroupingService {
                             if (bagCustomModelData != 0) {
                                 org.bukkit.inventory.meta.ItemMeta meta = bag.getItemMeta();
                                 if (meta != null) {
-                                    meta.getCustomModelDataComponent().setFloats(java.util.List.of((float) bagCustomModelData));
+                                    meta.setCustomModelData(bagCustomModelData);
                                     bag.setItemMeta(meta);
                                 }
                             }
@@ -242,8 +244,9 @@ public class ItemGroupingService {
                             visual.setItemDisplayTransform(org.bukkit.entity.ItemDisplay.ItemDisplayTransform.FIXED);
                             org.bukkit.util.Transformation t = visual.getTransformation();
                             Material itemMat = item.getItemStack().getType();
-                            boolean isCustom = plugin.isCustomItem(item.getItemStack());
-                            boolean isUpright = plugin.isUprightItem(itemMat);
+                            var cfgMgr = plugin.getConfigManager();
+                            boolean isCustom = fr.skynex.lootglow.util.ItemTypeClassifier.isCustomItem(item.getItemStack());
+                            boolean isUpright = fr.skynex.lootglow.util.ItemTypeClassifier.isUprightItem(itemMat, cfgMgr != null ? cfgMgr.getRpgForceFlatMaterials() : java.util.Collections.emptySet(), cfgMgr != null ? cfgMgr.getRpgForceUprightMaterials() : java.util.Collections.emptySet());
                             float targetRotX = (isCustom || isUpright) ? 0f : rpgRotation;
                             t.getLeftRotation().set(new org.joml.Quaternionf().rotationX(targetRotX));
                             visual.setTransformation(t);
@@ -251,6 +254,16 @@ public class ItemGroupingService {
                     }
                 });
             }
+
+            // Hide member vanilla item entities from players
+            groupedItems.forEach(gUuid -> {
+                Item gItem = activeItems.get(gUuid);
+                if (gItem != null && gItem.isValid()) {
+                    for (org.bukkit.entity.Player p : gItem.getWorld().getPlayers()) {
+                        p.hideEntity(plugin, gItem);
+                    }
+                }
+            });
 
             // Update holograms with visibility check and caching
             for (Map.Entry<UUID, ?> entry : trackedItems.entrySet()) {
@@ -309,12 +322,16 @@ public class ItemGroupingService {
                         color = defaultColor;
 
                     net.kyori.adventure.text.Component baseName = ti.baseName;
+                    var holoSvc = plugin.getService(HologramService.class);
+                    var cfgMgr = plugin.getConfigManager();
                     if (baseName == null) {
-                        baseName = plugin.calculateBaseName(item, color);
+                        baseName = holoSvc != null ? holoSvc.calculateBaseName(item, color, plugin.getStateRepository().getDisplayNameOverridesCache(), plugin.getStateRepository().getItemMoneyAmounts(), cfgMgr != null ? cfgMgr.getEconomyFormat() : "", cfgMgr != null ? cfgMgr.getEconomyPrefix() : "") : net.kyori.adventure.text.Component.empty();
                         ti.baseName = baseName;
                     }
-                    newContent = plugin.buildFinalName(item, baseName);
+                    newContent = holoSvc != null ? holoSvc.buildFinalName(item, baseName, cfgMgr != null && cfgMgr.isHoloShowAmount(), plugin.getStateRepository().getRawAmountFormat(), cfgMgr != null && cfgMgr.isProtectionEnabled(), cfgMgr != null ? cfgMgr.getProtectionDuration() : 10, plugin.getStateRepository().getItemSpawnTimes(), plugin.getStateRepository().getRawOwnerFormat(), org.bukkit.Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI"), cfgMgr != null && cfgMgr.isHoloShowTimer(), plugin.getStateRepository().getTimerComponentCache(), cfgMgr != null && cfgMgr.isHoloTimerNewLine()) : baseName;
                 } else {
+                    display.text(net.kyori.adventure.text.Component.empty());
+                    ti.lastHoloState = -1L;
                     continue;
                 }
 

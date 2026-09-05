@@ -12,7 +12,11 @@ import org.bukkit.Sound;
 import org.bukkit.block.data.type.Light;
 import org.bukkit.configuration.file.FileConfiguration;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Centralized manager holding plugin configuration modules, category mappings, and parsing logic.
@@ -30,6 +34,7 @@ public class LootGlowConfigManager {
     private final ProtectionConfig protectionConfig = new ProtectionConfig();
     private final LodConfig lodConfig = new LodConfig();
     private final BeamConfig beamConfig = new BeamConfig();
+    private final CategoryConfig categoryConfig = new CategoryConfig();
 
     // Core Settings
     private boolean isEnabled = true;
@@ -84,27 +89,21 @@ public class LootGlowConfigManager {
     private boolean aspirationEnabled = true;
     private double aspirationSpeed = 0.15;
 
-    // Default Colors & Categories Maps
+    // Default Colors
     private NamedTextColor defaultColor = NamedTextColor.WHITE;
     private Particle.DustOptions defaultDustOptions;
 
-    private final Map<String, NamedTextColor> categoryColors = new HashMap<>();
-    private final Map<String, Particle> categoryParticles = new HashMap<>();
-    private final Map<String, Sound> categorySounds = new HashMap<>();
-    private final Map<String, String> categoryNames = new HashMap<>();
-    private final Map<String, Boolean> categoryGlow = new HashMap<>();
-    private final Map<String, List<String>> categoryLorePatterns = new HashMap<>();
-    private final Map<String, List<String>> categoryNbtPatterns = new HashMap<>();
-    private final Map<String, String> categoryTitles = new HashMap<>();
-    private final Map<String, String> categorySubtitles = new HashMap<>();
-    private final Map<String, Double> categoryNotificationRadius = new HashMap<>();
-    private final Map<String, NamedTextColor> itemCategories = new HashMap<>();
-    private final Map<String, Integer> categoryLights = new HashMap<>();
-    private final Map<String, Particle.DustOptions> categoryDustOptions = new HashMap<>();
-    private final Map<String, String> categoryAnimTypes = new HashMap<>();
-
     public LootGlowConfigManager(LootGlow plugin) {
         this.plugin = plugin;
+    }
+
+    private final ConfigParser configParser = new ConfigParser();
+    public ConfigParser getConfigParser() { return configParser; }
+    public boolean isUsePapi() { return plugin.isUsePapi(); }
+
+    public void loadConfiguration() {
+        plugin.reloadConfig();
+        loadAll(plugin.getConfig(), MiniMessage.miniMessage(), plugin.getStateRepository().getDisplayNameOverridesCache());
     }
 
     public HologramConfig getHologramConfig() { return hologramConfig; }
@@ -197,12 +196,13 @@ public class LootGlowConfigManager {
         this.aspirationSpeed = config.getDouble("settings.aspiration.speed", 0.15);
 
         String defColorStr = config.getString("default-color", "WHITE");
-        this.defaultColor = plugin.parseNamedColor(defColorStr);
+        this.defaultColor = configParser.parseNamedColor(defColorStr);
+        if (this.defaultColor == null) this.defaultColor = NamedTextColor.WHITE;
         this.defaultDustOptions = new Particle.DustOptions(
                 org.bukkit.Color.fromRGB(defaultColor.red(), defaultColor.green(), defaultColor.blue()),
                 (float) particleConfig.getSize());
 
-        loadCategories(config, categoryColors, categoryDustOptions, particleConfig.getSize(), categoryLights, categoryGlow, displayNameOverridesCache, miniMessage, itemCategories, categoryNames, categoryParticles, categoryAnimTypes, particleConfig.getAnimType(), categorySounds);
+        categoryConfig.load(config, configParser, particleConfig.getSize(), particleConfig.getAnimType(), displayNameOverridesCache);
     }
 
     public boolean isEnabled() { return isEnabled; }
@@ -319,20 +319,22 @@ public class LootGlowConfigManager {
     public NamedTextColor getDefaultColor() { return defaultColor; }
     public Particle.DustOptions getDefaultDustOptions() { return defaultDustOptions; }
 
-    public Map<String, NamedTextColor> getCategoryColors() { return categoryColors; }
-    public Map<String, Particle> getCategoryParticles() { return categoryParticles; }
-    public Map<String, Sound> getCategorySounds() { return categorySounds; }
-    public Map<String, String> getCategoryNames() { return categoryNames; }
-    public Map<String, Boolean> getCategoryGlow() { return categoryGlow; }
-    public Map<String, List<String>> getCategoryLorePatterns() { return categoryLorePatterns; }
-    public Map<String, List<String>> getCategoryNbtPatterns() { return categoryNbtPatterns; }
-    public Map<String, String> getCategoryTitles() { return categoryTitles; }
-    public Map<String, String> getCategorySubtitles() { return categorySubtitles; }
-    public Map<String, Double> getCategoryNotificationRadius() { return categoryNotificationRadius; }
-    public Map<String, NamedTextColor> getItemCategories() { return itemCategories; }
-    public Map<String, Integer> getCategoryLights() { return categoryLights; }
-    public Map<String, Particle.DustOptions> getCategoryDustOptions() { return categoryDustOptions; }
-    public Map<String, String> getCategoryAnimTypes() { return categoryAnimTypes; }
+    public CategoryConfig getCategoryConfig() { return categoryConfig; }
+
+    public Map<String, NamedTextColor> getCategoryColors() { return categoryConfig.getCategoryColors(); }
+    public Map<String, Particle> getCategoryParticles() { return categoryConfig.getCategoryParticles(); }
+    public Map<String, Sound> getCategorySounds() { return categoryConfig.getCategorySounds(); }
+    public Map<String, String> getCategoryNames() { return categoryConfig.getCategoryNames(); }
+    public Map<String, Boolean> getCategoryGlow() { return categoryConfig.getCategoryGlow(); }
+    public Map<String, List<String>> getCategoryLorePatterns() { return categoryConfig.getCategoryLorePatterns(); }
+    public Map<String, List<String>> getCategoryNbtPatterns() { return categoryConfig.getCategoryNbtPatterns(); }
+    public Map<String, String> getCategoryTitles() { return categoryConfig.getCategoryTitles(); }
+    public Map<String, String> getCategorySubtitles() { return categoryConfig.getCategorySubtitles(); }
+    public Map<String, Double> getCategoryNotificationRadius() { return categoryConfig.getCategoryNotificationRadius(); }
+    public Map<String, NamedTextColor> getItemCategories() { return categoryConfig.getItemCategories(); }
+    public Map<String, Integer> getCategoryLights() { return categoryConfig.getCategoryLights(); }
+    public Map<String, Particle.DustOptions> getCategoryDustOptions() { return categoryConfig.getCategoryDustOptions(); }
+    public Map<String, String> getCategoryAnimTypes() { return categoryConfig.getCategoryAnimTypes(); }
 
     public boolean isWorldAllowed(String worldName) {
         if (isWorldWhitelist) {
@@ -356,88 +358,7 @@ public class LootGlowConfigManager {
                                 Map<String, String> categoryAnimTypes,
                                 String particleAnimType,
                                 Map<String, Sound> categorySounds) {
-        categoryLorePatterns.clear();
-        categoryNbtPatterns.clear();
-        categoryTitles.clear();
-        categorySubtitles.clear();
-        categoryNotificationRadius.clear();
-
-        if (config.getConfigurationSection("categories") != null) {
-            for (String key : config.getConfigurationSection("categories").getKeys(false)) {
-                String colorStr = config.getString("categories." + key + ".color", "WHITE");
-                NamedTextColor color = plugin.parseNamedColor(colorStr);
-                categoryColors.put(key, color);
-                if (color != null) {
-                    categoryDustOptions.put(key, new Particle.DustOptions(
-                            org.bukkit.Color.fromRGB(color.red(), color.green(), color.blue()), (float) particleSize));
-                }
-
-                String partStr = config.getString("categories." + key + ".particle");
-                Particle particle = null;
-                if (partStr != null) {
-                    try {
-                        org.bukkit.NamespacedKey particleKey = org.bukkit.NamespacedKey.minecraft(partStr.toLowerCase());
-                        particle = org.bukkit.Registry.PARTICLE_TYPE.get(particleKey);
-                    } catch (Exception ignored) {}
-                }
-
-                String soundStr = config.getString("categories." + key + ".sound");
-                Sound sound = null;
-                if (soundStr != null) {
-                    sound = plugin.parseSound(soundStr);
-                }
-
-                int lightLevel = config.getInt("categories." + key + ".light-level", 0);
-                categoryLights.put(key, lightLevel);
-
-                boolean glowEnabled = config.getBoolean("categories." + key + ".glow", true);
-                categoryGlow.put(key, glowEnabled);
-
-                List<String> lorePats = config.getStringList("categories." + key + ".lore-patterns");
-                if (!lorePats.isEmpty()) {
-                    List<String> lowerLorePats = new ArrayList<>();
-                    for (String lp : lorePats) lowerLorePats.add(lp.toLowerCase());
-                    categoryLorePatterns.put(key, lowerLorePats);
-                }
-
-                List<String> nbtPats = config.getStringList("categories." + key + ".nbt-patterns");
-                if (!nbtPats.isEmpty()) {
-                    List<String> lowerNbtPats = new ArrayList<>();
-                    for (String np : nbtPats) lowerNbtPats.add(np.toLowerCase());
-                    categoryNbtPatterns.put(key, lowerNbtPats);
-                }
-
-                if (config.contains("categories." + key + ".title")) {
-                    categoryTitles.put(key, config.getString("categories." + key + ".title"));
-                }
-                if (config.contains("categories." + key + ".subtitle")) {
-                    categorySubtitles.put(key, config.getString("categories." + key + ".subtitle"));
-                }
-                categoryNotificationRadius.put(key, config.getDouble("categories." + key + ".notification-radius", 15.0));
-
-                if (config.getConfigurationSection("categories." + key + ".display-names") != null) {
-                    for (String itemKey : config.getConfigurationSection("categories." + key + ".display-names").getKeys(false)) {
-                        String raw = config.getString("categories." + key + ".display-names." + itemKey);
-                        if (raw != null)
-                            displayNameOverridesCache.put(itemKey.toUpperCase(), fr.skynex.lootglow.util.ColorUtil.parse(raw));
-                    }
-                }
-
-                for (String material : config.getStringList("categories." + key + ".items")) {
-                    String mat = material.toUpperCase();
-                    itemCategories.put(mat, color);
-                    categoryNames.put(mat, key);
-                    if (particle != null)
-                        categoryParticles.put(mat, particle);
-
-                    String catAnim = config.getString("categories." + key + ".particle-animation", particleAnimType);
-                    categoryAnimTypes.put(key, catAnim);
-
-                    if (sound != null)
-                        categorySounds.put(mat, sound);
-                }
-            }
-        }
+        categoryConfig.load(config, configParser, particleSize, particleAnimType, displayNameOverridesCache);
     }
 
     public void loadWorldFiltering(FileConfiguration config, Set<String> filteredWorlds) {

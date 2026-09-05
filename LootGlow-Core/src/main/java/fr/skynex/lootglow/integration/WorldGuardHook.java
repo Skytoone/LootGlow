@@ -4,7 +4,6 @@ import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldguard.WorldGuard;
 import com.sk89q.worldguard.protection.ApplicableRegionSet;
 import com.sk89q.worldguard.protection.flags.StateFlag;
-import com.sk89q.worldguard.protection.flags.registry.FlagConflictException;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 import com.sk89q.worldguard.protection.regions.RegionContainer;
 import com.sk89q.worldguard.protection.regions.RegionQuery;
@@ -21,12 +20,13 @@ public class WorldGuardHook {
             WorldGuard.getInstance().getFlagRegistry().register(flag);
             LOOTGLOW_FARMING_FLAG = flag;
             Bukkit.getLogger().info("Successfully registered WorldGuard flag 'lootglow-farming'");
-        } catch (FlagConflictException e) {
-            com.sk89q.worldguard.protection.flags.Flag<?> existing = WorldGuard.getInstance().getFlagRegistry().get("lootglow-farming");
-            if (existing instanceof StateFlag) {
-                LOOTGLOW_FARMING_FLAG = (StateFlag) existing;
-            }
-        } catch (Throwable ignored) {
+        } catch (Throwable e) {
+            try {
+                com.sk89q.worldguard.protection.flags.Flag<?> existing = WorldGuard.getInstance().getFlagRegistry().get("lootglow-farming");
+                if (existing instanceof StateFlag) {
+                    LOOTGLOW_FARMING_FLAG = (StateFlag) existing;
+                }
+            } catch (Throwable ignored) {}
         }
     }
 

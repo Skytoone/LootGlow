@@ -65,34 +65,42 @@ public class PluginDisableService {
         }
 
         // Clear all tracking maps and manager states
-        if (plugin.getTrackedItemManager() != null) {
-            plugin.getTrackedItemManager().clearAll();
+        var trackedMgr = plugin.getService(fr.skynex.lootglow.managers.TrackedItemManager.class);
+        if (trackedMgr != null) {
+            trackedMgr.clearAll();
         }
-        if (plugin.getGroupContainerManager() != null) {
-            plugin.getGroupContainerManager().clearAll();
+        var groupMgr = plugin.getService(fr.skynex.lootglow.managers.GroupContainerManager.class);
+        if (groupMgr != null) {
+            groupMgr.clearAll();
         }
-        if (plugin.getBeamManager() != null) {
-            plugin.getBeamManager().clearAll();
+        var beamMgr = plugin.getService(fr.skynex.lootglow.managers.BeamManager.class);
+        if (beamMgr != null) {
+            beamMgr.clearAll();
         }
-        if (plugin.getParticleAnimationManager() != null) {
-            plugin.getParticleAnimationManager().getCustomParticles().clear();
+        var animMgr = plugin.getService(fr.skynex.lootglow.managers.ParticleAnimationManager.class);
+        if (animMgr != null) {
+            animMgr.getCustomParticles().clear();
         }
-        if (plugin.getHologramRenderer() != null) {
-            plugin.getHologramRenderer().getCustomHolograms().clear();
+        var holoRenderer = plugin.getService(fr.skynex.lootglow.managers.HologramRenderer.class);
+        if (holoRenderer != null) {
+            holoRenderer.getCustomHolograms().clear();
         }
-        if (plugin.getItemMagnetManager() != null) {
-            plugin.getItemMagnetManager().clearAll();
+        var magnetMgr = plugin.getService(fr.skynex.lootglow.managers.ItemMagnetManager.class);
+        if (magnetMgr != null) {
+            magnetMgr.clearAll();
         }
-        if (plugin.getGlowTeamManager() != null) {
-            plugin.getGlowTeamManager().clearScoreboardTeams();
+        var teamMgr = plugin.getService(fr.skynex.lootglow.managers.GlowTeamManager.class);
+        if (teamMgr != null) {
+            teamMgr.clearScoreboardTeams();
         }
-        if (plugin.getPluginTickManager() != null) {
-            plugin.getPluginTickManager().cancelTasks();
+        var tickMgr = plugin.getService(fr.skynex.lootglow.managers.PluginTickManager.class);
+        if (tickMgr != null) {
+            tickMgr.cancelTasks();
         }
 
-        plugin.getVisibleEntities().clear();
-        plugin.getHiddenVisuals().clear();
-        plugin.getDisabledMagnets().clear();
+        plugin.getStateRepository().getVisibleEntities().clear();
+        plugin.getStateRepository().getHiddenVisuals().clear();
+        plugin.getStateRepository().getDisabledMagnets().clear();
 
         trackedItems.clear();
         activeLabels.clear();
@@ -107,8 +115,9 @@ public class PluginDisableService {
         timerComponentCache.clear();
         bounceCounts.clear();
         recentlyBounced.clear();
-        if (plugin.getSurfaceAlignmentManager() != null) {
-            plugin.getSurfaceAlignmentManager().clearAll();
+        var alignMgr = plugin.getService(fr.skynex.lootglow.managers.SurfaceAlignmentManager.class);
+        if (alignMgr != null) {
+            alignMgr.clearAll();
         }
         lastFarmingScanLocations.clear();
     }

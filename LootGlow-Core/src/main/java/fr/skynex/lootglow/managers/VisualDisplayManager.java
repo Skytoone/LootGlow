@@ -99,7 +99,8 @@ public class VisualDisplayManager {
 
     public void removeVisual(UUID uuid) {
         if (uuid == null) return;
-        if (plugin != null && plugin.getRpgDropManager() != null && plugin.getRpgDropManager().getFlyingVisuals().containsKey(uuid)) {
+        var rpgMgr = plugin != null ? plugin.getService(RPGDropManager.class) : null;
+        if (rpgMgr != null && rpgMgr.getFlyingVisuals().containsKey(uuid)) {
             activeItemVisuals.remove(uuid);
             return;
         }
@@ -108,8 +109,9 @@ public class VisualDisplayManager {
             entityIdMap.remove(display.getEntityId());
             display.remove();
         }
-        if (plugin != null && plugin.getTrackedItemManager() != null) {
-            TrackedItem ti = plugin.getTrackedItemManager().getTrackedItems().get(uuid);
+        var trackedMgr = plugin != null ? plugin.getService(TrackedItemManager.class) : null;
+        if (trackedMgr != null) {
+            TrackedItem ti = trackedMgr.getTrackedItems().get(uuid);
             if (ti != null && ti.visual != null) {
                 if (ti.visual.isValid()) {
                     entityIdMap.remove(ti.visual.getEntityId());

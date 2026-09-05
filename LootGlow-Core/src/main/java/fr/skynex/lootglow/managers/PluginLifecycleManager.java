@@ -66,7 +66,7 @@ public class PluginLifecycleManager {
         // 2. Standard Bukkit plugin.yml command binding or dynamic fallback
         try {
             org.bukkit.command.PluginCommand cmd = plugin.getCommand("lootglow");
-            LootGlowCommandManager cmdMgr = plugin.getCommandManager();
+            LootGlowCommandManager cmdMgr = plugin.getService(LootGlowCommandManager.class);
             if (cmd != null && cmdMgr != null) {
                 cmd.setExecutor(cmdMgr);
                 cmd.setTabCompleter(cmdMgr);
@@ -106,12 +106,11 @@ public class PluginLifecycleManager {
     }
 
     public void resetStateOnReload() {
-        var registry = plugin.getServiceRegistry();
-        TrackedItemManager trackedItemMgr = registry != null ? registry.getService(TrackedItemManager.class) : null;
+        TrackedItemManager trackedItemMgr = plugin.getService(TrackedItemManager.class);
         if (trackedItemMgr != null) {
             trackedItemMgr.clearAll();
         } else {
-            for (TrackedItem ti : plugin.getTrackedItems().values()) {
+            for (TrackedItem ti : plugin.getStateRepository().getTrackedItems().values()) {
                 if (ti.label != null && ti.label.isValid()) ti.label.remove();
                 if (ti.beam != null && ti.beam.isValid()) {
                     ti.beam.getPassengers().forEach(e -> { if (e != null) e.remove(); });
@@ -120,82 +119,84 @@ public class PluginLifecycleManager {
                 if (ti.visual != null && ti.visual.isValid()) ti.visual.remove();
                 if (ti.shadow != null && ti.shadow.isValid()) ti.shadow.remove();
             }
-            plugin.getTrackedItems().clear();
-            plugin.getActiveItems().clear();
-            plugin.getItemsByWorld().clear();
-            plugin.getEntityIdMap().clear();
+            plugin.getStateRepository().getTrackedItems().clear();
+            plugin.getStateRepository().getActiveItems().clear();
+            plugin.getStateRepository().getEntityIdMap().clear();
         }
 
-        plugin.getHiddenVanillaItems().clear();
-        plugin.getItemSpawnTimes().clear();
-        plugin.getItemCategories().clear();
-        plugin.getCategoryParticles().clear();
-        plugin.getCategorySounds().clear();
-        plugin.getCategoryNames().clear();
+        plugin.getStateRepository().getHiddenVanillaItems().clear();
+        plugin.getStateRepository().getItemSpawnTimes().clear();
+        plugin.getStateRepository().getItemCategories().clear();
+        plugin.getStateRepository().getCategoryParticles().clear();
+        plugin.getStateRepository().getCategorySounds().clear();
+        plugin.getStateRepository().getCategoryNames().clear();
 
-        LootGlowConfigManager cfgMgr = registry != null ? registry.getService(LootGlowConfigManager.class) : null;
+        LootGlowConfigManager cfgMgr = plugin.getConfigManager();
         if (cfgMgr != null) {
             cfgMgr.getCategoryGlow().clear();
             cfgMgr.getFilteredWorlds().clear();
         }
-        plugin.getCategoryColors().clear();
-        plugin.getDisplayNameOverridesCache().clear();
-        plugin.getCategoryLights().clear();
+        plugin.getStateRepository().getCategoryColors().clear();
+        plugin.getStateRepository().getDisplayNameOverridesCache().clear();
+        plugin.getStateRepository().getCategoryLights().clear();
 
-        plugin.getActiveLights().forEach((uuid, loc) -> {
+        plugin.getStateRepository().getActiveLights().forEach((uuid, loc) -> {
             for (Player p : Bukkit.getOnlinePlayers()) {
                 if (p.getWorld().equals(loc.getWorld())) {
                     p.sendBlockChange(loc, loc.getBlock().getBlockData());
                 }
             }
         });
-        plugin.getActiveLights().clear();
+        plugin.getStateRepository().getActiveLights().clear();
 
-        plugin.getActiveCropSymbols().values().forEach(list -> list.forEach(d -> {
+        plugin.getStateRepository().getActiveCropSymbols().values().forEach(list -> list.forEach(d -> {
             if (d != null && d.isValid()) d.remove();
         }));
-        plugin.getActiveCropSymbols().clear();
+        plugin.getStateRepository().getActiveCropSymbols().clear();
 
-        plugin.getVisibleEntities().clear();
-        plugin.getHiddenVisuals().clear();
-        plugin.getDisabledMagnets().clear();
-        plugin.getCategoryDustOptions().clear();
+        plugin.getStateRepository().getVisibleEntities().clear();
+        plugin.getStateRepository().getHiddenVisuals().clear();
+        plugin.getStateRepository().getDisabledMagnets().clear();
+        plugin.getStateRepository().getCategoryDustOptions().clear();
+        plugin.getStateRepository().getRecentlyBounced().clear();
 
-        SurfaceAlignmentManager surfaceAlignMgr = registry != null ? registry.getService(SurfaceAlignmentManager.class) : null;
+        SurfaceAlignmentManager surfaceAlignMgr = plugin.getService(SurfaceAlignmentManager.class);
         if (surfaceAlignMgr != null) {
             surfaceAlignMgr.clearAll();
         }
-        plugin.getLastFarmingScanLocations().clear();
+        plugin.getStateRepository().getLastFarmingScanLocations().clear();
+        plugin.getStateRepository().getGloballyVisibleEntities().clear();
 
-        plugin.getGloballyVisibleEntities().clear();
-
-        GroupContainerManager groupContainerMgr = registry != null ? registry.getService(GroupContainerManager.class) : null;
+        GroupContainerManager groupContainerMgr = plugin.getService(GroupContainerManager.class);
         if (groupContainerMgr != null) {
             groupContainerMgr.clearAll();
         }
-        plugin.getGroupMembers().clear();
-        plugin.getGroupedItems().clear();
-        plugin.getOpenContainers().clear();
+        plugin.getStateRepository().getGroupMembers().clear();
+        plugin.getStateRepository().getGroupedItems().clear();
+        plugin.getStateRepository().getOpenContainers().clear();
 
-        BeamManager beamMgr = registry != null ? registry.getService(BeamManager.class) : null;
+        BeamManager beamMgr = plugin.getService(BeamManager.class);
         if (beamMgr != null) {
             beamMgr.clearAll();
         }
-        ParticleAnimationManager particleAnimMgr = registry != null ? registry.getService(ParticleAnimationManager.class) : null;
+        ParticleAnimationManager particleAnimMgr = plugin.getService(ParticleAnimationManager.class);
         if (particleAnimMgr != null) {
             particleAnimMgr.getCustomParticles().clear();
         }
-        HologramRenderer holoRenderer = registry != null ? registry.getService(HologramRenderer.class) : null;
+        HologramRenderer holoRenderer = plugin.getService(HologramRenderer.class);
         if (holoRenderer != null) {
             holoRenderer.getCustomHolograms().clear();
         }
 
-        fr.skynex.lootglow.spatial.LootSpatialIndexService spatialIndexService = registry != null ? registry.getService(fr.skynex.lootglow.spatial.LootSpatialIndexService.class) : null;
+        fr.skynex.lootglow.spatial.LootSpatialIndexService spatialIndexService = plugin.getService(fr.skynex.lootglow.spatial.LootSpatialIndexService.class);
         if (spatialIndexService != null) {
             spatialIndexService.clearAll();
         }
-        plugin.getRecentlyBounced().clear();
-        plugin.getBounceCounts().clear();
+        RPGDropManager rpgMgr = plugin.getService(RPGDropManager.class);
+        if (rpgMgr != null) {
+            rpgMgr.getRecentlyBounced().clear();
+            rpgMgr.getBounceCounts().clear();
+        }
     }
 
     public fr.skynex.lootglow.registry.ServiceRegistry initializeServicesAndManagers(
@@ -230,7 +231,7 @@ public class PluginLifecycleManager {
         var surfaceAlignmentManager = new fr.skynex.lootglow.managers.SurfaceAlignmentManager(plugin);
         var glowTeamManager = new fr.skynex.lootglow.managers.GlowTeamManager(plugin);
         var visualDisplayManager = new fr.skynex.lootglow.managers.VisualDisplayManager(plugin);
-        var pluginTickManager = new fr.skynex.lootglow.managers.PluginTickManager(plugin);
+        var pluginTickManager = new fr.skynex.lootglow.managers.PluginTickManager(plugin, serviceRegistry, plugin.getStateRepository());
         var visualSpawner = new fr.skynex.lootglow.managers.VisualSpawner(plugin);
         var configParser = new fr.skynex.lootglow.config.ConfigParser(plugin);
         var integrationManager = new fr.skynex.lootglow.integration.IntegrationManager(plugin);
@@ -308,5 +309,100 @@ public class PluginLifecycleManager {
                 .registerService(fr.skynex.lootglow.api.LootGlowAPI.class, apiImpl);
 
         return serviceRegistry;
+    }
+
+    public void startBackgroundTasks() {
+        startParticleTask();
+        startLightingTask();
+        startLODTask();
+        startGarbageCollectorTask();
+        startGroupingTask();
+        startFarmingTask();
+
+        var tickMgr = plugin.getService(PluginTickManager.class);
+        if (tickMgr != null) {
+            tickMgr.startUnifiedTickTask();
+        }
+    }
+
+    public void loadMessages() {
+        var msgSvc = plugin.getService(fr.skynex.lootglow.service.MessageService.class);
+        var stateRepo = plugin.getStateRepository();
+        if (msgSvc != null) {
+            msgSvc.loadMessages(stateRepo.getTimerComponentCache());
+            stateRepo.setRawAmountFormat(msgSvc.getRawAmountFormat());
+            stateRepo.setRawOwnerFormat(msgSvc.getRawOwnerFormat());
+            stateRepo.setRawBundleFormat(msgSvc.getRawBundleFormat());
+        }
+    }
+
+    public void setupTeams() {
+        var teamMgr = plugin.getService(GlowTeamManager.class);
+        if (teamMgr != null) {
+            teamMgr.setupTeams();
+        }
+    }
+
+    private void startParticleTask() {
+        var animMgr = plugin.getService(ParticleAnimationManager.class);
+        var cfgMgr = plugin.getService(LootGlowConfigManager.class);
+        var stateRepo = plugin.getStateRepository();
+        if (animMgr != null && cfgMgr != null) {
+            animMgr.startParticleTask(plugin.isPluginEnabled(), cfgMgr.isParticlesEnabled(), cfgMgr.getLodPartDistSq(), stateRepo.getActiveItems(), stateRepo.getItemParticlesCache(), stateRepo.getItemCategoriesCache(), stateRepo.getHiddenVisuals(), stateRepo.getCategoryDustOptions(), stateRepo.getDefaultDustOptions(), stateRepo.getCategoryAnimTypes(), cfgMgr.getParticleAnimType(), cfgMgr.getParticlesFrequency());
+        }
+    }
+
+    private void startLightingTask() {
+        int interval = plugin.getConfig().getInt("settings.lighting.update-interval", 5);
+        var lightSvc = plugin.getService(fr.skynex.lootglow.service.LightService.class);
+        var cfgMgr = plugin.getService(LootGlowConfigManager.class);
+        var stateRepo = plugin.getStateRepository();
+        if (lightSvc != null && cfgMgr != null) {
+            lightSvc.startLightingTask(plugin.isPluginEnabled(), cfgMgr.isLightingEnabled(), stateRepo.getActiveLights(), stateRepo.getActiveItems(), stateRepo.getItemCategoriesCache(), stateRepo.getCategoryLights(), cfgMgr.getCachedLightBlockData(), interval);
+        }
+    }
+
+    private void startGarbageCollectorTask() {
+        var trackedMgr = plugin.getService(TrackedItemManager.class);
+        if (trackedMgr != null) {
+            trackedMgr.startGarbageCollectorTask(plugin.isPluginEnabled(), plugin.getStateRepository().getActiveItems());
+        }
+    }
+
+    private void startLODTask() {
+        var lodMgr = plugin.getService(LODManager.class);
+        var cfgMgr = plugin.getService(LootGlowConfigManager.class);
+        var trackedMgr = plugin.getService(TrackedItemManager.class);
+        var stateRepo = plugin.getStateRepository();
+        if (lodMgr != null && cfgMgr != null) {
+            lodMgr.startLODTask(plugin.isPluginEnabled(), cfgMgr.isLodEnabled(), cfgMgr.getLodBeamDistSq(), cfgMgr.getLodHoloDistSq(), cfgMgr.getFarmingViewDistance(),
+                    stateRepo.getVisibleEntities(), stateRepo.getHiddenVisuals(), stateRepo.getActiveItems(), stateRepo.getGroupedItems(), stateRepo.getActiveLabels(), stateRepo.getActiveBeams(),
+                    stateRepo.getActiveItemVisuals(), stateRepo.getActiveShadows(), trackedMgr != null ? trackedMgr.getItemsByWorld() : java.util.Collections.emptyMap(), cfgMgr.isFarmingEnabled(), stateRepo.getActiveCropSymbols(), cfgMgr.getLodInterval(), stateRepo.getGloballyVisibleEntities());
+        }
+    }
+
+    private void startFarmingTask() {
+        var farmMgr = plugin.getService(FarmingManager.class);
+        var cfgMgr = plugin.getService(LootGlowConfigManager.class);
+        var stateRepo = plugin.getStateRepository();
+        if (farmMgr != null && cfgMgr != null) {
+            farmMgr.startFarmingTask(plugin.isPluginEnabled(), cfgMgr.isFarmingEnabled(), cfgMgr.getFarmingCrops(), cfgMgr.getFarmingViewDistance(), stateRepo.getLastFarmingScanLocations());
+        }
+    }
+
+    private void startGroupingTask() {
+        var groupSvc = plugin.getService(fr.skynex.lootglow.service.ItemGroupingService.class);
+        var cfgMgr = plugin.getService(LootGlowConfigManager.class);
+        var stateRepo = plugin.getStateRepository();
+        if (groupSvc != null && cfgMgr != null) {
+            fr.skynex.lootglow.model.ItemGroupingContext ctx = new fr.skynex.lootglow.model.ItemGroupingContext(
+                    plugin.isPluginEnabled(), cfgMgr.isGroupingEnabled(), stateRepo.getTrackedItems(), stateRepo.getActiveItems(),
+                    stateRepo.getItemCategoriesCache(), stateRepo.getGroupedItems(), stateRepo.getGroupLeaders(), stateRepo.getGroupMembers(), stateRepo.getActiveItemVisuals(),
+                    cfgMgr.isUseVisualBag(), cfgMgr.getBagMaterial(), cfgMgr.getBagHeadTexture(),
+                    cfgMgr.isUseOwnerHead(), cfgMgr.getBagCustomModelData(), cfgMgr.getRpgRotation(),
+                    cfgMgr.isHoloShowTimer(), stateRepo.getRawBundleFormat(), stateRepo.getItemCategories(), cfgMgr.getDefaultColor(), net.kyori.adventure.text.minimessage.MiniMessage.miniMessage()
+            );
+            groupSvc.startGroupingTask(ctx);
+        }
     }
 }

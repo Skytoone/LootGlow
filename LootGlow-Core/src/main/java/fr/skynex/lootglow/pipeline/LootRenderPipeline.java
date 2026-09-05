@@ -37,19 +37,9 @@ public class LootRenderPipeline {
      */
     public void render(Item item, boolean playAnimation) {
         if (item == null || item.isDead()) return;
-        var registry = plugin.getServiceRegistry();
-        var applyService = registry != null ? registry.get(fr.skynex.lootglow.service.ItemGlowApplyService.class) : plugin.getItemGlowApplyService();
+        var applyService = plugin.getService(fr.skynex.lootglow.service.ItemGlowApplyService.class);
         if (applyService != null) {
-            applyService.applyGlow(item, playAnimation, new fr.skynex.lootglow.model.ItemGlowContext(
-                    plugin.isPluginEnabled(), plugin.getConfigManager().isEconomyEnabled(), plugin.getConfigManager().getEconomyKeys(), plugin.getConfigManager().getEconomyColor(), plugin.getConfigManager().getEconomySound(),
-                    plugin.getStateRepository().getItemMoneyAmounts(), plugin.getItemCategories(), plugin.getCategoryNames(), plugin.getConfigManager().getDefaultColor(), plugin.getCategoryParticles(),
-                    plugin.getItemParticlesCache(), plugin.getItemCategoriesCache(), plugin.getConfigManager().getDespawnTime(), plugin.getEntityIdMap(), plugin.getActiveItems(), plugin.getItemsByWorld(),
-                    plugin.getConfigManager().isRpgDropsEnabled(), plugin.getConfigManager().getRpgEnabledCategories(), plugin.getConfigManager().getCategoryGlow(), plugin.getConfigManager().isDefaultGlow(), plugin.getHiddenVanillaItems(),
-                    plugin.getCategorySounds(), plugin.getConfigManager().isHoloEnabled(), plugin.getConfigManager().isHoloHideUncategorized(), plugin.getItemSpawnTimes(), plugin.getBaseNameCache(),
-                    plugin.getConfigManager().isProtectionEnabled(), plugin.getConfigManager().getProtectionDuration(), plugin.getConfigManager().isShadowsEnabled(), plugin.getConfigManager().isBeamsEnabled(), plugin.getConfigManager().getBeamCategories()
-            ));
-        } else {
-            plugin.applyGlow(item, playAnimation);
+            applyService.applyGlow(item, playAnimation, fr.skynex.lootglow.model.ItemGlowContext.from(plugin));
         }
     }
 
@@ -60,7 +50,8 @@ public class LootRenderPipeline {
      */
     public void unrender(UUID itemUuid) {
         if (itemUuid == null) return;
-        plugin.removeGlow(itemUuid);
+        var spawner = plugin.getService(fr.skynex.lootglow.managers.VisualSpawner.class);
+        if (spawner != null) spawner.removeGlow(itemUuid);
     }
 
     /**
@@ -78,21 +69,23 @@ public class LootRenderPipeline {
      */
     public void tickSync() {
         if (!plugin.isPluginEnabled()) return;
-        var registry = plugin.getServiceRegistry();
-        var physicsService = registry != null ? registry.get(fr.skynex.lootglow.service.ItemPhysicsService.class) : plugin.getItemPhysicsService();
+        var physicsService = plugin.getService(fr.skynex.lootglow.service.ItemPhysicsService.class);
         if (physicsService != null) {
+            var cfg = plugin.getConfigManager();
+            var repo = plugin.getStateRepository();
             physicsService.tickGlobalSync(
                     plugin.isPluginEnabled(),
-                    plugin.getActiveItems(),
-                    plugin.getTrackedItems(),
-                    plugin.getConfigManager().getRpgBlockScale(),
-                    plugin.getConfigManager().getRpgItemScale(),
-                    plugin.getConfigManager().getBagMaterial(),
-                    plugin.getGroupLeaders(),
-                    plugin.getConfigManager().getHoloOffset(),
-                    plugin.getConfigManager().getShadowScale(),
-                    plugin.getConfigManager().getRpgRotation()
+                    repo.getActiveItems(),
+                    repo.getTrackedItems(),
+                    cfg.getRpgBlockScale(),
+                    cfg.getRpgItemScale(),
+                    cfg.getBagMaterial(),
+                    repo.getGroupLeaders(),
+                    cfg.getHoloOffset(),
+                    cfg.getShadowScale(),
+                    cfg.getRpgRotation()
             );
         }
     }
 }
+

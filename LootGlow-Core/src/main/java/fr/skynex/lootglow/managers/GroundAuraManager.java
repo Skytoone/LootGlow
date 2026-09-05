@@ -69,7 +69,7 @@ public class GroundAuraManager {
             // Collect nearby players in LOD range
             java.util.List<org.bukkit.entity.Player> nearbyPlayers = null;
             for (org.bukkit.entity.Player p : worldPlayers) {
-                if (plugin.getHiddenVisuals().contains(p.getUniqueId())) continue;
+                if (plugin.getStateRepository().getHiddenVisuals().contains(p.getUniqueId())) continue;
                 double dx = p.getX() - baseX;
                 double dy = p.getY() - baseY;
                 double dz = p.getZ() - baseZ;
@@ -81,7 +81,7 @@ public class GroundAuraManager {
 
             if (nearbyPlayers == null || nearbyPlayers.isEmpty()) continue;
 
-            Particle.DustOptions dustOptions = plugin.getCategoryDustOptions().get(cat);
+            Particle.DustOptions dustOptions = plugin.getStateRepository().getCategoryDustOptions().get(cat);
             if (dustOptions == null) {
                 NamedTextColor color = plugin.getConfigManager().getCategoryColors().get(cat);
                 Color dustColor = color != null ? Color.fromRGB(color.red(), color.green(), color.blue()) : Color.WHITE;

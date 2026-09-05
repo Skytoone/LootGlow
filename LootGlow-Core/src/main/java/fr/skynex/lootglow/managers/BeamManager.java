@@ -70,6 +70,21 @@ public class BeamManager {
         return Material.WHITE_STAINED_GLASS;
     }
 
+    public void spawnBeam(Item item, String category, NamedTextColor color) {
+        var cfgMgr = plugin.getConfigManager();
+        var stateRepo = plugin.getStateRepository();
+        var lodMgr = plugin.getService(LODManager.class);
+        spawnBeam(item, category, color,
+                stateRepo != null ? stateRepo.getActiveBeams() : java.util.Collections.emptyMap(),
+                cfgMgr != null ? cfgMgr.getBeamHeight() : 10.0f,
+                cfgMgr != null ? cfgMgr.getBeamWidth() : 0.2f,
+                cfgMgr != null ? cfgMgr.isBeamsAnimate() : true,
+                cfgMgr != null ? cfgMgr.isBeamsUseCategoryColor() : true,
+                lodMgr != null ? lodMgr.getLodBeamDistanceSquared() : 1024.0,
+                stateRepo != null ? stateRepo.getHiddenVisuals() : java.util.Collections.emptySet(),
+                stateRepo != null ? stateRepo.getVisibleEntities() : java.util.Collections.emptyMap());
+    }
+
     public void spawnBeam(Item item, String category, NamedTextColor color,
                           Map<UUID, BlockDisplay> activeBeams,
                           float beamHeight,
@@ -124,10 +139,11 @@ public class BeamManager {
         });
 
         activeBeams.put(item.getUniqueId(), beam);
-        if (plugin.getTrackedItemManager() != null) {
-            TrackedItem ti = plugin.getTrackedItemManager().getOrCreateTrackedItem(item.getUniqueId());
+        TrackedItemManager trackedMgr = plugin.getService(TrackedItemManager.class);
+        if (trackedMgr != null) {
+            TrackedItem ti = trackedMgr.getOrCreateTrackedItem(item.getUniqueId());
             ti.beam = beam;
-            plugin.getTrackedItemManager().registerDisplayEntity(beam.getUniqueId(), item.getUniqueId());
+            trackedMgr.registerDisplayEntity(beam.getUniqueId(), item.getUniqueId());
         }
         activeBeamConfigs.put(item.getUniqueId(), new BeamConfig(finalH, finalW, anim, pulse));
 
@@ -149,12 +165,13 @@ public class BeamManager {
 
     public void removeBeam(UUID uuid) {
         if (uuid == null) return;
-        BlockDisplay activeBeam = plugin.getActiveBeams().remove(uuid);
+        BlockDisplay activeBeam = plugin.getStateRepository() != null ? plugin.getStateRepository().getActiveBeams().remove(uuid) : null;
         if (activeBeam != null && activeBeam.isValid()) {
             activeBeam.getPassengers().forEach(e -> { if (e != null) e.remove(); });
             activeBeam.remove();
         }
-        TrackedItem ti = plugin.getTrackedItemManager().getTrackedItems().get(uuid);
+        TrackedItemManager trackedMgr = plugin.getService(TrackedItemManager.class);
+        TrackedItem ti = trackedMgr != null ? trackedMgr.getTrackedItems().get(uuid) : null;
         if (ti != null && ti.beam != null) {
             if (ti.beam.isValid()) {
                 ti.beam.getPassengers().forEach(e -> { if (e != null) e.remove(); });

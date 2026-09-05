@@ -29,21 +29,24 @@ public class ProtocolLibProvider implements PacketProvider {
                 Player player = event.getPlayer();
                 int entityId = event.getPacket().getIntegers().read(0);
 
+                var cfgMgr = main.getConfigManager();
+                boolean rpgEnabled = cfgMgr != null && cfgMgr.isRpgDropsEnabled();
+
                 if (event.getPacketType() == PacketType.Play.Server.SPAWN_ENTITY) {
-                    if (main.isRpgDropsEnabled() && main.getHiddenVanillaItems().contains(entityId)) {
-                        if (!main.getHiddenVisuals().contains(player.getUniqueId())) {
+                    if (rpgEnabled && main.getStateRepository().getHiddenVanillaItems().contains(entityId)) {
+                        if (!main.getStateRepository().getHiddenVisuals().contains(player.getUniqueId())) {
                             event.setCancelled(true);
                         }
                     }
                     return;
                 }
 
-                if (!main.getEntityIdMap().containsKey(entityId))
+                if (!main.getStateRepository().getEntityIdMap().containsKey(entityId))
                     return;
 
                 try {
-                    boolean isHiddenVanilla = main.isRpgDropsEnabled() && main.getHiddenVanillaItems().contains(entityId);
-                    boolean isHiddenToggle = main.getHiddenVisuals().contains(player.getUniqueId());
+                    boolean isHiddenVanilla = rpgEnabled && main.getStateRepository().getHiddenVanillaItems().contains(entityId);
+                    boolean isHiddenToggle = main.getStateRepository().getHiddenVisuals().contains(player.getUniqueId());
 
                     boolean needsInvisible = isHiddenVanilla && !isHiddenToggle;
                     boolean needsNoGlow = isHiddenToggle;

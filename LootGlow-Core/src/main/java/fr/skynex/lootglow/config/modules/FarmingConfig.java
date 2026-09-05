@@ -21,8 +21,8 @@ public class FarmingConfig {
     private final Set<Material> crops = new HashSet<>();
 
     public void load(FileConfiguration config, LootGlow plugin) {
-        this.enabled = config.getBoolean("settings.farming.enabled", true);
-        this.glowColor = plugin.parseNamedColor(config.getString("settings.farming.glow-color", "GREEN"));
+        var cfgParser = plugin.getConfigManager() != null ? plugin.getConfigManager().getConfigParser() : new fr.skynex.lootglow.config.ConfigParser();
+        this.glowColor = cfgParser.parseNamedColor(config.getString("settings.farming.glow-color", "GREEN"));
         String symbolMatStr = config.getString("settings.farming.symbol-material", "EMERALD_BLOCK");
         this.material = Material.matchMaterial(symbolMatStr);
         if (this.material == null || !this.material.isBlock()) {

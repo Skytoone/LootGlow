@@ -11,6 +11,9 @@ import org.bukkit.entity.Item;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.TextDisplay;
 
+import fr.skynex.lootglow.managers.SurfaceAlignmentManager;
+import fr.skynex.lootglow.managers.VisualSpawner;
+import fr.skynex.lootglow.util.ItemTypeClassifier;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -69,7 +72,8 @@ public class ItemPhysicsService {
             double itemY = item.getY();
             double itemZ = item.getZ();
 
-            SurfaceState state = plugin.getSurfaceAlignmentManager() != null ? plugin.getSurfaceAlignmentManager().getSurfaceStates().get(itemUuid) : null;
+            var surfMgr = plugin.getService(SurfaceAlignmentManager.class);
+            SurfaceState state = surfMgr != null ? surfMgr.getSurfaceStates().get(itemUuid) : null;
             boolean itemActuallyMoved = true;
             if (state != null) {
                 double dx = state.lastItemX - itemX;
@@ -77,8 +81,8 @@ public class ItemPhysicsService {
                 double dz = state.lastItemZ - itemZ;
                 double distSq = dx * dx + dy * dy + dz * dz;
                 if (distSq > 0.0001) {
-                    if (plugin.getSurfaceAlignmentManager() != null) {
-                        plugin.getSurfaceAlignmentManager().getSurfaceStates().remove(itemUuid);
+                    if (surfMgr != null) {
+                        surfMgr.getSurfaceStates().remove(itemUuid);
                     }
                 } else {
                     itemActuallyMoved = false;
@@ -87,18 +91,19 @@ public class ItemPhysicsService {
 
             if (itemActuallyMoved) {
                 if ((globalSyncTick - ti.lastRayTraceTick) >= 4) {
-                    plugin.updateSurfaceAlignment(item);
+                    if (surfMgr != null) surfMgr.updateSurfaceAlignment(item, null);
                     ti.lastRayTraceTick = globalSyncTick;
                 }
-                if (plugin.getSurfaceAlignmentManager() != null) {
-                    state = plugin.getSurfaceAlignmentManager().getSurfaceStates().get(itemUuid);
+                if (surfMgr != null) {
+                    state = surfMgr.getSurfaceStates().get(itemUuid);
                 }
             }
 
+            var cfgMgr = plugin.getConfigManager();
             double bobbingOffset = 0.0;
-            if (plugin.isBobbingEnabled() && item.isOnGround()) {
-                double phase = (globalSyncTick + (itemUuid.getLeastSignificantBits() & 0xFF)) * plugin.getBobbingSpeed();
-                bobbingOffset = Math.sin(phase) * plugin.getBobbingAmplitude();
+            if (cfgMgr != null && cfgMgr.isBobbingEnabled() && item.isOnGround()) {
+                double phase = (globalSyncTick + (itemUuid.getLeastSignificantBits() & 0xFF)) * cfgMgr.getBobbingSpeed();
+                bobbingOffset = Math.sin(phase) * cfgMgr.getBobbingAmplitude();
             }
 
             double targetSurfaceY = state != null ? state.y : itemY;
@@ -113,7 +118,9 @@ public class ItemPhysicsService {
                 ti.itemMaterial = itemMat;
             }
             if (ti.isBlockItem == null) {
-                ti.isBlockItem = plugin.isUprightItem(itemMat);
+                ti.isBlockItem = ItemTypeClassifier.isUprightItem(itemMat,
+                        cfgMgr != null ? cfgMgr.getRpgForceFlatMaterials() : java.util.Collections.emptySet(),
+                        cfgMgr != null ? cfgMgr.getRpgForceUprightMaterials() : java.util.Collections.emptySet());
             }
             boolean isBlockItem = ti.isBlockItem;
             double visualYOffset = isBlockItem ? Math.max(0.05, (rpgBlockScale / 2.0) - 0.15) : baseWeight;
@@ -202,14 +209,14 @@ public class ItemPhysicsService {
 
                 if (visual != null && !visual.isDead()) {
                     if (ti.isFishItem == null) {
-                        ti.isFishItem = plugin.isFishItem(itemMat);
+                        ti.isFishItem = ItemTypeClassifier.isFishItem(itemMat);
                     }
                     boolean isFish = ti.isFishItem;
                     boolean currentlyInWater = item.isInWater();
 
                     if (currentlyInWater) {
-                        if (plugin.getSurfaceAlignmentManager() != null) {
-                            plugin.getSurfaceAlignmentManager().getWaterLogCache().add(itemUuid);
+                        if (surfMgr != null) {
+                            surfMgr.getWaterLogCache().add(itemUuid);
                         }
                         if (isFish) {
                             Location vLoc = visual.getLocation();
@@ -217,12 +224,12 @@ public class ItemPhysicsService {
                             visual.teleport(vLoc);
                         }
                     } else {
-                        boolean removed = plugin.getSurfaceAlignmentManager() != null && plugin.getSurfaceAlignmentManager().getWaterLogCache().remove(itemUuid);
+                        boolean removed = surfMgr != null && surfMgr.getWaterLogCache().remove(itemUuid);
                         if (removed) {
                             boolean isLeader = groupLeaders.containsKey(itemUuid);
                             if (!isLeader) {
                                 if (ti.isCustomItem == null) {
-                                    ti.isCustomItem = plugin.isCustomItem(item.getItemStack());
+                                    ti.isCustomItem = ItemTypeClassifier.isCustomItem(item.getItemStack());
                                 }
                                 float targetRotX = (ti.isCustomItem || isBlockItem) ? 0f : rpgRotation;
                                 org.bukkit.util.Transformation t = visual.getTransformation();
@@ -236,8 +243,9 @@ public class ItemPhysicsService {
         }
 
         if (staleEntries != null) {
+            var spawner = plugin.getService(VisualSpawner.class);
             for (UUID staleUuid : staleEntries) {
-                plugin.removeGlow(staleUuid);
+                if (spawner != null) spawner.removeGlow(staleUuid);
             }
         }
     }

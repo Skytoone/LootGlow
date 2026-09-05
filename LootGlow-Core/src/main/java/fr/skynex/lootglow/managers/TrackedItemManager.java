@@ -29,7 +29,11 @@ public class TrackedItemManager {
     private final Map<UUID, UUID> displayToItemMap = new ConcurrentHashMap<>();
 
     public TrackedItemManager(LootGlow plugin) {
-        this(plugin, plugin.getTrackedItems(), plugin.getActiveItems(), plugin.getEntityIdMap(), plugin.getGloballyVisibleEntities());
+        this(plugin,
+             plugin.getStateRepository() != null ? plugin.getStateRepository().getTrackedItems() : null,
+             plugin.getStateRepository() != null ? plugin.getStateRepository().getActiveItems() : null,
+             plugin.getStateRepository() != null ? plugin.getStateRepository().getEntityIdMap() : null,
+             plugin.getStateRepository() != null ? plugin.getStateRepository().getGloballyVisibleEntities() : null);
     }
 
     public TrackedItemManager(LootGlow plugin,
@@ -42,7 +46,7 @@ public class TrackedItemManager {
         this.activeItems = activeItems != null ? activeItems : new ConcurrentHashMap<>();
         this.entityIdMap = entityIdMap != null ? entityIdMap : new ConcurrentHashMap<>();
         this.globallyVisibleEntities = globallyVisibleEntities != null ? globallyVisibleEntities : ConcurrentHashMap.newKeySet();
-        this.itemCategoriesCache = plugin.getItemCategoriesCache();
+        this.itemCategoriesCache = plugin.getStateRepository().getItemCategoriesCache();
     }
 
     public static long getChunkKey(int chunkX, int chunkZ) {
@@ -183,8 +187,9 @@ public class TrackedItemManager {
         int cZ = item.getLocation().getBlockZ() >> 4;
         itemsByChunk.computeIfAbsent(worldName, k -> new ConcurrentHashMap<>())
                 .computeIfAbsent(getChunkKey(cX, cZ), k -> ConcurrentHashMap.newKeySet()).add(uuid);
-        if (plugin.getSpatialIndexService() != null) {
-            plugin.getSpatialIndexService().register(item.getLocation(), uuid);
+        var spatialSvc = plugin.getService(fr.skynex.lootglow.spatial.LootSpatialIndexService.class);
+        if (spatialSvc != null) {
+            spatialSvc.register(item.getLocation(), uuid);
         }
     }
 
@@ -228,20 +233,24 @@ public class TrackedItemManager {
                     ti.shadow.remove();
             }
         }
-        if (plugin.getParticleAnimationManager() != null) {
-            plugin.getParticleAnimationManager().getCustomParticles().remove(uuid);
+        var animMgr = plugin.getService(ParticleAnimationManager.class);
+        if (animMgr != null) {
+            animMgr.getCustomParticles().remove(uuid);
         }
-        if (plugin.getHologramRenderer() != null) {
-            plugin.getHologramRenderer().getCustomHolograms().remove(uuid);
+        var holoRenderer = plugin.getService(HologramRenderer.class);
+        if (holoRenderer != null) {
+            holoRenderer.getCustomHolograms().remove(uuid);
         }
-        if (plugin.getSurfaceAlignmentManager() != null) {
-            plugin.getSurfaceAlignmentManager().getSurfaceStates().remove(uuid);
-            plugin.getSurfaceAlignmentManager().getWaterLogCache().remove(uuid);
+        var surfMgr = plugin.getService(SurfaceAlignmentManager.class);
+        if (surfMgr != null) {
+            surfMgr.getSurfaceStates().remove(uuid);
+            surfMgr.getWaterLogCache().remove(uuid);
         }
-        plugin.getLastHoloState().remove(uuid);
-        plugin.getBaseNameCache().remove(uuid);
-        if (plugin.getEconomyDropManager() != null) {
-            plugin.getEconomyDropManager().getItemMoneyAmounts().remove(uuid);
+        plugin.getStateRepository().getLastHoloState().remove(uuid);
+        plugin.getStateRepository().getBaseNameCache().remove(uuid);
+        var econMgr = plugin.getService(EconomyDropManager.class);
+        if (econMgr != null) {
+            econMgr.getItemMoneyAmounts().remove(uuid);
         }
         Item item = activeItems.remove(uuid);
         if (item != null) {
@@ -261,8 +270,9 @@ public class TrackedItemManager {
                 }
             }
         }
-        if (plugin.getSpatialIndexService() != null) {
-            plugin.getSpatialIndexService().unregister(uuid);
+        var spatialIndexSvc = plugin.getService(fr.skynex.lootglow.spatial.LootSpatialIndexService.class);
+        if (spatialIndexSvc != null) {
+            spatialIndexSvc.unregister(uuid);
         }
     }
 
@@ -271,7 +281,7 @@ public class TrackedItemManager {
         UUID eUuid = entity.getUniqueId();
         Set<UUID> viewers = displayViewers.remove(eUuid);
         if (viewers != null) {
-            Map<UUID, Set<UUID>> visibleEntitiesMap = plugin.getVisibleEntities();
+            Map<UUID, Set<UUID>> visibleEntitiesMap = plugin.getStateRepository().getVisibleEntities();
             for (UUID pUuid : viewers) {
                 Set<UUID> set = visibleEntitiesMap.get(pUuid);
                 if (set != null) {
@@ -300,8 +310,9 @@ public class TrackedItemManager {
                 }
             }
 
+            var spawner = plugin.getService(VisualSpawner.class);
             for (UUID uuid : toRemove) {
-                plugin.removeGlow(uuid);
+                if (spawner != null) spawner.removeGlow(uuid);
             }
         }, 600L, 600L);
     }

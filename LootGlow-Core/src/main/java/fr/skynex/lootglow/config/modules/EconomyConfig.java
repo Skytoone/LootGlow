@@ -22,9 +22,10 @@ public class EconomyConfig {
         this.enabled = config.getBoolean("settings.economy.enabled", true);
         this.format = config.getString("settings.economy.format", "<prefix><amount>");
         this.prefix = config.getString("settings.economy.prefix", "&a$&f");
-        this.color = plugin.parseNamedColor(config.getString("settings.economy.color", "GOLD"));
+        var cfgParser = plugin.getConfigManager() != null ? plugin.getConfigManager().getConfigParser() : new fr.skynex.lootglow.config.ConfigParser();
+        this.color = cfgParser.parseNamedColor(config.getString("settings.economy.color", "GOLD"));
         String ecoSoundStr = config.getString("settings.economy.sound", "ENTITY_EXPERIENCE_ORB_PICKUP");
-        this.sound = plugin.parseSound(ecoSoundStr);
+        this.sound = cfgParser.parseSound(ecoSoundStr);
         if (this.sound == null) this.sound = Sound.ENTITY_EXPERIENCE_ORB_PICKUP;
 
         this.economyKeys.clear();

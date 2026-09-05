@@ -7,7 +7,10 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collections;
 import java.util.List;
+import fr.skynex.lootglow.managers.TrackedItemManager;
+import fr.skynex.lootglow.managers.RarityManager;
 
 /**
  * PlaceholderAPI expansion for LootGlow.
@@ -49,8 +52,9 @@ public class LootGlowExpansion extends PlaceholderExpansion {
 
     @Override
     public @Nullable String onPlaceholderRequest(Player player, @NotNull String params) {
+        var trackedMgr = plugin.getService(TrackedItemManager.class);
         if (params.equalsIgnoreCase("total_tracked")) {
-            return String.valueOf(plugin.getTrackedItemManager().getTrackedItems().size());
+            return String.valueOf(trackedMgr != null ? trackedMgr.getTrackedItems().size() : 0);
         }
 
         if (player == null) {
@@ -61,20 +65,20 @@ public class LootGlowExpansion extends PlaceholderExpansion {
 
         switch (lowerParams) {
             case "toggle_status" -> {
-                boolean isHidden = plugin.getHiddenVisuals().contains(player.getUniqueId());
+                boolean isHidden = plugin.getStateRepository().getHiddenVisuals().contains(player.getUniqueId());
                 return isHidden ? "Désactivé" : "Activé";
             }
             case "items_nearby" -> {
-                List<Item> nearby = plugin.getTrackedItemManager().getNearbyGlowingItems(player.getLocation(), 15.0);
+                List<Item> nearby = trackedMgr != null ? trackedMgr.getNearbyGlowingItems(player.getLocation(), 15.0) : Collections.emptyList();
                 return String.valueOf(nearby.size());
             }
             case "rarest_item_nearby" -> {
-                List<Item> nearby = plugin.getTrackedItemManager().getNearbyGlowingItems(player.getLocation(), 15.0);
+                List<Item> nearby = trackedMgr != null ? trackedMgr.getNearbyGlowingItems(player.getLocation(), 15.0) : Collections.emptyList();
                 if (nearby.isEmpty()) return "Aucun";
 
                 String rarestCat = null;
                 for (Item item : nearby) {
-                    String cat = plugin.getTrackedItemManager().getItemCategory(item.getUniqueId());
+                    String cat = trackedMgr != null ? trackedMgr.getItemCategory(item.getUniqueId()) : null;
                     if (cat != null) {
                         rarestCat = cat;
                         if (cat.equalsIgnoreCase("LEGENDARY") || cat.equalsIgnoreCase("MYTHIC")) {
@@ -106,15 +110,16 @@ public class LootGlowExpansion extends PlaceholderExpansion {
                 } catch (NumberFormatException ignored) {}
             }
 
-            List<Item> nearby = plugin.getTrackedItemManager().getNearbyGlowingItems(player.getLocation(), radius);
+            List<Item> nearby = trackedMgr != null ? trackedMgr.getNearbyGlowingItems(player.getLocation(), radius) : Collections.emptyList();
             if (rarityFilter == null) {
                 return String.valueOf(nearby.size());
             }
 
             final String finalRarityFilter = rarityFilter;
+            var rarityMgr = plugin.getService(RarityManager.class);
             long count = nearby.stream().filter(item -> {
-                if (plugin.getRarityManager() != null) {
-                    fr.skynex.lootglow.managers.RarityManager.ItemRarity rarity = plugin.getRarityManager().detectRarity(item.getItemStack());
+                if (rarityMgr != null) {
+                    fr.skynex.lootglow.managers.RarityManager.ItemRarity rarity = rarityMgr.detectRarity(item.getItemStack());
                     return rarity.name().equalsIgnoreCase(finalRarityFilter);
                 }
                 return false;

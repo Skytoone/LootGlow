@@ -23,6 +23,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import fr.skynex.lootglow.config.ConfigParser;
+import fr.skynex.lootglow.managers.TrackedItemManager;
+import fr.skynex.lootglow.managers.BeamManager;
+import fr.skynex.lootglow.managers.RPGDropManager;
 
 /**
  * Handles full item glow resolution, MMOItems/MythicDrops smart rarity detection,
@@ -38,8 +42,9 @@ public class ItemGlowApplyService {
 
     public void applyGlow(Item item, boolean playAnimation, fr.skynex.lootglow.model.ItemGlowContext ctx) {
         if (ctx == null || !ctx.isEnabled() || item == null) return;
-        if (!plugin.isWorldAllowed(item.getWorld().getName())) return;
-        if (plugin.isInBlockedRegion(item.getLocation())) return;
+        var cfgMgr = plugin.getConfigManager();
+        if (cfgMgr == null || !cfgMgr.isWorldAllowed(item.getWorld().getName())) return;
+        if (plugin.isUseWorldGuard() && cfgMgr.isWgEnabled() && fr.skynex.lootglow.integration.WorldGuardHook.isInBlockedRegion(item.getLocation(), cfgMgr.getWgBlockedRegions())) return;
 
         boolean economyEnabled = ctx.economyEnabled();
         List<NamespacedKey> economyKeys = ctx.economyKeys();
@@ -81,7 +86,7 @@ public class ItemGlowApplyService {
         }
 
         ItemStack stack = item.getItemStack();
-        String customId = plugin.getInternalId(stack);
+        String customId = fr.skynex.lootglow.util.CustomItemIdentifier.getInternalId(stack, plugin.getConfig().getBoolean("settings.debug", false), plugin.getLogger());
         String matName = stack.getType().name();
 
         String category = null;
@@ -118,12 +123,13 @@ public class ItemGlowApplyService {
                     tier = pdc.get(tierKeyAlt, PersistentDataType.STRING);
                 }
 
+                var parser = plugin.getService(ConfigParser.class);
                 if (tier != null) {
                     tier = tier.toLowerCase();
                     if (plugin.getConfig().contains("categories." + tier)) {
                         category = tier;
                         String colorStr = plugin.getConfig().getString("categories." + tier + ".color", "WHITE");
-                        color = plugin.parseNamedColor(colorStr);
+                        if (parser != null) color = parser.parseNamedColor(colorStr);
                     }
                 }
 
@@ -133,7 +139,7 @@ public class ItemGlowApplyService {
                     if (plugin.getConfig().contains("categories." + mdTier)) {
                         category = mdTier;
                         String colorStr = plugin.getConfig().getString("categories." + mdTier + ".color", "WHITE");
-                        color = plugin.parseNamedColor(colorStr);
+                        if (parser != null) color = parser.parseNamedColor(colorStr);
                     }
                 }
 
@@ -260,8 +266,9 @@ public class ItemGlowApplyService {
             item.setTicksLived(Math.max(1, 6000 - (despawnTime * 20)));
         }
 
-        if (plugin.getTrackedItemManager() != null) {
-            plugin.getTrackedItemManager().registerItem(item);
+        var trackedMgr = plugin.getService(TrackedItemManager.class);
+        if (trackedMgr != null) {
+            trackedMgr.registerItem(item);
         } else {
             entityIdMap.put(item.getEntityId(), item.getUniqueId());
             activeItems.put(item.getUniqueId(), item);
@@ -308,7 +315,8 @@ public class ItemGlowApplyService {
         if (sound == null && finalCategory != null) {
             String soundStr = plugin.getConfig().getString("categories." + finalCategory + ".sound");
             if (soundStr != null) {
-                sound = plugin.parseSound(soundStr);
+                var parser = plugin.getService(ConfigParser.class);
+                if (parser != null) sound = parser.parseSound(soundStr);
             }
         }
 
@@ -317,12 +325,14 @@ public class ItemGlowApplyService {
                 item.getWorld().playSound(item.getLocation(), sound, 1.0f, 1.0f);
             }
 
-            if (plugin.getRarityManager() != null && plugin.getParticleAnimationManager() != null) {
-                fr.skynex.lootglow.managers.RarityManager.ItemRarity rarity = plugin.getRarityManager().detectRarity(item.getItemStack());
+            var rarityMgr = plugin.getService(fr.skynex.lootglow.managers.RarityManager.class);
+            var animMgr = plugin.getService(fr.skynex.lootglow.managers.ParticleAnimationManager.class);
+            if (rarityMgr != null && animMgr != null) {
+                fr.skynex.lootglow.managers.RarityManager.ItemRarity rarity = rarityMgr.detectRarity(item.getItemStack());
                 if (rarity == fr.skynex.lootglow.managers.RarityManager.ItemRarity.LEGENDARY || rarity == fr.skynex.lootglow.managers.RarityManager.ItemRarity.MYTHIC) {
-                    plugin.getParticleAnimationManager().triggerParabolaDropAnimation(item, rarity);
+                    animMgr.triggerParabolaDropAnimation(item, rarity);
                 }
-                plugin.getParticleAnimationManager().triggerImpactShockwave(item, finalCategory);
+                animMgr.triggerImpactShockwave(item, finalCategory);
             }
 
             // Title & Subtitle RPG drop notification broadcast
@@ -340,8 +350,11 @@ public class ItemGlowApplyService {
             }
 
             if (NamedTextColor.GOLD.equals(finalColor)) {
-                item.getWorld().getNearbyPlayers(item.getLocation(), 15)
-                        .forEach(p -> plugin.sendMessage(p, "legendary-found"));
+                var msgSvc = plugin.getService(MessageService.class);
+                if (msgSvc != null) {
+                    item.getWorld().getNearbyPlayers(item.getLocation(), 15)
+                            .forEach(p -> msgSvc.sendMessage(p, "legendary-found"));
+                }
             }
         }
 
@@ -352,12 +365,33 @@ public class ItemGlowApplyService {
                 if (!itemSpawnTimes.containsKey(item.getUniqueId())) {
                     itemSpawnTimes.put(item.getUniqueId(), System.currentTimeMillis());
                 }
-                baseNameCache.put(item.getUniqueId(), plugin.getHologramService() != null ? plugin.getHologramService().calculateBaseName(item, finalColor, plugin.getDisplayNameOverridesCache(), itemMoneyAmounts, plugin.getEconomyFormat(), plugin.getEconomyPrefix()) : Component.empty());
-                plugin.updateHologram(item, finalColor);
+                var holoSvc = plugin.getService(HologramService.class);
+                baseNameCache.put(item.getUniqueId(), holoSvc != null ? holoSvc.calculateBaseName(item, finalColor, plugin.getStateRepository().getDisplayNameOverridesCache(), itemMoneyAmounts, cfgMgr != null ? cfgMgr.getEconomyFormat() : "", cfgMgr != null ? cfgMgr.getEconomyPrefix() : "") : Component.empty());
+                if (holoSvc != null && cfgMgr != null) {
+                    fr.skynex.lootglow.model.HologramContext ctxHolo = new fr.skynex.lootglow.model.HologramContext(
+                            cfgMgr.isHoloEnabled(), plugin.getStateRepository().getItemCategoriesCache(), cfgMgr.isHoloHideUncategorized(),
+                            plugin.getStateRepository().getActiveLabels(), plugin.getStateRepository().getGroupLeaders(), plugin.getStateRepository().getLastHoloState(), plugin.getStateRepository().getBaseNameCache(), plugin.getStateRepository().getDisplayNameOverridesCache(),
+                            plugin.getStateRepository().getItemMoneyAmounts(), cfgMgr.getEconomyFormat(), cfgMgr.getEconomyPrefix(),
+                            cfgMgr.isHoloShowAmount(), plugin.getStateRepository().getRawAmountFormat(), cfgMgr.isProtectionEnabled(),
+                            cfgMgr.getProtectionDuration(), plugin.getStateRepository().getItemSpawnTimes(), plugin.getStateRepository().getRawOwnerFormat(), Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI"),
+                            cfgMgr.isHoloShowTimer(), plugin.getStateRepository().getTimerComponentCache(), cfgMgr.isHoloTimerNewLine()
+                    );
+                    holoSvc.updateHologram(item, finalColor, ctxHolo);
+                }
 
                 if (protectionEnabled) {
                     FoliaScheduler.runLater(plugin, () -> {
-                        if (!item.isDead()) plugin.updateHologram(item, finalColor);
+                        if (!item.isDead() && holoSvc != null && cfgMgr != null) {
+                            fr.skynex.lootglow.model.HologramContext ctxHolo = new fr.skynex.lootglow.model.HologramContext(
+                                    cfgMgr.isHoloEnabled(), plugin.getStateRepository().getItemCategoriesCache(), cfgMgr.isHoloHideUncategorized(),
+                                    plugin.getStateRepository().getActiveLabels(), plugin.getStateRepository().getGroupLeaders(), plugin.getStateRepository().getLastHoloState(), plugin.getStateRepository().getBaseNameCache(), plugin.getStateRepository().getDisplayNameOverridesCache(),
+                                    plugin.getStateRepository().getItemMoneyAmounts(), cfgMgr.getEconomyFormat(), cfgMgr.getEconomyPrefix(),
+                                    cfgMgr.isHoloShowAmount(), plugin.getStateRepository().getRawAmountFormat(), cfgMgr.isProtectionEnabled(),
+                                    cfgMgr.getProtectionDuration(), plugin.getStateRepository().getItemSpawnTimes(), plugin.getStateRepository().getRawOwnerFormat(), Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI"),
+                                    cfgMgr.isHoloShowTimer(), plugin.getStateRepository().getTimerComponentCache(), cfgMgr.isHoloTimerNewLine()
+                            );
+                            holoSvc.updateHologram(item, finalColor, ctxHolo);
+                        }
                     }, protectionDuration * 20L);
                 }
             }
@@ -365,14 +399,29 @@ public class ItemGlowApplyService {
 
         if (isRpgDrop) {
             if (!item.isDead() && activeItems.containsKey(item.getUniqueId())) {
-                plugin.spawnItemVisual(item, finalCategory, finalColor);
+                var spawnSvc = plugin.getService(ItemVisualSpawnService.class);
+                if (spawnSvc != null && cfgMgr != null) {
+                    fr.skynex.lootglow.model.ItemVisualContext ctxVis = new fr.skynex.lootglow.model.ItemVisualContext(
+                            cfgMgr.isUseVisualBag(), cfgMgr.isRpgDropsEnabled(), plugin.getStateRepository().getGroupLeaders(),
+                            plugin.getStateRepository().getActiveItemVisuals(), plugin.getStateRepository().getEntityIdMap(), new java.util.HashSet<>(cfgMgr.getRpgEnabledCategories()),
+                            plugin.getStateRepository().getHiddenVisuals(), plugin.getStateRepository().getVisibleEntities(), cfgMgr.getCategoryGlow(), cfgMgr.isDefaultGlow(),
+                            cfgMgr.getBagMaterial(), cfgMgr.getBagHeadTexture(), cfgMgr.isUseOwnerHead(), cfgMgr.getBagCustomModelData(),
+                            cfgMgr.getRpgItemScale(), cfgMgr.getRpgBlockScale(), cfgMgr.getRpgRotation()
+                    );
+                    spawnSvc.spawnItemVisual(item, finalCategory, finalColor, ctxVis);
+                }
                 if (shadowsEnabled) {
-                    plugin.spawnShadow(item);
+                    var rpgMgr = plugin.getService(RPGDropManager.class);
+                    if (rpgMgr != null) rpgMgr.spawnShadow(item);
                 }
                 if (beamsEnabled && finalCategory != null && beamCategories.contains(finalCategory.toLowerCase())) {
-                    plugin.spawnBeam(item, finalCategory, finalColor);
+                    var beamMgr = plugin.getService(BeamManager.class);
+                    if (beamMgr != null && cfgMgr != null) {
+                        beamMgr.spawnBeam(item, finalCategory, finalColor, plugin.getStateRepository().getActiveBeams(), cfgMgr.getBeamHeight(), cfgMgr.getBeamWidth(), cfgMgr.isBeamsAnimate(), cfgMgr.isBeamsUseCategoryColor(), cfgMgr.getLodBeamDistSq(), plugin.getStateRepository().getHiddenVisuals(), plugin.getStateRepository().getVisibleEntities());
+                    }
                 }
-                plugin.broadcastRpgDropVisibility(item);
+                var visSvc = plugin.getService(EntityVisibilityService.class);
+                if (visSvc != null) visSvc.broadcastRpgDropVisibility(item, plugin.getStateRepository().getActiveItemVisuals(), plugin.getStateRepository().getHiddenVisuals(), plugin.getStateRepository().getGroupedItems());
             }
         }
     }
@@ -385,9 +434,10 @@ public class ItemGlowApplyService {
                             Map<Integer, UUID> entityIdMap,
                             Set<Integer> hiddenVanillaItems) {
         if (!isEnabled || !rpgDropsEnabled) return;
-        if (!plugin.isWorldAllowed(item.getWorld().getName())) return;
+        var cfgMgr = plugin.getConfigManager();
+        if (cfgMgr != null && !cfgMgr.isWorldAllowed(item.getWorld().getName())) return;
 
-        String customId = plugin.getInternalId(item.getItemStack());
+        String customId = fr.skynex.lootglow.util.CustomItemIdentifier.getInternalId(item.getItemStack(), plugin.getConfig().getBoolean("settings.debug", false), plugin.getLogger());
         if (customId == null) {
             PersistentDataContainer pdc = item.getPersistentDataContainer();
             if (pdc.has(sourceMobKey, PersistentDataType.STRING)) {

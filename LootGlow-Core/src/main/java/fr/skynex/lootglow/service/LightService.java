@@ -52,7 +52,7 @@ public class LightService {
                 if (ent == null || ent.isDead() || !ent.isValid()) {
                     Location loc = activeLights.get(uuid);
                     if (loc != null) {
-                        int columnHeight = plugin.getLightColumnHeight();
+                        int columnHeight = plugin.getConfigManager().getLightColumnHeight();
                         for (int h = 0; h < columnHeight; h++) {
                             Location restoreLoc = loc.clone().add(0, h, 0);
                             BlockData blockData = restoreLoc.getBlock().getBlockData();
@@ -85,7 +85,7 @@ public class LightService {
 
                 if (oldLoc != null && oldLoc.equals(currentLoc)) continue;
 
-                int columnHeight = plugin.getLightColumnHeight();
+                int columnHeight = plugin.getConfigManager().getLightColumnHeight();
                 if (oldLoc != null) {
                     for (int h = 0; h < columnHeight; h++) {
                         Location restoreLoc = oldLoc.clone().add(0, h, 0);
