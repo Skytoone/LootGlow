@@ -108,7 +108,7 @@ public class ItemGroupingService {
                     materials.add(ni.getItemStack().getType());
                 }
 
-                if (nearby.size() >= minItems && materials.size() > 1) {
+                if (nearby.size() >= minItems) {
                     Item leaderItem = nearby.get(0);
                     fr.skynex.lootglow.api.events.LootBagGroupEvent groupEvent = new fr.skynex.lootglow.api.events.LootBagGroupEvent(leaderItem, nearby);
                     org.bukkit.Bukkit.getPluginManager().callEvent(groupEvent);
@@ -187,8 +187,7 @@ public class ItemGroupingService {
             var lodMgr = plugin.getService(fr.skynex.lootglow.managers.LODManager.class);
             double holoDistSq = lodMgr != null ? lodMgr.getLodHoloDistanceSquared() : 576.0;
 
-            groupedItems.clear();
-            groupLeaders.clear();
+            // Clear Leaders map; groupedItems will be atomically updated in processItemGrouping
 
             // Cache player positions primitives once to eliminate dynamic Location allocation storm
             java.util.Collection<? extends org.bukkit.entity.Player> onlinePlayers = org.bukkit.Bukkit.getOnlinePlayers();
@@ -258,6 +257,7 @@ public class ItemGroupingService {
                     }
                 });
 
+                Material activeBagMat = plugin.getConfigManager() != null ? plugin.getConfigManager().getBagMaterial() : bagMaterial;
                 activeItemVisuals.forEach((uuid, visual) -> {
                     if (!visual.isValid())
                         return;
@@ -268,19 +268,19 @@ public class ItemGroupingService {
                     boolean isLeader = groupLeaders.containsKey(uuid);
                     org.bukkit.inventory.ItemStack currentStack = visual.getItemStack();
                     if (isLeader) {
-                        if (currentStack == null || currentStack.getType() != bagMaterial) {
+                        if (currentStack == null || currentStack.getType() != activeBagMat) {
                             org.bukkit.inventory.ItemStack bag;
                             var visDispMgr = plugin.getService(fr.skynex.lootglow.managers.VisualDisplayManager.class);
-                            if (bagMaterial == Material.PLAYER_HEAD) {
+                            if (activeBagMat == Material.PLAYER_HEAD) {
                                 if (useOwnerHead && item.getThrower() != null) {
                                     bag = visDispMgr != null ? visDispMgr.getOwnerHead(item.getThrower()) : new org.bukkit.inventory.ItemStack(Material.PLAYER_HEAD);
                                 } else if (!bagHeadTexture.isEmpty()) {
                                     bag = visDispMgr != null ? visDispMgr.createTexturedHead(bagHeadTexture) : new org.bukkit.inventory.ItemStack(Material.PLAYER_HEAD);
                                 } else {
-                                    bag = new org.bukkit.inventory.ItemStack(bagMaterial);
+                                    bag = new org.bukkit.inventory.ItemStack(activeBagMat);
                                 }
                             } else {
-                                bag = new org.bukkit.inventory.ItemStack(bagMaterial);
+                                bag = new org.bukkit.inventory.ItemStack(activeBagMat);
                             }
 
                             if (bagCustomModelData != 0) {
@@ -294,13 +294,13 @@ public class ItemGroupingService {
                             visual.setItemDisplayTransform(org.bukkit.entity.ItemDisplay.ItemDisplayTransform.FIXED);
                             org.bukkit.util.Transformation t = visual.getTransformation();
                             t.getLeftRotation().set(new org.joml.Quaternionf());
-                            float bagTransY = fr.skynex.lootglow.service.ItemVisualSpawnService.getBagYOffset(bagMaterial);
+                            float bagTransY = fr.skynex.lootglow.service.ItemVisualSpawnService.getBagYOffset(activeBagMat);
                             t.getTranslation().set(0f, bagTransY, 0f);
                             t.getScale().set(1.0f, 1.0f, 1.0f);
                             visual.setTransformation(t);
                         }
                     } else {
-                        if (currentStack != null && currentStack.getType() == bagMaterial) {
+                        if (currentStack != null && currentStack.getType() == activeBagMat) {
                             visual.setItemStack(item.getItemStack());
                             visual.setItemDisplayTransform(org.bukkit.entity.ItemDisplay.ItemDisplayTransform.FIXED);
                             org.bukkit.util.Transformation t = visual.getTransformation();
@@ -378,13 +378,18 @@ public class ItemGroupingService {
                     int count = groupLeaders.get(uuid);
                     newContent = fr.skynex.lootglow.util.ColorUtil.parse(rawBundleFormat.replace("<count>", String.valueOf(count)));
                 } else if (!isGrouped) {
+                    var cfgMgr = plugin.getConfigManager();
+                    if (cfgMgr != null && cfgMgr.isHoloHideUncategorized() && ti.category == null) {
+                        display.text(net.kyori.adventure.text.Component.empty());
+                        ti.lastHoloState = -1L;
+                        continue;
+                    }
                     net.kyori.adventure.text.format.NamedTextColor color = itemCategories.get(ti.category);
                     if (color == null)
                         color = defaultColor;
 
                     net.kyori.adventure.text.Component baseName = ti.baseName;
                     var holoSvc = plugin.getService(HologramService.class);
-                    var cfgMgr = plugin.getConfigManager();
                     if (baseName == null) {
                         baseName = holoSvc != null ? holoSvc.calculateBaseName(item, color, plugin.getStateRepository().getDisplayNameOverridesCache(), plugin.getStateRepository().getItemMoneyAmounts(), cfgMgr != null ? cfgMgr.getEconomyFormat() : "", cfgMgr != null ? cfgMgr.getEconomyPrefix() : "") : net.kyori.adventure.text.Component.empty();
                         ti.baseName = baseName;

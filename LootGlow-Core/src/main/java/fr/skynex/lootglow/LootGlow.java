@@ -73,11 +73,11 @@ public class LootGlow extends JavaPlugin implements fr.skynex.lootglow.api.LootG
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        reloadConfig();
         File configFile = new File(getDataFolder(), "config.yml");
         if (configFile.exists()) {
             try {
-                org.bukkit.configuration.file.YamlConfiguration tempCfg = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(configFile);
-                if (tempCfg.getBoolean("settings.auto-update-config", true)) {
+                if (getConfig().getBoolean("settings.auto-update-config", true)) {
                     ConfigUpdater.update(this, "config.yml", configFile);
                 }
             } catch (Exception ignored) {}

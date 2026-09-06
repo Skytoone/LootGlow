@@ -134,12 +134,8 @@ public class ItemPhysicsService {
                     vMat = visual.getItemStack().getType();
                     ti.visualMaterial = vMat;
                 }
-                if (vMat == Material.PLAYER_HEAD) {
-                    visualYOffset = 0.10;
-                } else if (vMat == Material.BUNDLE) {
-                    visualYOffset = 0.15;
-                } else if (vMat == Material.CHEST || vMat == Material.TRAPPED_CHEST || vMat == Material.ENDER_CHEST) {
-                    visualYOffset = 0.15;
+                if (vMat == Material.PLAYER_HEAD || vMat == Material.BUNDLE || vMat == Material.CHEST || vMat == Material.TRAPPED_CHEST || vMat == Material.ENDER_CHEST) {
+                    visualYOffset = 0.0;
                 }
             }
             Entity representative = (visual != null) ? (Entity) visual : (Entity) label;

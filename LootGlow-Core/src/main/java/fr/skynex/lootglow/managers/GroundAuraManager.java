@@ -52,7 +52,11 @@ public class GroundAuraManager {
         currentAngle = (currentAngle + 0.15) % (2 * Math.PI);
         double maxDistSq = plugin.getConfigManager() != null ? plugin.getConfigManager().getLodPartDistSq() : 1024.0;
 
+        var gcMgr = plugin.getService(GroupContainerManager.class);
+        java.util.Set<UUID> groupedItems = gcMgr != null ? gcMgr.getGroupedItems() : plugin.getStateRepository().getGroupedItems();
+
         for (Map.Entry<UUID, Item> entry : activeItems.entrySet()) {
+            if (groupedItems.contains(entry.getKey())) continue;
             Item item = entry.getValue();
             if (item == null || !item.isValid() || item.isDead()) continue;
 

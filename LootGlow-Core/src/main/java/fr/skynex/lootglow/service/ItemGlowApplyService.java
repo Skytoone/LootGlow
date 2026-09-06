@@ -235,12 +235,30 @@ public class ItemGlowApplyService {
             }
         }
 
+        if (category == null) {
+            var rarityMgr = plugin.getService(fr.skynex.lootglow.managers.RarityManager.class);
+            if (rarityMgr != null) {
+                var rarity = rarityMgr.detectRarity(stack);
+                if (rarity != null) {
+                    String rarityKey = rarity.name().toLowerCase();
+                    if (plugin.getConfig().contains("categories." + rarityKey)) {
+                        category = rarityKey;
+                        NamedTextColor catColor = plugin.getConfigManager().getCategoryColors().get(rarityKey);
+                        if (catColor != null) color = catColor;
+                    }
+                }
+            }
+        }
+
         if (category != null) {
             itemCategoriesCache.put(item.getUniqueId(), category);
 
             Particle part = categoryParticles.get(customId != null ? customId : matName);
-            if (part == null && category != null) {
+            if (part == null) {
                 part = categoryParticles.get(category);
+            }
+            if (part == null) {
+                part = categoryParticles.get(category.toLowerCase());
             }
             if (part == null) {
                 String partStr = plugin.getConfig().getString("categories." + category + ".particle");

@@ -33,7 +33,8 @@ public class ItemPickupListener implements Listener {
             UUID itemUuid = event.getItem().getUniqueId();
             boolean isGroupItem = (gcMgr != null && gcMgr.getGroupLeader(itemUuid) != null)
                     || plugin.getStateRepository().getGroupMembers().containsKey(itemUuid)
-                    || plugin.getStateRepository().getGroupedItems().contains(itemUuid);
+                    || plugin.getStateRepository().getGroupedItems().contains(itemUuid)
+                    || plugin.getStateRepository().getGroupLeaders().containsKey(itemUuid);
 
             if (cfgMgr != null && cfgMgr.isContainerEnabled() && cfgMgr.isContainerRequireClick()) {
                 if (isGroupItem) {

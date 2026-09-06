@@ -191,6 +191,7 @@ public class ItemVisualSpawnService {
         String name = bagMaterial.name();
         if (name.contains("BUNDLE")) return 0.42f;
         if (name.contains("CHEST") || name.contains("BARREL") || name.contains("SHULKER_BOX")) return 0.18f;
+        if (name.contains("HEAD") || name.contains("SKULL")) return 0.15f;
         return 0.30f;
     }
 }

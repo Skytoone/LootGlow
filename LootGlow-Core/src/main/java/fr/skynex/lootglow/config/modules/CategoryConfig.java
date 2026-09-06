@@ -68,6 +68,10 @@ public class CategoryConfig {
 
             String partStr = config.getString("categories." + key + ".particle");
             Particle particle = configParser.parseParticle(partStr);
+            if (particle != null) {
+                categoryParticles.put(key, particle);
+                categoryParticles.put(key.toLowerCase(), particle);
+            }
 
             String soundStr = config.getString("categories." + key + ".sound");
             Sound sound = null;
