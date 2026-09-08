@@ -60,13 +60,16 @@ public class RPGDropManager {
     public void spawnShadow(Item item) {
         if (item == null || !item.isValid()) return;
         var cfgMgr = plugin.getConfigManager();
-        if (cfgMgr == null || !cfgMgr.isShadowsEnabled()) return;
-        float shadowScale = cfgMgr.getShadowScale();
-
         ItemDisplay visual = plugin.getStateRepository().getActiveItemVisuals().get(item.getUniqueId());
         if (visual != null && visual.isValid()) {
-            visual.setShadowRadius(shadowScale * 0.8f);
-            visual.setShadowStrength(1.0f);
+            if (cfgMgr != null && cfgMgr.isShadowsEnabled()) {
+                float shadowScale = cfgMgr.getShadowScale();
+                visual.setShadowRadius(shadowScale * 0.8f);
+                visual.setShadowStrength(1.0f);
+            } else {
+                visual.setShadowRadius(0.0f);
+                visual.setShadowStrength(0.0f);
+            }
         }
     }
 

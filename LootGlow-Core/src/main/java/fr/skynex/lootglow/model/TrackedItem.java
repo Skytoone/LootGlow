@@ -36,4 +36,5 @@ public class TrackedItem {
     public Boolean isUprightItem;
     public Boolean isCustomItem;
     public fr.skynex.lootglow.managers.RarityManager.ItemRarity rarity;
+    public boolean impactShockwaveTriggered = false;
 }

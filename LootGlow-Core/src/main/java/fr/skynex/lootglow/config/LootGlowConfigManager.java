@@ -203,6 +203,26 @@ public class LootGlowConfigManager {
                 (float) particleConfig.getSize());
 
         categoryConfig.load(config, configParser, particleConfig.getSize(), particleConfig.getAnimType(), displayNameOverridesCache);
+
+        if (plugin != null && plugin.getStateRepository() != null) {
+            var repo = plugin.getStateRepository();
+            repo.getCategoryNames().clear();
+            repo.getCategoryNames().putAll(categoryConfig.getCategoryNames());
+            repo.getItemCategories().clear();
+            repo.getItemCategories().putAll(categoryConfig.getItemCategories());
+            repo.getCategoryColors().clear();
+            repo.getCategoryColors().putAll(categoryConfig.getCategoryColors());
+            repo.getCategoryParticles().clear();
+            repo.getCategoryParticles().putAll(categoryConfig.getCategoryParticles());
+            repo.getCategorySounds().clear();
+            repo.getCategorySounds().putAll(categoryConfig.getCategorySounds());
+            repo.getCategoryLights().clear();
+            repo.getCategoryLights().putAll(categoryConfig.getCategoryLights());
+            repo.getCategoryDustOptions().clear();
+            repo.getCategoryDustOptions().putAll(categoryConfig.getCategoryDustOptions());
+            repo.getCategoryAnimTypes().clear();
+            repo.getCategoryAnimTypes().putAll(categoryConfig.getCategoryAnimTypes());
+        }
     }
 
     public boolean isEnabled() { return isEnabled; }

@@ -67,9 +67,11 @@ public class GroupContainerManager {
         }
 
         var trackedMgr = plugin.getService(TrackedItemManager.class);
+        fr.skynex.lootglow.model.TrackedItem tiOld = null;
         if (trackedMgr != null) {
-            fr.skynex.lootglow.model.TrackedItem tiOld = trackedMgr.getTrackedItems().remove(oldLeader);
+            tiOld = trackedMgr.getTrackedItems().remove(oldLeader);
             if (tiOld != null) {
+                tiOld.baseName = null;
                 trackedMgr.getTrackedItems().put(newLeader, tiOld);
             }
         }
@@ -79,11 +81,20 @@ public class GroupContainerManager {
             plugin.getStateRepository().getItemSpawnTimes().put(newLeader, spawnTime);
         }
 
-        // Instantly refresh hologram label for the new leader
+        plugin.getStateRepository().getBaseNameCache().remove(oldLeader);
+        plugin.getStateRepository().getBaseNameCache().remove(newLeader);
+
+        // Instantly refresh hologram label and visual model for the new leader
         var activeItems = trackedMgr != null ? trackedMgr.getActiveItems() : plugin.getStateRepository().getActiveItems();
         Item newLeaderItem = activeItems.get(newLeader);
-        var holoSvc = plugin.getService(fr.skynex.lootglow.service.HologramService.class);
         var cfgMgr = plugin.getConfigManager();
+        if (newLeaderItem != null && newLeaderItem.isValid() && tiOld != null && tiOld.visual != null && tiOld.visual.isValid()) {
+            boolean useVisualBag = cfgMgr != null && cfgMgr.isUseVisualBag();
+            if (!useVisualBag) {
+                tiOld.visual.setItemStack(newLeaderItem.getItemStack().clone());
+            }
+        }
+        var holoSvc = plugin.getService(fr.skynex.lootglow.service.HologramService.class);
         if (newLeaderItem != null && newLeaderItem.isValid() && holoSvc != null && cfgMgr != null) {
             holoSvc.refreshHologram(newLeaderItem, cfgMgr.isHoloEnabled(), cfgMgr.isHoloHideUncategorized(), plugin.getStateRepository().getItemCategoriesCache(), plugin.getStateRepository().getItemCategories(), cfgMgr.getDefaultColor(), plugin.getStateRepository().getLastHoloState());
         }

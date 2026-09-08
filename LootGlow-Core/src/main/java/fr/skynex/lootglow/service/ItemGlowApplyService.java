@@ -360,7 +360,9 @@ public class ItemGlowApplyService {
                 if (rarity == fr.skynex.lootglow.managers.RarityManager.ItemRarity.LEGENDARY || rarity == fr.skynex.lootglow.managers.RarityManager.ItemRarity.MYTHIC) {
                     animMgr.triggerParabolaDropAnimation(item, rarity);
                 }
-                animMgr.triggerImpactShockwave(item, finalCategory);
+                if (item.isOnGround()) {
+                    animMgr.triggerImpactShockwave(item, finalCategory);
+                }
             }
 
             // Title & Subtitle RPG drop notification broadcast

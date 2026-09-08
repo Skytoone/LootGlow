@@ -104,10 +104,17 @@ public class ItemPhysicsService {
             }
 
             var cfgMgr = plugin.getConfigManager();
+            if (item.isOnGround() && !ti.impactShockwaveTriggered) {
+                ti.impactShockwaveTriggered = true;
+                var animMgr = plugin.getService(fr.skynex.lootglow.managers.ParticleAnimationManager.class);
+                if (animMgr != null) {
+                    animMgr.triggerImpactShockwave(item, ti.category);
+                }
+            }
             double bobbingOffset = 0.0;
             if (cfgMgr != null && cfgMgr.isBobbingEnabled() && item.isOnGround()) {
                 double phase = (globalSyncTick + (itemUuid.getLeastSignificantBits() & 0xFF)) * cfgMgr.getBobbingSpeed();
-                bobbingOffset = Math.sin(phase) * cfgMgr.getBobbingAmplitude();
+                bobbingOffset = (1.0 + Math.sin(phase)) * 0.5 * cfgMgr.getBobbingAmplitude();
             }
 
             double targetSurfaceY = state != null ? state.y : itemY;
@@ -124,7 +131,8 @@ public class ItemPhysicsService {
             if (ti.isBlockItem == null) {
                 ti.isBlockItem = ItemTypeClassifier.isUprightItem(itemMat,
                         cfgMgr != null ? cfgMgr.getRpgForceFlatMaterials() : java.util.Collections.emptySet(),
-                        cfgMgr != null ? cfgMgr.getRpgForceUprightMaterials() : java.util.Collections.emptySet());
+                        cfgMgr != null ? cfgMgr.getRpgForceUprightMaterials() : java.util.Collections.emptySet())
+                        || ItemTypeClassifier.safeIsBlock(itemMat);
             }
             boolean isBlockItem = ti.isBlockItem;
             double visualYOffset = isBlockItem ? Math.max(0.05, (rpgBlockScale / 2.0) - 0.15) : baseWeight;
@@ -135,7 +143,11 @@ public class ItemPhysicsService {
                     ti.visualMaterial = vMat;
                 }
                 if (vMat == Material.PLAYER_HEAD || vMat == Material.BUNDLE || vMat == Material.CHEST || vMat == Material.TRAPPED_CHEST || vMat == Material.ENDER_CHEST) {
-                    visualYOffset = 0.0;
+                    visualYOffset = ItemVisualSpawnService.getBagYOffset(vMat);
+                }
+                if (cfgMgr != null && !cfgMgr.isShadowsEnabled()) {
+                    visual.setShadowRadius(0.0f);
+                    visual.setShadowStrength(0.0f);
                 }
             }
             Entity representative = (visual != null) ? (Entity) visual : (Entity) label;

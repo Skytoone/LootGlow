@@ -110,18 +110,20 @@ public class ItemVisualSpawnService {
                 }
                 ent.setItemStack(bag);
                 ent.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
+                float bagScale = (bagMaterial != null && bagMaterial.isBlock()) ? rpgBlockScale : rpgItemScale;
                 float bagTransY = getBagYOffset(bagMaterial);
                 ent.setTransformation(new org.bukkit.util.Transformation(
                         new org.joml.Vector3f(0f, bagTransY, 0f),
                         new org.joml.Quaternionf(),
-                        new org.joml.Vector3f(1.0f, 1.0f, 1.0f),
+                        new org.joml.Vector3f(bagScale, bagScale, bagScale),
                         new org.joml.Quaternionf()));
             } else {
                 ent.setItemStack(visualStack);
                 Material mat = visualStack.getType();
                 var cfgMgr = plugin.getConfigManager();
                 boolean isCustom = fr.skynex.lootglow.util.ItemTypeClassifier.isCustomItem(visualStack);
-                boolean isUpright = fr.skynex.lootglow.util.ItemTypeClassifier.isUprightItem(mat, cfgMgr != null ? cfgMgr.getRpgForceFlatMaterials() : java.util.Collections.emptySet(), cfgMgr != null ? cfgMgr.getRpgForceUprightMaterials() : java.util.Collections.emptySet());
+                boolean isUpright = fr.skynex.lootglow.util.ItemTypeClassifier.isUprightItem(mat, cfgMgr != null ? cfgMgr.getRpgForceFlatMaterials() : java.util.Collections.emptySet(), cfgMgr != null ? cfgMgr.getRpgForceUprightMaterials() : java.util.Collections.emptySet())
+                        || fr.skynex.lootglow.util.ItemTypeClassifier.safeIsBlock(mat);
                 float baseScale = isUpright ? rpgBlockScale : rpgItemScale;
                 if (fr.skynex.lootglow.util.ItemTypeClassifier.isFishItem(mat)) baseScale *= 0.55f;
                 float rotX = (isCustom || isUpright) ? 0f : rpgRotation;
@@ -143,6 +145,9 @@ public class ItemVisualSpawnService {
         if (cfgMgr != null && cfgMgr.isShadowsEnabled()) {
             display.setShadowRadius(cfgMgr.getShadowScale() * 0.8f);
             display.setShadowStrength(1.0f);
+        } else {
+            display.setShadowRadius(0.0f);
+            display.setShadowStrength(0.0f);
         }
 
         boolean shouldGlow = categoryGlow.getOrDefault(category, defaultGlow);

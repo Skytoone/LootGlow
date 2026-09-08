@@ -15,15 +15,15 @@ public class HologramConfig {
     private boolean hideUncategorized = false;
 
     public void load(FileConfiguration config) {
-        this.enabled = config.getBoolean("settings.hologram.enabled", true);
-        this.offset = config.getDouble("settings.hologram.height-offset", 0.7);
-        this.seeThrough = config.getBoolean("settings.hologram.see-through", false);
-        this.background = config.getBoolean("settings.hologram.background", false);
-        this.viewDistance = (float) config.getDouble("settings.hologram.view-distance", 15.0);
-        this.showAmount = config.getBoolean("settings.hologram.show-amount", true);
-        this.showTimer = config.getBoolean("settings.hologram.show-timer", true);
-        this.timerNewLine = config.getBoolean("settings.hologram.timer-new-line", true);
-        this.hideUncategorized = config.getBoolean("settings.hologram.hide-uncategorized", false);
+        this.enabled = config.getBoolean("settings.holograms.enabled", config.getBoolean("settings.hologram.enabled", true));
+        this.offset = config.getDouble("settings.holograms.height-offset", config.getDouble("settings.hologram.height-offset", 0.7));
+        this.seeThrough = config.getBoolean("settings.holograms.see-through", config.getBoolean("settings.hologram.see-through", false));
+        this.background = config.getBoolean("settings.holograms.background", config.getBoolean("settings.hologram.background", false));
+        this.viewDistance = (float) config.getDouble("settings.holograms.view-distance", config.getDouble("settings.hologram.view-distance", 15.0));
+        this.showAmount = config.getBoolean("settings.holograms.show-amount", config.getBoolean("settings.hologram.show-amount", true));
+        this.showTimer = config.getBoolean("settings.holograms.show-timer", config.getBoolean("settings.hologram.show-timer", true));
+        this.timerNewLine = config.getBoolean("settings.holograms.timer-new-line", config.getBoolean("settings.hologram.timer-new-line", true));
+        this.hideUncategorized = config.getBoolean("settings.holograms.hide-uncategorized", config.getBoolean("settings.hologram.hide-uncategorized", false));
     }
 
     public boolean isEnabled() { return enabled; }

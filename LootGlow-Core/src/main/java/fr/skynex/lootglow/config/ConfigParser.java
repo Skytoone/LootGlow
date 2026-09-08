@@ -31,7 +31,7 @@ public class ConfigParser {
             case "2", "dark_green", "darkgreen" -> NamedTextColor.DARK_GREEN;
             case "3", "dark_aqua", "darkaqua" -> NamedTextColor.DARK_AQUA;
             case "4", "dark_red", "darkred" -> NamedTextColor.DARK_RED;
-            case "5", "dark_purple", "darkpurple" -> NamedTextColor.DARK_PURPLE;
+            case "5", "dark_purple", "darkpurple", "purple" -> NamedTextColor.DARK_PURPLE;
             case "6", "gold" -> NamedTextColor.GOLD;
             case "7", "gray", "grey" -> NamedTextColor.GRAY;
             case "8", "dark_gray", "dark_grey", "darkgray", "darkgrey" -> NamedTextColor.DARK_GRAY;
@@ -39,7 +39,7 @@ public class ConfigParser {
             case "a", "green" -> NamedTextColor.GREEN;
             case "b", "aqua" -> NamedTextColor.AQUA;
             case "c", "red" -> NamedTextColor.RED;
-            case "d", "light_purple", "lightpurple", "pink", "purple" -> NamedTextColor.LIGHT_PURPLE;
+            case "d", "light_purple", "lightpurple", "pink" -> NamedTextColor.LIGHT_PURPLE;
             case "e", "yellow" -> NamedTextColor.YELLOW;
             case "f", "white" -> NamedTextColor.WHITE;
             default -> NamedTextColor.WHITE;
@@ -52,6 +52,10 @@ public class ConfigParser {
         if (lower.equals("none") || lower.equals("off") || lower.equals("disabled") || lower.equals("false") || lower.equals("\"\"") || lower.equals("''")) {
             return null;
         }
+
+        try {
+            return Sound.valueOf(soundStr.trim().toUpperCase());
+        } catch (Exception ignored) {}
 
         try {
             if (lower.contains(":")) {

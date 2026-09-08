@@ -435,11 +435,11 @@ categories:
       "MYTHIC:Excalibur": "<gradient:gold:white>Excalibur</gradient>"
 
   epic:
-    color: "LIGHT_PURPLE"
+    color: "DARK_PURPLE"
     glow: true
     particle: "WITCH_PELLETS"
     sound: "BLOCK_AMETHYST_BLOCK_STEP"
-    title: "<gradient:light_purple:purple>✦ DROP ÉPIQUE ✦</gradient>"
+    title: "<gradient:light_purple:dark_purple>✦ DROP ÉPIQUE ✦</gradient>"
     subtitle: "<gray>Un objet rare et puissant gît au sol.</gray>"
     notification-radius: 12.0
     lore-patterns:

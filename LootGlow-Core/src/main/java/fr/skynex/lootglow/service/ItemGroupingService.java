@@ -88,17 +88,24 @@ public class ItemGroupingService {
                 nearby.add(item);
                 String cat = cats[i];
 
-                for (int j = i + 1; j < size; j++) {
-                    Item other = items.get(j);
-                    if (processed.contains(other.getUniqueId())) continue;
+                for (int curr = 0; curr < nearby.size(); curr++) {
+                    Item refItem = nearby.get(curr);
+                    double refX = refItem.getX();
+                    double refY = refItem.getY();
+                    double refZ = refItem.getZ();
 
-                    double dx = xs[i] - xs[j];
-                    double dy = ys[i] - ys[j];
-                    double dz = zs[i] - zs[j];
+                    for (int j = 0; j < size; j++) {
+                        Item other = items.get(j);
+                        if (processed.contains(other.getUniqueId()) || nearby.contains(other)) continue;
 
-                    if ((dx * dx + dy * dy + dz * dz) < radiusSq) {
-                        if (!byCategory || Objects.equals(cat, cats[j])) {
-                            nearby.add(other);
+                        double dx = refX - xs[j];
+                        double dy = refY - ys[j];
+                        double dz = refZ - zs[j];
+
+                        if ((dx * dx + dy * dy + dz * dz) < radiusSq) {
+                            if (!byCategory || Objects.equals(cat, cats[j])) {
+                                nearby.add(other);
+                            }
                         }
                     }
                 }

@@ -53,7 +53,7 @@ public class LootGlowCommandManager implements CommandExecutor, TabCompleter {
                     sendMessage(sender, "no-permission");
                     return true;
                 }
-                if (plugin.getConfigManager() != null) plugin.getConfigManager().loadConfiguration();
+                plugin.loadConfiguration();
                 sendMessage(sender, "config-reloaded");
                 return true;
             } else if (args[0].equalsIgnoreCase("toggle") && sender instanceof Player p) {

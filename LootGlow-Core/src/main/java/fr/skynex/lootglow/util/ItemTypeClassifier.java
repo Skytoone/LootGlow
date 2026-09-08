@@ -22,6 +22,15 @@ public class ItemTypeClassifier {
                 || mat == Material.ITEM_FRAME || mat == Material.GLOW_ITEM_FRAME;
     }
 
+    public static boolean safeIsBlock(Material mat) {
+        if (mat == null) return false;
+        try {
+            return mat.isBlock();
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
     public static boolean isUprightItem(Material mat, Set<Material> forceFlatMaterials, Set<Material> forceUprightMaterials) {
         if (mat == null || mat == Material.AIR) return false;
         if (isFlatItemOrBlock(mat, forceFlatMaterials, forceUprightMaterials)) return false;
