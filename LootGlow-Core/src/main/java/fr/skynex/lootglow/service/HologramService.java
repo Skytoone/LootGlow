@@ -233,7 +233,7 @@ public class HologramService {
         String cat = itemCategoriesCache.get(uuid);
         var trackedMgr = plugin.getService(TrackedItemManager.class);
         if (cat == null && trackedMgr != null) cat = trackedMgr.getItemCategory(uuid);
-        if (holoHideUncategorized && cat == null) {
+        if (holoHideUncategorized && isUncategorized(cat)) {
             var holoMgr = plugin.getService(HologramManager.class);
             if (holoMgr != null) holoMgr.removeHologram(uuid);
             return;
@@ -312,7 +312,7 @@ public class HologramService {
         String cat = itemCategoriesCache.get(uuid);
         var trackedMgr = plugin.getService(TrackedItemManager.class);
         if (cat == null && trackedMgr != null) cat = trackedMgr.getItemCategory(uuid);
-        if (holoHideUncategorized && cat == null) {
+        if (holoHideUncategorized && isUncategorized(cat)) {
             var holoMgr = plugin.getService(HologramManager.class);
             if (holoMgr != null) holoMgr.removeHologram(uuid);
             return;
@@ -382,7 +382,7 @@ public class HologramService {
             return;
         UUID uuid = item.getUniqueId();
         String cat = itemCategoriesCache.get(uuid);
-        if (holoHideUncategorized && cat == null) {
+        if (holoHideUncategorized && isUncategorized(cat)) {
             var holoMgr = plugin.getService(HologramManager.class);
             if (holoMgr != null) holoMgr.removeHologram(uuid);
             return;
@@ -425,5 +425,13 @@ public class HologramService {
         int totalBars = 8;
         int filled = (int) Math.max(0, Math.min(totalBars, (double) remaining / totalDuration * totalBars));
         return "[" + "█".repeat(filled) + "░".repeat(totalBars - filled) + "]";
+    }
+
+    public boolean isUncategorized(String category) {
+        if (category == null || category.trim().isEmpty() || category.equalsIgnoreCase("uncategorized")) return true;
+        if (plugin.getConfigManager() != null && plugin.getConfigManager().getCategoryColors() != null) {
+            return !plugin.getConfigManager().getCategoryColors().containsKey(category.toLowerCase());
+        }
+        return false;
     }
 }

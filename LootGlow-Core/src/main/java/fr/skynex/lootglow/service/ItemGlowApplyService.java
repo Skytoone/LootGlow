@@ -316,6 +316,17 @@ public class ItemGlowApplyService {
 
         if (shouldGlow) {
             item.setGlowing(true);
+            try {
+                NamedTextColor teamColor = finalColor != null ? finalColor : (defaultColor != null ? defaultColor : NamedTextColor.WHITE);
+                Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+                String teamName = "LG_" + teamColor.toString().toUpperCase();
+                Team team = scoreboard.getTeam(teamName);
+                if (team == null) {
+                    team = scoreboard.registerNewTeam(teamName);
+                    team.color(teamColor);
+                }
+                team.addEntry(item.getUniqueId().toString());
+            } catch (Throwable ignored) {}
         }
 
         if (isRpgDrop) {
@@ -323,19 +334,6 @@ public class ItemGlowApplyService {
                 item.setVisibleByDefault(false);
             } catch (NoSuchMethodError ignored) {}
             hiddenVanillaItems.add(item.getEntityId());
-        }
-
-        if (shouldGlow && finalColor != null) {
-            try {
-                Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
-                String teamName = "LG_" + finalColor.toString().toUpperCase();
-                Team team = scoreboard.getTeam(teamName);
-                if (team == null) {
-                    team = scoreboard.registerNewTeam(teamName);
-                    team.color(finalColor);
-                }
-                team.addEntry(item.getUniqueId().toString());
-            } catch (Throwable ignored) {}
         }
 
         Sound sound = categorySounds.get(customId);
@@ -355,6 +353,10 @@ public class ItemGlowApplyService {
 
             var rarityMgr = plugin.getService(fr.skynex.lootglow.managers.RarityManager.class);
             var animMgr = plugin.getService(fr.skynex.lootglow.managers.ParticleAnimationManager.class);
+            if (animMgr != null && plugin.getConfig().getBoolean("settings.spawn-animation.enabled", true)) {
+                double jumpForce = plugin.getConfig().getDouble("settings.spawn-animation.jump-force", 0.25);
+                animMgr.triggerPopAnimation(item, jumpForce);
+            }
             if (rarityMgr != null && animMgr != null) {
                 fr.skynex.lootglow.managers.RarityManager.ItemRarity rarity = rarityMgr.detectRarity(item.getItemStack());
                 if (rarity == fr.skynex.lootglow.managers.RarityManager.ItemRarity.LEGENDARY || rarity == fr.skynex.lootglow.managers.RarityManager.ItemRarity.MYTHIC) {
@@ -389,13 +391,13 @@ public class ItemGlowApplyService {
         }
 
         if (holoEnabled) {
-            if (holoHideUncategorized && finalCategory == null) {
+            var holoSvc = plugin.getService(HologramService.class);
+            if (holoHideUncategorized && holoSvc != null && holoSvc.isUncategorized(finalCategory)) {
                 // Skip hologram for uncategorized
             } else {
                 if (!itemSpawnTimes.containsKey(item.getUniqueId())) {
                     itemSpawnTimes.put(item.getUniqueId(), System.currentTimeMillis());
                 }
-                var holoSvc = plugin.getService(HologramService.class);
                 baseNameCache.put(item.getUniqueId(), holoSvc != null ? holoSvc.calculateBaseName(item, finalColor, plugin.getStateRepository().getDisplayNameOverridesCache(), itemMoneyAmounts, cfgMgr != null ? cfgMgr.getEconomyFormat() : "", cfgMgr != null ? cfgMgr.getEconomyPrefix() : "") : Component.empty());
                 if (holoSvc != null && cfgMgr != null) {
                     fr.skynex.lootglow.model.HologramContext ctxHolo = new fr.skynex.lootglow.model.HologramContext(

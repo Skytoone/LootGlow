@@ -122,8 +122,9 @@ public class ItemVisualSpawnService {
                 Material mat = visualStack.getType();
                 var cfgMgr = plugin.getConfigManager();
                 boolean isCustom = fr.skynex.lootglow.util.ItemTypeClassifier.isCustomItem(visualStack);
-                boolean isUpright = fr.skynex.lootglow.util.ItemTypeClassifier.isUprightItem(mat, cfgMgr != null ? cfgMgr.getRpgForceFlatMaterials() : java.util.Collections.emptySet(), cfgMgr != null ? cfgMgr.getRpgForceUprightMaterials() : java.util.Collections.emptySet())
-                        || fr.skynex.lootglow.util.ItemTypeClassifier.safeIsBlock(mat);
+                boolean isForceFlat = cfgMgr != null && cfgMgr.getRpgForceFlatMaterials() != null && cfgMgr.getRpgForceFlatMaterials().contains(mat);
+                boolean isUpright = !isForceFlat && (fr.skynex.lootglow.util.ItemTypeClassifier.isUprightItem(mat, cfgMgr != null ? cfgMgr.getRpgForceFlatMaterials() : java.util.Collections.emptySet(), cfgMgr != null ? cfgMgr.getRpgForceUprightMaterials() : java.util.Collections.emptySet())
+                        || fr.skynex.lootglow.util.ItemTypeClassifier.safeIsBlock(mat));
                 float baseScale = isUpright ? rpgBlockScale : rpgItemScale;
                 if (fr.skynex.lootglow.util.ItemTypeClassifier.isFishItem(mat)) baseScale *= 0.55f;
                 float rotX = (isCustom || isUpright) ? 0f : rpgRotation;
@@ -192,11 +193,11 @@ public class ItemVisualSpawnService {
     }
 
     public static float getBagYOffset(Material bagMaterial) {
-        if (bagMaterial == null) return 0.30f;
+        if (bagMaterial == null) return 0.18f;
         String name = bagMaterial.name();
-        if (name.contains("BUNDLE")) return 0.42f;
-        if (name.contains("CHEST") || name.contains("BARREL") || name.contains("SHULKER_BOX")) return 0.18f;
+        if (name.contains("BUNDLE")) return 0.18f;
+        if (name.contains("CHEST") || name.contains("BARREL") || name.contains("SHULKER_BOX")) return 0.15f;
         if (name.contains("HEAD") || name.contains("SKULL")) return 0.15f;
-        return 0.30f;
+        return 0.18f;
     }
 }

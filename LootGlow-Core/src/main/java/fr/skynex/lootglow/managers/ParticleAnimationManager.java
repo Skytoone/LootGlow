@@ -1,8 +1,12 @@
 package fr.skynex.lootglow.managers;
 
 import fr.skynex.lootglow.LootGlow;
+import fr.skynex.lootglow.api.particle.ParticleAnimation;
+import fr.skynex.lootglow.api.particle.ParticleAnimationContext;
+import fr.skynex.lootglow.api.particle.ParticleAnimationRegistry;
 import fr.skynex.lootglow.util.FoliaScheduler;
 import org.bukkit.Bukkit;
+import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
@@ -28,6 +32,27 @@ public class ParticleAnimationManager {
 
     public ParticleAnimationManager(LootGlow plugin) {
         this.plugin = plugin;
+        registerDefaultAnimations();
+    }
+
+    public static void registerDefaultAnimations() {
+        if (!ParticleAnimationRegistry.has("circle")) {
+            ParticleAnimationRegistry.register("circle", ParticleAnimation.orbit(0.4, 0.2));
+        }
+
+        if (!ParticleAnimationRegistry.has("spiral")) {
+            ParticleAnimationRegistry.register("spiral", ParticleAnimation.helix(0.3, 0.3, 0.05));
+        }
+
+        if (!ParticleAnimationRegistry.has("dust_transition_orbit")) {
+            ParticleAnimationRegistry.register("dust_transition_orbit", ParticleAnimation.dustTransitionOrbit(Color.RED, Color.BLUE, 0.5, 0.3, 1.5f));
+        }
+
+        if (!ParticleAnimationRegistry.has("default")) {
+            ParticleAnimationRegistry.register("default", context -> {
+                context.spawnParticle(context.getParticle(), context.getOriginX(), context.getOriginY(), context.getOriginZ(), 1, 0.1, 0.1, 0.1, 0.02, context.getCategoryData());
+            });
+        }
     }
 
     public Map<UUID, Particle> getCustomParticles() {
@@ -224,21 +249,15 @@ public class ParticleAnimationManager {
                     double yCoord = iy + 0.5;
                     double zCoord = iz;
 
-                    switch (animType != null ? animType.toUpperCase() : "") {
-                        case "CIRCLE" -> {
-                            double radius = 0.4;
-                            double x = Math.cos(particleTick * 0.2) * radius;
-                            double z = Math.sin(particleTick * 0.2) * radius;
-                            p.spawnParticle(particle, xCoord + x, yCoord, zCoord + z, 1, 0, 0, 0, 0, data);
-                        }
-                        case "SPIRAL" -> {
-                            double radius = 0.3;
-                            double x = Math.cos(particleTick * 0.3) * radius;
-                            double z = Math.sin(particleTick * 0.3) * radius;
-                            double yOffset = (particleTick % 20) * 0.05;
-                            p.spawnParticle(particle, xCoord + x, yCoord + yOffset, zCoord + z, 1, 0, 0, 0, 0, data);
-                        }
-                        default -> p.spawnParticle(particle, xCoord, yCoord, zCoord, 1, 0.1, 0.1, 0.1, 0.02, data);
+                    ParticleAnimation animation = animType != null ? ParticleAnimationRegistry.get(animType) : null;
+                    if (animation == null) {
+                        animation = ParticleAnimationRegistry.get("default");
+                    }
+
+                    if (animation != null) {
+                        animation.render(new ParticleAnimationContext(
+                                p, item, particle, xCoord, yCoord, zCoord, particleTick, data
+                        ));
                     }
                 }
 
@@ -330,5 +349,7 @@ public class ParticleAnimationManager {
     public void clearAll() {
         stopParticleTask();
         customParticles.clear();
+        ParticleAnimationRegistry.clear();
+        registerDefaultAnimations();
     }
 }

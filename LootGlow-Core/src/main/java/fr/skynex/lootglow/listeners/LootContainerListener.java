@@ -83,6 +83,35 @@ public class LootContainerListener implements Listener {
                     item.remove();
                     player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_ITEM_PICKUP, 0.5f, 1.5f);
                     player.closeInventory();
+                } else if (members.size() == 1) {
+                    // Only 1 item remains - disband group and restore normal ground alignment
+                    if (spawner != null) spawner.removeGlow(itemUuid);
+                    item.remove();
+                    player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_ITEM_PICKUP, 0.5f, 1.5f);
+
+                    UUID remainingUuid = members.get(0);
+                    Item remainingItem = activeItems.get(remainingUuid);
+
+                    plugin.getStateRepository().getGroupLeaders().remove(leaderUuid);
+                    plugin.getStateRepository().getGroupMembers().remove(leaderUuid);
+                    plugin.getStateRepository().getGroupedItems().remove(remainingUuid);
+
+                    org.bukkit.entity.ItemDisplay bagDisplay = plugin.getStateRepository().getActiveItemVisuals().remove(leaderUuid);
+                    if (bagDisplay != null && bagDisplay.isValid()) {
+                        bagDisplay.remove();
+                    }
+
+                    if (remainingItem != null && remainingItem.isValid()) {
+                        try { remainingItem.setVisibleByDefault(true); } catch (Throwable ignored) {}
+                        for (Player p : remainingItem.getWorld().getPlayers()) {
+                            p.showEntity(plugin, remainingItem);
+                        }
+                        var glowSvc = plugin.getService(fr.skynex.lootglow.service.ItemGlowApplyService.class);
+                        if (glowSvc != null) {
+                            glowSvc.applyGlow(remainingItem, false, fr.skynex.lootglow.model.ItemGlowContext.from(plugin));
+                        }
+                    }
+                    player.closeInventory();
                 } else {
                     if (slot == 0) {
                         // ── Leader was removed ──

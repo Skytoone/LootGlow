@@ -30,6 +30,7 @@ public class LootGlowItemBuilder {
     private Color beamColor;
     private String hologramText;
     private Particle particle;
+    private String particleAnimationType;
     private UUID protectionOwner;
     private long protectionDurationSeconds;
     private Boolean bouncing;
@@ -82,6 +83,17 @@ public class LootGlowItemBuilder {
         return this;
     }
 
+    public LootGlowItemBuilder particleAnimation(@Nullable String animationType) {
+        this.particleAnimationType = animationType;
+        return this;
+    }
+
+    public LootGlowItemBuilder particleAnimation(@NotNull String customId, @NotNull fr.skynex.lootglow.api.particle.ParticleAnimation animation) {
+        fr.skynex.lootglow.api.particle.ParticleAnimationRegistry.register(customId, animation);
+        this.particleAnimationType = customId;
+        return this;
+    }
+
     public LootGlowItemBuilder protection(@NotNull UUID ownerUuid) {
         this.protectionOwner = ownerUuid;
         this.protectionDurationSeconds = -1;
@@ -115,6 +127,10 @@ public class LootGlowItemBuilder {
 
     public LootGlowItemBuilder withParticle(@Nullable Particle particle) {
         return particle(particle);
+    }
+
+    public LootGlowItemBuilder withParticleAnimation(@Nullable String animationType) {
+        return particleAnimation(animationType);
     }
 
     public LootGlowItemBuilder withBeaconBeam(boolean enabled, @Nullable Color color) {
@@ -165,6 +181,9 @@ public class LootGlowItemBuilder {
         }
         if (particle != null) {
             api.setParticleEffect(spawnedItem, particle);
+        }
+        if (particleAnimationType != null) {
+            api.setParticleAnimationType(spawnedItem, particleAnimationType);
         }
         if (protectionOwner != null && protectionDurationSeconds != 0) {
             api.setLootProtection(spawnedItem, protectionOwner, protectionDurationSeconds);

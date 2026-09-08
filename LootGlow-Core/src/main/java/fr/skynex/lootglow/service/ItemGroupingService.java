@@ -116,7 +116,16 @@ public class ItemGroupingService {
                 }
 
                 if (nearby.size() >= minItems) {
-                    Item leaderItem = nearby.get(0);
+                    Item leaderItem = null;
+                    for (Item ni : nearby) {
+                        if (groupLeaders.containsKey(ni.getUniqueId())) {
+                            leaderItem = ni;
+                            break;
+                        }
+                    }
+                    if (leaderItem == null) {
+                        leaderItem = nearby.get(0);
+                    }
                     fr.skynex.lootglow.api.events.LootBagGroupEvent groupEvent = new fr.skynex.lootglow.api.events.LootBagGroupEvent(leaderItem, nearby);
                     org.bukkit.Bukkit.getPluginManager().callEvent(groupEvent);
                     if (groupEvent.isCancelled()) continue;
@@ -131,7 +140,7 @@ public class ItemGroupingService {
                         if (ni != null && ni.isValid() && ni.getItemStack() != null) {
                             totalCount += ni.getItemStack().getAmount();
                         }
-                        if (k > 0) {
+                        if (!mUuid.equals(leaderUuid)) {
                             tempGrouped.add(mUuid);
                             processed.add(mUuid);
                         }
@@ -224,7 +233,7 @@ public class ItemGroupingService {
                             var spawnSvc = plugin.getService(ItemVisualSpawnService.class);
                             var cfgMgr = plugin.getConfigManager();
                             String lCat = itemCategoriesCache.get(lUuid);
-                            net.kyori.adventure.text.format.NamedTextColor lColor = lCat != null ? itemCategories.get(lCat) : defaultColor;
+                            net.kyori.adventure.text.format.NamedTextColor lColor = getHighestRarityColor(lUuid, groupMembers, itemCategoriesCache, itemCategories, defaultColor);
                             if (spawnSvc != null && cfgMgr != null) {
                                 fr.skynex.lootglow.model.ItemVisualContext ctxVis = new fr.skynex.lootglow.model.ItemVisualContext(
                                         cfgMgr.isUseVisualBag(), cfgMgr.isRpgDropsEnabled(), plugin.getStateRepository().getGroupLeaders(),
@@ -248,7 +257,7 @@ public class ItemGroupingService {
                             var holoSvc = plugin.getService(HologramService.class);
                             var cfgMgr = plugin.getConfigManager();
                             String lCat = itemCategoriesCache.get(lUuid);
-                            net.kyori.adventure.text.format.NamedTextColor lColor = lCat != null ? itemCategories.get(lCat) : defaultColor;
+                            net.kyori.adventure.text.format.NamedTextColor lColor = getHighestRarityColor(lUuid, groupMembers, itemCategoriesCache, itemCategories, defaultColor);
                             if (holoSvc != null && cfgMgr != null) {
                                 fr.skynex.lootglow.model.HologramContext ctxHolo = new fr.skynex.lootglow.model.HologramContext(
                                         cfgMgr.isHoloEnabled(), plugin.getStateRepository().getItemCategoriesCache(), cfgMgr.isHoloHideUncategorized(),
@@ -412,5 +421,40 @@ public class ItemGroupingService {
                 ti.lastHoloState = stateHash;
             }
         }, 20L, 20L);
+    }
+
+    private net.kyori.adventure.text.format.NamedTextColor getHighestRarityColor(UUID leaderUuid, Map<UUID, List<UUID>> groupMembers, Map<UUID, String> itemCategoriesCache, Map<String, net.kyori.adventure.text.format.NamedTextColor> itemCategories, net.kyori.adventure.text.format.NamedTextColor defaultColor) {
+        List<UUID> members = groupMembers.get(leaderUuid);
+        if (members == null || members.isEmpty()) {
+            String cat = itemCategoriesCache.get(leaderUuid);
+            net.kyori.adventure.text.format.NamedTextColor col = cat != null ? itemCategories.get(cat) : defaultColor;
+            return col != null ? col : defaultColor;
+        }
+        net.kyori.adventure.text.format.NamedTextColor highestColor = defaultColor;
+        int highestWeight = -1;
+        for (UUID mUuid : members) {
+            String cat = itemCategoriesCache.get(mUuid);
+            if (cat != null) {
+                net.kyori.adventure.text.format.NamedTextColor col = itemCategories.get(cat);
+                int weight = getCategoryWeight(cat);
+                if (weight > highestWeight && col != null) {
+                    highestWeight = weight;
+                    highestColor = col;
+                }
+            }
+        }
+        return highestColor;
+    }
+
+    private int getCategoryWeight(String category) {
+        if (category == null) return 0;
+        return switch (category.toLowerCase()) {
+            case "mythic" -> 5;
+            case "legendary" -> 4;
+            case "epic" -> 3;
+            case "rare" -> 2;
+            case "uncommon" -> 1;
+            default -> 0;
+        };
     }
 }
