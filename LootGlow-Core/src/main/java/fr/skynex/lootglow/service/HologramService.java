@@ -428,10 +428,14 @@ public class HologramService {
     }
 
     public boolean isUncategorized(String category) {
-        if (category == null || category.trim().isEmpty() || category.equalsIgnoreCase("uncategorized")) return true;
-        if (plugin.getConfigManager() != null && plugin.getConfigManager().getCategoryColors() != null) {
-            return !plugin.getConfigManager().getCategoryColors().containsKey(category.toLowerCase());
+        if (category == null || category.trim().isEmpty()
+                || category.equalsIgnoreCase("uncategorized")
+                || category.equalsIgnoreCase("default")
+                || category.equalsIgnoreCase("none")) return true;
+        if (plugin.getConfigManager() != null && plugin.getConfigManager().getCategoryColors() != null
+                && !plugin.getConfigManager().getCategoryColors().isEmpty()) {
+            return !plugin.getConfigManager().getCategoryColors().containsKey(category.toLowerCase(java.util.Locale.ROOT));
         }
-        return false;
+        return true;
     }
 }
