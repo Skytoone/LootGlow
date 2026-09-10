@@ -10,10 +10,15 @@ public class ProtectionConfig {
     private String bypassPermission = "lootglow.bypass.lock";
 
     public void load(FileConfiguration config) {
-        this.enabled = config.getBoolean("settings.protection.enabled", true);
-        this.duration = config.getInt("settings.protection.duration", 10);
-        this.hardLockEnabled = config.getBoolean("settings.protection.hard-lock", true);
-        this.bypassPermission = config.getString("settings.protection.bypass-permission", "lootglow.bypass.lock");
+        this.enabled = config.getBoolean("settings.loot-protection.enabled",
+                config.getBoolean("settings.protection.enabled", true));
+        this.duration = config.getInt("settings.loot-protection.display-duration",
+                config.getInt("settings.loot-protection.duration",
+                        config.getInt("settings.protection.duration", 10)));
+        this.hardLockEnabled = config.getBoolean("settings.loot-protection.hard-lock",
+                config.getBoolean("settings.protection.hard-lock", true));
+        this.bypassPermission = config.getString("settings.loot-protection.bypass-permission",
+                config.getString("settings.protection.bypass-permission", "lootglow.bypass.lock"));
     }
 
     public boolean isEnabled() { return enabled; }

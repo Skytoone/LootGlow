@@ -107,6 +107,13 @@ public class ItemMagnetManager {
                     Item item = activeItems.get(uuid);
                     if (item == null || !item.isValid() || item.getPickupDelay() > 0) continue;
 
+                    if (plugin.isUseWorldGuard() && cfgMgr != null && cfgMgr.isWgEnabled()) {
+                        if (fr.skynex.lootglow.integration.WorldGuardHook.isInBlockedRegion(item.getLocation(), cfgMgr.getWgBlockedRegions())
+                                || fr.skynex.lootglow.integration.WorldGuardHook.isInBlockedRegion(pLoc, cfgMgr.getWgBlockedRegions())) {
+                            continue;
+                        }
+                    }
+
                     double dx = px - item.getX();
                     double dy = py - item.getY();
                     double dz = pz - item.getZ();
@@ -145,6 +152,13 @@ public class ItemMagnetManager {
                 for (Entity ent : p.getWorld().getNearbyEntities(pLoc, dist, dist, dist, e -> e instanceof Item)) {
                     Item item = (Item) ent;
                     if (!item.isValid() || item.getPickupDelay() > 0) continue;
+
+                    if (plugin.isUseWorldGuard() && cfgMgr != null && cfgMgr.isWgEnabled()) {
+                        if (fr.skynex.lootglow.integration.WorldGuardHook.isInBlockedRegion(item.getLocation(), cfgMgr.getWgBlockedRegions())
+                                || fr.skynex.lootglow.integration.WorldGuardHook.isInBlockedRegion(pLoc, cfgMgr.getWgBlockedRegions())) {
+                            continue;
+                        }
+                    }
 
                     double dx = px - item.getX();
                     double dy = py - item.getY();
