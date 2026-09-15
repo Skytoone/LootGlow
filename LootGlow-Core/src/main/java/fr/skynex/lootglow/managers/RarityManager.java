@@ -52,10 +52,10 @@ public class RarityManager {
     }
 
     public ItemRarity detectRarity(ItemStack itemStack) {
-        if (itemStack == null || itemStack.getType().isAir()) return ItemRarity.COMMON;
+        if (itemStack == null || itemStack.getType().isAir()) return null;
 
         boolean raritiesEnabled = getConfigBoolean("enabled", true);
-        if (!raritiesEnabled) return ItemRarity.COMMON;
+        if (!raritiesEnabled) return null;
 
         boolean checkDisplayName = getConfigBoolean("check-display-name", true);
         boolean useVanillaRarity = getConfigBoolean("use-vanilla-rarity", true);
@@ -128,7 +128,7 @@ public class RarityManager {
             return ItemRarity.RARE;
         }
 
-        return ItemRarity.COMMON;
+        return null;
     }
 
     private ItemRarity matchKeywords(String textUpper) {

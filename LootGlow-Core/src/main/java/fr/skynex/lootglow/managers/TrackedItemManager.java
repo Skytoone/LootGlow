@@ -245,9 +245,13 @@ public class TrackedItemManager {
                 }
             }
             if (ti.visual != null) {
-                displayToItemMap.remove(ti.visual.getUniqueId());
-                if (ti.visual.isValid())
-                    ti.visual.remove();
+                var rpgMgr = plugin != null ? plugin.getService(RPGDropManager.class) : null;
+                boolean isFlying = rpgMgr != null && rpgMgr.getFlyingVisuals().containsKey(uuid);
+                if (!isFlying) {
+                    displayToItemMap.remove(ti.visual.getUniqueId());
+                    if (ti.visual.isValid())
+                        ti.visual.remove();
+                }
             }
             if (ti.shadow != null) {
                 displayToItemMap.remove(ti.shadow.getUniqueId());

@@ -85,6 +85,7 @@ public class ItemMagnetManager {
 
         var trackedMgr = plugin.getService(TrackedItemManager.class);
         var spatialSvc = plugin.getService(fr.skynex.lootglow.spatial.LootSpatialIndexService.class);
+        var cfgMgr = plugin.getConfigManager();
 
         Set<UUID> nearbyUuids = new java.util.HashSet<>();
 

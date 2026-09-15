@@ -129,21 +129,27 @@ public class ItemPhysicsService {
                 ti.itemMaterial = itemMat;
             }
             if (ti.isBlockItem == null) {
-                ti.isBlockItem = ItemTypeClassifier.isUprightItem(itemMat,
+                boolean isForceFlat = cfgMgr != null && cfgMgr.getRpgForceFlatMaterials() != null && cfgMgr.getRpgForceFlatMaterials().contains(itemMat);
+                ti.isBlockItem = !isForceFlat && (ItemTypeClassifier.isUprightItem(itemMat,
                         cfgMgr != null ? cfgMgr.getRpgForceFlatMaterials() : java.util.Collections.emptySet(),
                         cfgMgr != null ? cfgMgr.getRpgForceUprightMaterials() : java.util.Collections.emptySet())
-                        || ItemTypeClassifier.safeIsBlock(itemMat);
+                        || ItemTypeClassifier.safeIsBlock(itemMat));
             }
             boolean isBlockItem = ti.isBlockItem;
             double visualYOffset = isBlockItem ? Math.max(0.05, (rpgBlockScale / 2.0) - 0.15) : baseWeight;
             if (visual != null && !visual.isDead()) {
-                Material vMat = ti.visualMaterial;
-                if (vMat == null && visual.getItemStack() != null) {
-                    vMat = visual.getItemStack().getType();
-                    ti.visualMaterial = vMat;
-                }
-                if (vMat == Material.PLAYER_HEAD || vMat == Material.BUNDLE || vMat == Material.CHEST || vMat == Material.TRAPPED_CHEST || vMat == Material.ENDER_CHEST) {
-                    visualYOffset = ItemVisualSpawnService.getBagYOffset(vMat);
+                if (groupLeaders != null && groupLeaders.containsKey(itemUuid)) {
+                    Material activeBagMat = bagMaterial != null ? bagMaterial : Material.PLAYER_HEAD;
+                    visualYOffset = ItemVisualSpawnService.getBagYOffset(activeBagMat);
+                } else {
+                    Material vMat = ti.visualMaterial;
+                    if (vMat == null && visual.getItemStack() != null) {
+                        vMat = visual.getItemStack().getType();
+                        ti.visualMaterial = vMat;
+                    }
+                    if (vMat == Material.PLAYER_HEAD || vMat == Material.BUNDLE || vMat == Material.CHEST || vMat == Material.TRAPPED_CHEST || vMat == Material.ENDER_CHEST) {
+                        visualYOffset = ItemVisualSpawnService.getBagYOffset(vMat);
+                    }
                 }
                 if (cfgMgr != null && !cfgMgr.isShadowsEnabled()) {
                     visual.setShadowRadius(0.0f);

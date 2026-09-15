@@ -351,12 +351,16 @@ public class ItemGlowApplyService {
                 item.getWorld().playSound(item.getLocation(), sound, 1.0f, 1.0f);
             }
 
-            var rarityMgr = plugin.getService(fr.skynex.lootglow.managers.RarityManager.class);
             var animMgr = plugin.getService(fr.skynex.lootglow.managers.ParticleAnimationManager.class);
             if (animMgr != null && plugin.getConfig().getBoolean("settings.spawn-animation.enabled", true)) {
                 double jumpForce = plugin.getConfig().getDouble("settings.spawn-animation.jump-force", 0.25);
                 animMgr.triggerPopAnimation(item, jumpForce);
             }
+            var rpgMgr = plugin.getService(fr.skynex.lootglow.managers.RPGDropManager.class);
+            if (rpgMgr != null && cfgMgr != null && cfgMgr.isBouncingEnabled()) {
+                rpgMgr.getBounceCounts().put(item.getUniqueId(), 0);
+            }
+            var rarityMgr = plugin.getService(fr.skynex.lootglow.managers.RarityManager.class);
             if (rarityMgr != null && animMgr != null) {
                 fr.skynex.lootglow.managers.RarityManager.ItemRarity rarity = rarityMgr.detectRarity(item.getItemStack());
                 if (rarity == fr.skynex.lootglow.managers.RarityManager.ItemRarity.LEGENDARY || rarity == fr.skynex.lootglow.managers.RarityManager.ItemRarity.MYTHIC) {

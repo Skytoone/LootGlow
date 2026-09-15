@@ -149,11 +149,25 @@ public class RPGDropManager {
     }
 
     public void playAspirationAnimation(Item item, Player player, Map<UUID, ItemDisplay> activeItemVisuals, boolean aspirationEnabled) {
-        if (!aspirationEnabled || item == null) return;
+        if (!aspirationEnabled || item == null || player == null || !player.isOnline()) return;
         UUID uuid = item.getUniqueId();
         ItemDisplay visual = activeItemVisuals.remove(uuid);
         if (visual != null && visual.isValid()) {
             flyingVisuals.put(uuid, new VisualAnimation(visual, player));
+        } else if (item.isValid()) {
+            Location loc = item.getLocation();
+            ItemDisplay flyDisplay = loc.getWorld().spawn(loc, ItemDisplay.class, d -> {
+                d.setItemStack(item.getItemStack().clone());
+                d.setItemDisplayTransform(ItemDisplay.ItemDisplayTransform.FIXED);
+                d.setTransformation(new org.bukkit.util.Transformation(
+                        new org.joml.Vector3f(0, 0.15f, 0),
+                        new org.joml.Quaternionf(),
+                        new org.joml.Vector3f(0.6f, 0.6f, 0.6f),
+                        new org.joml.Quaternionf()
+                ));
+                d.setPersistent(false);
+            });
+            flyingVisuals.put(uuid, new VisualAnimation(flyDisplay, player));
         }
     }
 

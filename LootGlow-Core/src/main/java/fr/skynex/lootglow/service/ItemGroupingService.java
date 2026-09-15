@@ -88,31 +88,42 @@ public class ItemGroupingService {
                 nearby.add(item);
                 String cat = cats[i];
 
-                for (int curr = 0; curr < nearby.size(); curr++) {
-                    Item refItem = nearby.get(curr);
-                    double refX = refItem.getX();
-                    double refY = refItem.getY();
-                    double refZ = refItem.getZ();
+                double refX = xs[i];
+                double refY = ys[i];
+                double refZ = zs[i];
 
-                    for (int j = 0; j < size; j++) {
-                        Item other = items.get(j);
-                        if (processed.contains(other.getUniqueId()) || nearby.contains(other)) continue;
+                for (int j = 0; j < size; j++) {
+                    if (i == j) continue;
+                    Item other = items.get(j);
+                    if (processed.contains(other.getUniqueId()) || nearby.contains(other)) continue;
 
-                        double dx = refX - xs[j];
-                        double dy = refY - ys[j];
-                        double dz = refZ - zs[j];
+                    double dx = refX - xs[j];
+                    double dy = refY - ys[j];
+                    double dz = refZ - zs[j];
 
-                        if ((dx * dx + dy * dy + dz * dz) < radiusSq) {
-                            if (!byCategory || Objects.equals(cat, cats[j])) {
-                                nearby.add(other);
-                            }
+                    if ((dx * dx + dy * dy + dz * dz) < radiusSq) {
+                        if (!byCategory || Objects.equals(cat, cats[j])) {
+                            nearby.add(other);
                         }
                     }
                 }
 
-                Set<Material> materials = new HashSet<>();
-                for (Item ni : nearby) {
-                    materials.add(ni.getItemStack().getType());
+                if (nearby.size() >= minItems) {
+                    var mergeMgr = plugin.getService(fr.skynex.lootglow.managers.ItemMergeManager.class);
+                    if (mergeMgr != null) {
+                        for (int m = 0; m < nearby.size(); m++) {
+                            Item item1 = nearby.get(m);
+                            if (item1 == null || !item1.isValid() || item1.isDead()) continue;
+                            for (int n = m + 1; n < nearby.size(); n++) {
+                                Item item2 = nearby.get(n);
+                                if (item2 == null || !item2.isValid() || item2.isDead()) continue;
+                                if (mergeMgr.canMerge(item1, item2)) {
+                                    mergeMgr.mergeAmount(item1, item2);
+                                }
+                            }
+                        }
+                        nearby.removeIf(it -> it == null || !it.isValid() || it.isDead());
+                    }
                 }
 
                 if (nearby.size() >= minItems) {
@@ -283,6 +294,8 @@ public class ItemGroupingService {
 
                     boolean isLeader = groupLeaders.containsKey(uuid);
                     org.bukkit.inventory.ItemStack currentStack = visual.getItemStack();
+                    var trackedMgr = plugin.getService(TrackedItemManager.class);
+                    var cfgMgr = plugin.getConfigManager();
                     if (isLeader) {
                         if (currentStack == null || currentStack.getType() != activeBagMat) {
                             org.bukkit.inventory.ItemStack bag;
@@ -312,8 +325,16 @@ public class ItemGroupingService {
                             t.getLeftRotation().set(new org.joml.Quaternionf());
                             float bagTransY = fr.skynex.lootglow.service.ItemVisualSpawnService.getBagYOffset(activeBagMat);
                             t.getTranslation().set(0f, bagTransY, 0f);
-                            t.getScale().set(1.0f, 1.0f, 1.0f);
+                            float bagScale = (activeBagMat != null && activeBagMat.isBlock()) ? (cfgMgr != null ? cfgMgr.getRpgBlockScale() : 0.8f) : (cfgMgr != null ? cfgMgr.getRpgItemScale() : 0.7f);
+                            t.getScale().set(bagScale, bagScale, bagScale);
                             visual.setTransformation(t);
+
+                            if (trackedMgr != null) {
+                                fr.skynex.lootglow.model.TrackedItem ti = trackedMgr.getTrackedItem(uuid);
+                                if (ti != null) {
+                                    ti.visualMaterial = activeBagMat;
+                                }
+                            }
                         }
                     } else {
                         if (currentStack != null && currentStack.getType() == activeBagMat) {
@@ -321,12 +342,26 @@ public class ItemGroupingService {
                             visual.setItemDisplayTransform(org.bukkit.entity.ItemDisplay.ItemDisplayTransform.FIXED);
                             org.bukkit.util.Transformation t = visual.getTransformation();
                             Material itemMat = item.getItemStack().getType();
-                            var cfgMgr = plugin.getConfigManager();
                             boolean isCustom = fr.skynex.lootglow.util.ItemTypeClassifier.isCustomItem(item.getItemStack());
-                            boolean isUpright = fr.skynex.lootglow.util.ItemTypeClassifier.isUprightItem(itemMat, cfgMgr != null ? cfgMgr.getRpgForceFlatMaterials() : java.util.Collections.emptySet(), cfgMgr != null ? cfgMgr.getRpgForceUprightMaterials() : java.util.Collections.emptySet());
+                            boolean isForceFlat = cfgMgr != null && cfgMgr.getRpgForceFlatMaterials() != null && cfgMgr.getRpgForceFlatMaterials().contains(itemMat);
+                            boolean isUpright = !isForceFlat && (fr.skynex.lootglow.util.ItemTypeClassifier.isUprightItem(itemMat, cfgMgr != null ? cfgMgr.getRpgForceFlatMaterials() : java.util.Collections.emptySet(), cfgMgr != null ? cfgMgr.getRpgForceUprightMaterials() : java.util.Collections.emptySet()) || fr.skynex.lootglow.util.ItemTypeClassifier.safeIsBlock(itemMat));
+                            float baseScale = isUpright ? (cfgMgr != null ? cfgMgr.getRpgBlockScale() : 0.8f) : (cfgMgr != null ? cfgMgr.getRpgItemScale() : 0.7f);
+                            if (fr.skynex.lootglow.util.ItemTypeClassifier.isFishItem(itemMat)) baseScale *= 0.55f;
                             float targetRotX = (isCustom || isUpright) ? 0f : rpgRotation;
                             t.getLeftRotation().set(new org.joml.Quaternionf().rotationX(targetRotX));
+                            t.getScale().set(baseScale, baseScale, baseScale);
+                            float transY = isCustom ? 0.18f : 0.15f;
+                            if (itemMat == Material.TRIDENT) transY += 0.35f;
+                            else if (itemMat == Material.SHIELD) transY += 0.42f;
+                            t.getTranslation().set(0f, transY, 0f);
                             visual.setTransformation(t);
+
+                            if (trackedMgr != null) {
+                                fr.skynex.lootglow.model.TrackedItem ti = trackedMgr.getTrackedItem(uuid);
+                                if (ti != null) {
+                                    ti.visualMaterial = itemMat;
+                                }
+                            }
                         }
                     }
                 });
@@ -395,7 +430,8 @@ public class ItemGroupingService {
                     newContent = fr.skynex.lootglow.util.ColorUtil.parse(rawBundleFormat.replace("<count>", String.valueOf(count)));
                 } else if (!isGrouped) {
                     var cfgMgr = plugin.getConfigManager();
-                    if (cfgMgr != null && cfgMgr.isHoloHideUncategorized() && ti.category == null) {
+                    var holoSvc = plugin.getService(HologramService.class);
+                    if (cfgMgr != null && cfgMgr.isHoloHideUncategorized() && (ti.category == null || (holoSvc != null && holoSvc.isUncategorized(ti.category)))) {
                         display.text(net.kyori.adventure.text.Component.empty());
                         ti.lastHoloState = -1L;
                         continue;
@@ -405,7 +441,6 @@ public class ItemGroupingService {
                         color = defaultColor;
 
                     net.kyori.adventure.text.Component baseName = ti.baseName;
-                    var holoSvc = plugin.getService(HologramService.class);
                     if (baseName == null) {
                         baseName = holoSvc != null ? holoSvc.calculateBaseName(item, color, plugin.getStateRepository().getDisplayNameOverridesCache(), plugin.getStateRepository().getItemMoneyAmounts(), cfgMgr != null ? cfgMgr.getEconomyFormat() : "", cfgMgr != null ? cfgMgr.getEconomyPrefix() : "") : net.kyori.adventure.text.Component.empty();
                         ti.baseName = baseName;

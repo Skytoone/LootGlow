@@ -160,10 +160,16 @@ public class LootContainerListener implements Listener {
 
     private void refreshInventory(Inventory inv, List<UUID> members, java.util.Map<UUID, Item> activeItems) {
         inv.clear();
-        for (int i = 0; i < Math.min(members.size(), inv.getSize()); i++) {
-            Item item = activeItems.get(members.get(i));
-            if (item != null && item.isValid()) {
-                inv.setItem(i, item.getItemStack());
+        members.removeIf(mUuid -> {
+            Item it = activeItems.get(mUuid);
+            return it == null || !it.isValid() || it.isDead();
+        });
+        int slotIdx = 0;
+        for (UUID mUuid : members) {
+            if (slotIdx >= inv.getSize()) break;
+            Item item = activeItems.get(mUuid);
+            if (item != null && item.isValid() && !item.isDead()) {
+                inv.setItem(slotIdx++, item.getItemStack());
             }
         }
     }

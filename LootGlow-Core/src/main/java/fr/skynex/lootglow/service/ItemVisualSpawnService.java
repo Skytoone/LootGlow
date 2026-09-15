@@ -156,9 +156,15 @@ public class ItemVisualSpawnService {
 
         entityIdMap.put(display.getEntityId(), display.getUniqueId());
         try {
+            NamedTextColor teamColor = color != null ? color : NamedTextColor.WHITE;
             Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
-            Team team = scoreboard.getTeam("LG_" + color.toString().toUpperCase());
-            if (team != null) team.addEntry(display.getUniqueId().toString());
+            String teamName = "LG_" + teamColor.toString().toUpperCase();
+            Team team = scoreboard.getTeam(teamName);
+            if (team == null) {
+                team = scoreboard.registerNewTeam(teamName);
+                team.color(teamColor);
+            }
+            team.addEntry(display.getUniqueId().toString());
         } catch (Throwable ignored) {}
         activeItemVisuals.put(item.getUniqueId(), display);
         var trackedMgr = plugin.getService(fr.skynex.lootglow.managers.TrackedItemManager.class);

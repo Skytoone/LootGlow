@@ -82,8 +82,17 @@ public class ParticleAnimationManager {
 
     public void triggerPopAnimation(Item item, double jumpVelocity) {
         if (item == null || !item.isValid()) return;
-        item.setVelocity(new org.bukkit.util.Vector(0, Math.max(0.1, jumpVelocity), 0));
-        item.getWorld().spawnParticle(Particle.FIREWORK, item.getLocation(), 15, 0.2, 0.2, 0.2, 0.05);
+        org.bukkit.util.Vector vel = item.getVelocity();
+        vel.setY(Math.max(0.1, jumpVelocity));
+        item.setVelocity(vel);
+        int count = plugin.getConfig().getInt("settings.spawn-animation.burst-amount", 15);
+        try {
+            item.getWorld().spawnParticle(Particle.FIREWORK, item.getLocation().add(0, 0.2, 0), count, 0.2, 0.2, 0.2, 0.05);
+        } catch (Throwable t) {
+            try {
+                item.getWorld().spawnParticle(Particle.valueOf("FIREWORK_EXPLOSION"), item.getLocation().add(0, 0.2, 0), count, 0.2, 0.2, 0.2, 0.05);
+            } catch (Throwable ignored) {}
+        }
     }
 
     public void triggerParabolaDropAnimation(Item item, fr.skynex.lootglow.managers.RarityManager.ItemRarity rarity) {

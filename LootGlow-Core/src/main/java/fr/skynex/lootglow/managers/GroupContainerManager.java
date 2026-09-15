@@ -66,12 +66,28 @@ public class GroupContainerManager {
             stateRepo.getGroupMembers().put(newLeader, members);
         }
 
+        ItemDisplay visualDisp = stateRepo.getActiveItemVisuals().remove(oldLeader);
+        if (visualDisp != null) {
+            stateRepo.getActiveItemVisuals().put(newLeader, visualDisp);
+        }
+
+        org.bukkit.entity.TextDisplay labelDisp = stateRepo.getActiveLabels().remove(oldLeader);
+        if (labelDisp != null) {
+            stateRepo.getActiveLabels().put(newLeader, labelDisp);
+        }
+
         var trackedMgr = plugin.getService(TrackedItemManager.class);
         fr.skynex.lootglow.model.TrackedItem tiOld = null;
         if (trackedMgr != null) {
             tiOld = trackedMgr.getTrackedItems().remove(oldLeader);
             if (tiOld != null) {
                 tiOld.baseName = null;
+                if (visualDisp != null) {
+                    trackedMgr.registerDisplayEntity(visualDisp.getUniqueId(), newLeader);
+                }
+                if (labelDisp != null) {
+                    trackedMgr.registerDisplayEntity(labelDisp.getUniqueId(), newLeader);
+                }
                 trackedMgr.getTrackedItems().put(newLeader, tiOld);
             }
         }
@@ -144,14 +160,23 @@ public class GroupContainerManager {
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (!player.isOnline()) return;
 
+            members.removeIf(mUuid -> {
+                Item it = activeItems.get(mUuid);
+                return it == null || !it.isValid() || it.isDead();
+            });
+
+            if (members.isEmpty()) return;
+
             int size = ((members.size() / 9) + 1) * 9;
             if (size > 54) size = 54;
 
             Inventory gui = Bukkit.createInventory(null, size, fr.skynex.lootglow.util.ColorUtil.parse(containerTitle));
-            for (int i = 0; i < Math.min(members.size(), 54); i++) {
-                Item item = activeItems.get(members.get(i));
-                if (item != null && item.isValid()) {
-                    gui.setItem(i, item.getItemStack());
+            int slotIdx = 0;
+            for (UUID mUuid : members) {
+                if (slotIdx >= size) break;
+                Item item = activeItems.get(mUuid);
+                if (item != null && item.isValid() && !item.isDead()) {
+                    gui.setItem(slotIdx++, item.getItemStack());
                 }
             }
 
