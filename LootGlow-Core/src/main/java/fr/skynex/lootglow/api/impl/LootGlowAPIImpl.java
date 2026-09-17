@@ -449,7 +449,8 @@ public class LootGlowAPIImpl implements LootGlowAPI {
         var rarityMgr = plugin.getService(fr.skynex.lootglow.managers.RarityManager.class);
         if (itemStack == null || rarityMgr == null)
             return "COMMON";
-        return rarityMgr.detectRarity(itemStack).name();
+        fr.skynex.lootglow.managers.RarityManager.ItemRarity rarity = rarityMgr.detectRarity(itemStack);
+        return rarity != null ? rarity.name() : "COMMON";
     }
 
     @NotNull

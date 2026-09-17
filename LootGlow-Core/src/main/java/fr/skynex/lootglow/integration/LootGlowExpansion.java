@@ -120,7 +120,7 @@ public class LootGlowExpansion extends PlaceholderExpansion {
             long count = nearby.stream().filter(item -> {
                 if (rarityMgr != null) {
                     fr.skynex.lootglow.managers.RarityManager.ItemRarity rarity = rarityMgr.detectRarity(item.getItemStack());
-                    return rarity.name().equalsIgnoreCase(finalRarityFilter);
+                    return rarity != null && rarity.name().equalsIgnoreCase(finalRarityFilter);
                 }
                 return false;
             }).count();

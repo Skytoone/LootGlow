@@ -114,9 +114,11 @@ public class HologramService {
                 rarity = rarityMgr.detectRarity(item.getItemStack());
                 if (ti != null) ti.rarity = rarity;
             }
-            Component rarityHeader = rarityMgr.getRarityHeaderComponent(rarity);
-            if (rarityHeader != null) {
-                result = rarityHeader.append(Component.newline()).append(result);
+            if (rarity != null) {
+                Component rarityHeader = rarityMgr.getRarityHeaderComponent(rarity);
+                if (rarityHeader != null) {
+                    result = rarityHeader.append(Component.newline()).append(result);
+                }
             }
         }
 

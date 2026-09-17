@@ -163,7 +163,7 @@ public class RarityManager {
     }
 
     public Component getRarityHeaderComponent(ItemRarity rarity) {
-        if (rarity == ItemRarity.COMMON) return null;
+        if (rarity == null || rarity == ItemRarity.COMMON) return null;
 
         return rarityHeaderCache.computeIfAbsent(rarity, r -> {
             String rarityKey = r.name().toLowerCase();
