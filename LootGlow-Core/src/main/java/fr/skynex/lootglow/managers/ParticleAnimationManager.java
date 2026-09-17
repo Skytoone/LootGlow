@@ -122,8 +122,10 @@ public class ParticleAnimationManager {
         if (!plugin.getConfig().getBoolean("settings.wow-effects.impact-shockwave.enabled", true)) return;
 
         java.util.List<String> enabledCategories = plugin.getConfig().getStringList("settings.wow-effects.impact-shockwave.categories");
-        if (category != null && !enabledCategories.isEmpty() && enabledCategories.stream().noneMatch(c -> c.equalsIgnoreCase(category))) {
-            return;
+        if (!enabledCategories.isEmpty()) {
+            if (category == null || enabledCategories.stream().noneMatch(c -> c.equalsIgnoreCase(category))) {
+                return;
+            }
         }
 
         int count = plugin.getConfig().getInt("settings.wow-effects.impact-shockwave.particle-count", 24);

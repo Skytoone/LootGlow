@@ -190,6 +190,7 @@ public class RPGDropManager {
             FoliaScheduler.runAtEntity(plugin, anim.display, () -> {
                 if (!anim.target.isOnline() || !anim.display.isValid()) {
                     if (anim.display.isValid()) anim.display.remove();
+                    anim.ticks = 999;
                     return;
                 }
 
@@ -197,14 +198,16 @@ public class RPGDropManager {
                 Location displayLoc = anim.display.getLocation();
 
                 double distSq = displayLoc.distanceSquared(targetLoc);
-                if (distSq < 0.09 || anim.ticks > 20) {
+                if ((distSq < 0.09 && anim.ticks > 1) || anim.ticks > 20) {
                     anim.display.remove();
+                    anim.ticks = 999;
                     return;
                 }
 
                 double dist = Math.sqrt(distSq);
                 if (dist < 0.01) {
                     anim.display.remove();
+                    anim.ticks = 999;
                     return;
                 }
 

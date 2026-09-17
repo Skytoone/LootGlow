@@ -9,6 +9,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.ItemMergeEvent;
 import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
+import java.util.UUID;
 
 public class ItemLifecycleListener implements Listener {
 
@@ -45,8 +46,15 @@ public class ItemLifecycleListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onMerge(ItemMergeEvent event) {
-        var spawner = plugin.getService(fr.skynex.lootglow.managers.VisualSpawner.class);
-        if (spawner != null) spawner.removeGlow(event.getEntity().getUniqueId());
+        UUID entityUuid = event.getEntity().getUniqueId();
+        UUID targetUuid = event.getTarget().getUniqueId();
+        var gcMgr = plugin.getService(fr.skynex.lootglow.managers.GroupContainerManager.class);
+        if (gcMgr != null && gcMgr.getGroupLeaders().contains(entityUuid)) {
+            gcMgr.transferLeaderVisuals(entityUuid, targetUuid);
+        } else {
+            var spawner = plugin.getService(fr.skynex.lootglow.managers.VisualSpawner.class);
+            if (spawner != null) spawner.removeGlow(entityUuid);
+        }
         
         var cfgMgr = plugin.getConfigManager();
         if (plugin.getStateRepository().getActiveItems().containsKey(event.getTarget().getUniqueId())) {

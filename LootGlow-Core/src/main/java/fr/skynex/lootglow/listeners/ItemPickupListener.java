@@ -83,8 +83,19 @@ public class ItemPickupListener implements Listener {
             var rpgMgr = plugin.getService(fr.skynex.lootglow.managers.RPGDropManager.class);
 
             if (event.getRemaining() == 0) {
-                if (rpgMgr != null && cfgMgr != null) rpgMgr.playAspirationAnimation(event.getItem(), player, plugin.getStateRepository().getActiveItemVisuals(), cfgMgr.isAspirationEnabled());
-                if (pipeline != null) pipeline.unrender(event.getItem());
+                boolean aspirationPlaying = false;
+                if (rpgMgr != null && cfgMgr != null && cfgMgr.isAspirationEnabled()) {
+                    rpgMgr.playAspirationAnimation(event.getItem(), player, plugin.getStateRepository().getActiveItemVisuals(), true);
+                    aspirationPlaying = true;
+                }
+                if (pipeline != null) {
+                    if (aspirationPlaying) {
+                        var spawner = plugin.getService(fr.skynex.lootglow.managers.VisualSpawner.class);
+                        if (spawner != null) spawner.removeGlowKeepDisplays(event.getItem().getUniqueId());
+                    } else {
+                        pipeline.unrender(event.getItem());
+                    }
+                }
             } else {
                 if (holoSvc != null && cfgMgr != null) holoSvc.refreshHologram(event.getItem(), cfgMgr.isHoloEnabled(), cfgMgr.isHoloHideUncategorized(), plugin.getStateRepository().getItemCategoriesCache(), plugin.getStateRepository().getItemCategories(), cfgMgr.getDefaultColor(), plugin.getStateRepository().getLastHoloState());
             }

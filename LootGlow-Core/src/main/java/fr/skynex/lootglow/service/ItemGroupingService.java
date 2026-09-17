@@ -459,18 +459,26 @@ public class ItemGroupingService {
     }
 
     private net.kyori.adventure.text.format.NamedTextColor getHighestRarityColor(UUID leaderUuid, Map<UUID, List<UUID>> groupMembers, Map<UUID, String> itemCategoriesCache, Map<String, net.kyori.adventure.text.format.NamedTextColor> itemCategories, net.kyori.adventure.text.format.NamedTextColor defaultColor) {
+        Map<String, net.kyori.adventure.text.format.NamedTextColor> catColors = plugin != null && plugin.getStateRepository() != null ? plugin.getStateRepository().getCategoryColors() : java.util.Collections.emptyMap();
         List<UUID> members = groupMembers.get(leaderUuid);
         if (members == null || members.isEmpty()) {
             String cat = itemCategoriesCache.get(leaderUuid);
-            net.kyori.adventure.text.format.NamedTextColor col = cat != null ? itemCategories.get(cat) : defaultColor;
-            return col != null ? col : defaultColor;
+            if (cat != null) {
+                net.kyori.adventure.text.format.NamedTextColor col = catColors.get(cat);
+                if (col == null) col = catColors.get(cat.toLowerCase());
+                if (col == null) col = itemCategories.get(cat);
+                if (col != null) return col;
+            }
+            return defaultColor;
         }
         net.kyori.adventure.text.format.NamedTextColor highestColor = defaultColor;
         int highestWeight = -1;
         for (UUID mUuid : members) {
             String cat = itemCategoriesCache.get(mUuid);
             if (cat != null) {
-                net.kyori.adventure.text.format.NamedTextColor col = itemCategories.get(cat);
+                net.kyori.adventure.text.format.NamedTextColor col = catColors.get(cat);
+                if (col == null) col = catColors.get(cat.toLowerCase());
+                if (col == null) col = itemCategories.get(cat);
                 int weight = getCategoryWeight(cat);
                 if (weight > highestWeight && col != null) {
                     highestWeight = weight;

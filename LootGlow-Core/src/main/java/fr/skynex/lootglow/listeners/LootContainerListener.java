@@ -103,12 +103,13 @@ public class LootContainerListener implements Listener {
 
                     if (remainingItem != null && remainingItem.isValid()) {
                         try { remainingItem.setVisibleByDefault(true); } catch (Throwable ignored) {}
-                        org.bukkit.Location groundLoc = remainingItem.getLocation().clone();
-                        org.bukkit.block.Block b = groundLoc.getBlock();
-                        if (b.getType().isAir()) {
-                            groundLoc.setY(b.getY());
+                        if (trackedMgr != null) {
+                            fr.skynex.lootglow.model.TrackedItem ti = trackedMgr.getTrackedItem(remainingUuid);
+                            if (ti != null) {
+                                ti.visualMaterial = remainingItem.getItemStack().getType();
+                                ti.isBlockItem = null;
+                            }
                         }
-                        remainingItem.teleport(groundLoc);
                         for (Player p : remainingItem.getWorld().getPlayers()) {
                             p.showEntity(plugin, remainingItem);
                         }

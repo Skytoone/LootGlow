@@ -67,11 +67,20 @@ public class GroupContainerManager {
         }
 
         ItemDisplay visualDisp = stateRepo.getActiveItemVisuals().remove(oldLeader);
+        ItemDisplay existingNewVisual = stateRepo.getActiveItemVisuals().remove(newLeader);
+        if (existingNewVisual != null && existingNewVisual.isValid() && existingNewVisual != visualDisp) {
+            stateRepo.getEntityIdMap().remove(existingNewVisual.getEntityId());
+            existingNewVisual.remove();
+        }
         if (visualDisp != null) {
             stateRepo.getActiveItemVisuals().put(newLeader, visualDisp);
         }
 
         org.bukkit.entity.TextDisplay labelDisp = stateRepo.getActiveLabels().remove(oldLeader);
+        org.bukkit.entity.TextDisplay existingNewLabel = stateRepo.getActiveLabels().remove(newLeader);
+        if (existingNewLabel != null && existingNewLabel.isValid() && existingNewLabel != labelDisp) {
+            existingNewLabel.remove();
+        }
         if (labelDisp != null) {
             stateRepo.getActiveLabels().put(newLeader, labelDisp);
         }
@@ -79,6 +88,7 @@ public class GroupContainerManager {
         var trackedMgr = plugin.getService(TrackedItemManager.class);
         fr.skynex.lootglow.model.TrackedItem tiOld = null;
         if (trackedMgr != null) {
+            trackedMgr.getTrackedItems().remove(newLeader);
             tiOld = trackedMgr.getTrackedItems().remove(oldLeader);
             if (tiOld != null) {
                 tiOld.baseName = null;
