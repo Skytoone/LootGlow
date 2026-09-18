@@ -250,11 +250,8 @@ settings:
       damping: 0.6
       # Set to true if bouncing should ONLY happen on snow blocks
       only-on-snow: false
-      # Blocks on which bouncing is disabled (e.g. grass)
-      blocked-blocks:
-        - "GRASS_BLOCK"
-        - "SHORT_GRASS"
-        - "TALL_GRASS"
+      # Blocks on which bouncing is disabled (e.g. grass). Empty by default.
+      blocked-blocks: []
 
   # NEW: Aspiration Animation (Fly to player on pickup)
   aspiration:

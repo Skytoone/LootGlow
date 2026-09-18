@@ -114,10 +114,19 @@ public class GroupContainerManager {
         var activeItems = trackedMgr != null ? trackedMgr.getActiveItems() : plugin.getStateRepository().getActiveItems();
         Item newLeaderItem = activeItems.get(newLeader);
         var cfgMgr = plugin.getConfigManager();
-        if (newLeaderItem != null && newLeaderItem.isValid() && tiOld != null && tiOld.visual != null && tiOld.visual.isValid()) {
-            boolean useVisualBag = cfgMgr != null && cfgMgr.isUseVisualBag();
-            if (!useVisualBag) {
-                tiOld.visual.setItemStack(newLeaderItem.getItemStack().clone());
+        if (newLeaderItem != null && newLeaderItem.isValid()) {
+            Location nLoc = newLeaderItem.getLocation();
+            if (visualDisp != null && visualDisp.isValid()) {
+                visualDisp.teleport(nLoc);
+            }
+            if (labelDisp != null && labelDisp.isValid()) {
+                labelDisp.teleport(nLoc);
+            }
+            if (tiOld != null && tiOld.visual != null && tiOld.visual.isValid()) {
+                boolean useVisualBag = cfgMgr != null && cfgMgr.isUseVisualBag();
+                if (!useVisualBag) {
+                    tiOld.visual.setItemStack(newLeaderItem.getItemStack().clone());
+                }
             }
         }
         var holoSvc = plugin.getService(fr.skynex.lootglow.service.HologramService.class);

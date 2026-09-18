@@ -20,6 +20,7 @@ import org.bukkit.util.Vector;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 
 public class ItemInteractionListener implements Listener {
@@ -85,7 +86,9 @@ public class ItemInteractionListener implements Listener {
         if (targetItem != null) {
             UUID leaderUuid = gcMgr != null ? gcMgr.getGroupLeader(targetItem.getUniqueId()) : null;
             boolean isGroup = (leaderUuid != null);
-            if (isGroup) {
+            boolean rmbForGroups = (cfgMgr != null && cfgMgr.isRmbPickupEnabled() && cfgMgr.isRmbPickupEnableForGroups());
+
+            if (isGroup && !rmbForGroups) {
                 event.setCancelled(true);
                 if (cfgMgr != null && cfgMgr.isContainerEnabled() && gcMgr != null) {
                     gcMgr.openLootContainer(player, leaderUuid, cfgMgr.isContainerEnabled(), cfgMgr.getContainerTitle(), plugin.getStateRepository().getActiveItemVisuals(), cfgMgr.getRpgBlockScale(), net.kyori.adventure.text.minimessage.MiniMessage.miniMessage());
@@ -111,6 +114,34 @@ public class ItemInteractionListener implements Listener {
                     if (!finalTargetItem.isValid() || finalTargetItem.isDead()) return;
                     HashMap<Integer, ItemStack> leftovers = player.getInventory().addItem(finalTargetItem.getItemStack());
                     if (leftovers.isEmpty()) {
+                        if (isGroup && gcMgr != null) {
+                            List<UUID> members = gcMgr.getGroupMembers().get(leaderUuid);
+                            if (members != null) {
+                                members.remove(finalTargetItem.getUniqueId());
+                                if (members.isEmpty()) {
+                                    var spawner = plugin.getService(fr.skynex.lootglow.managers.VisualSpawner.class);
+                                    if (spawner != null) spawner.removeGlow(leaderUuid);
+                                } else if (members.size() == 1) {
+                                    UUID remainingUuid = members.get(0);
+                                    Item remainingItem = plugin.getStateRepository().getActiveItems().get(remainingUuid);
+                                    plugin.getStateRepository().getGroupLeaders().remove(leaderUuid);
+                                    plugin.getStateRepository().getGroupMembers().remove(leaderUuid);
+                                    plugin.getStateRepository().getGroupedItems().remove(remainingUuid);
+                                    org.bukkit.entity.ItemDisplay bagDisplay = plugin.getStateRepository().getActiveItemVisuals().remove(leaderUuid);
+                                    if (bagDisplay != null && bagDisplay.isValid()) bagDisplay.remove();
+                                    if (remainingItem != null && remainingItem.isValid()) {
+                                        try { remainingItem.setVisibleByDefault(true); } catch (Throwable ignored) {}
+                                        for (Player p : remainingItem.getWorld().getPlayers()) p.showEntity(plugin, remainingItem);
+                                        var glowSvc = plugin.getService(fr.skynex.lootglow.service.ItemGlowApplyService.class);
+                                        if (glowSvc != null) glowSvc.applyGlow(remainingItem, false, fr.skynex.lootglow.model.ItemGlowContext.from(plugin));
+                                    }
+                                } else if (finalTargetItem.getUniqueId().equals(leaderUuid)) {
+                                    UUID newLeaderUuid = members.get(0);
+                                    gcMgr.transferLeaderVisuals(leaderUuid, newLeaderUuid);
+                                }
+                            }
+                        }
+
                         var rpgMgr = plugin.getService(fr.skynex.lootglow.managers.RPGDropManager.class);
                         if (rpgMgr != null) rpgMgr.playAspirationAnimation(finalTargetItem, player, plugin.getStateRepository().getActiveItemVisuals(), cfgMgr.isAspirationEnabled());
                         var spawner = plugin.getService(fr.skynex.lootglow.managers.VisualSpawner.class);

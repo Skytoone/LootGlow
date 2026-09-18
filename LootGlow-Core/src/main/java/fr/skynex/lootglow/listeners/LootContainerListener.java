@@ -51,6 +51,12 @@ public class LootContainerListener implements Listener {
         UUID itemUuid = members.get(slot);
         Item item = activeItems.get(itemUuid);
 
+        if (item == null || !item.isValid() || item.isDead()) {
+            refreshInventory(event.getClickedInventory(), members, activeItems);
+            event.setCancelled(true);
+            return;
+        }
+
         if (item != null && item.isValid()) {
             org.bukkit.Location oldLoc = item.getLocation();
             ItemStack toAdd = item.getItemStack().clone();

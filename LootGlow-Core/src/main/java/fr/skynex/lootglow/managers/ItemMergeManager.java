@@ -169,6 +169,10 @@ public class ItemMergeManager {
         if (total <= maxStack) {
             stack1.setAmount(total);
             item1.setItemStack(stack1);
+            var spawner = plugin.getService(VisualSpawner.class);
+            if (spawner != null) {
+                spawner.removeGlow(item2.getUniqueId());
+            }
             item2.remove();
         } else {
             stack1.setAmount(maxStack);

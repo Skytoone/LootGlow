@@ -43,11 +43,18 @@ public class VisualSpawner {
                 itemTeam.removeEntry(itemEntry);
         } catch (Exception ignored) {}
 
+        var holoMgr = plugin.getService(HologramManager.class);
+        if (holoMgr != null) holoMgr.removeHologram(uuid);
         var beamMgr = plugin.getService(BeamManager.class);
-        if (beamMgr != null) beamMgr.getActiveBeamConfigs().remove(uuid);
+        if (beamMgr != null) beamMgr.removeBeam(uuid);
+        var rpgMgr = plugin.getService(RPGDropManager.class);
+        if (rpgMgr != null) rpgMgr.removeShadow(uuid);
+        var protMgr = plugin.getService(LootProtectionManager.class);
+        if (protMgr != null) protMgr.removeProtection(uuid);
+
         var trackedMgr = plugin.getService(TrackedItemManager.class);
         if (trackedMgr != null) {
-            trackedMgr.getTrackedItems().remove(uuid);
+            trackedMgr.untrackItem(uuid);
         }
         var surfMgr = plugin.getService(SurfaceAlignmentManager.class);
         if (surfMgr != null) {
