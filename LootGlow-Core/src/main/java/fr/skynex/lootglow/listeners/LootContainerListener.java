@@ -1,8 +1,11 @@
 package fr.skynex.lootglow.listeners;
 
 import fr.skynex.lootglow.LootGlow;
+import org.bukkit.Location;
 import org.bukkit.entity.Item;
+import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.TextDisplay;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -11,6 +14,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public class LootContainerListener implements Listener {
@@ -58,7 +62,7 @@ public class LootContainerListener implements Listener {
         }
 
         if (item != null && item.isValid()) {
-            org.bukkit.Location oldLoc = item.getLocation();
+            Location oldLoc = item.getLocation().clone();
             ItemStack toAdd = item.getItemStack().clone();
             // Try to add to player inventory
             java.util.HashMap<Integer, ItemStack> leftovers = player.getInventory().addItem(toAdd);
@@ -84,7 +88,7 @@ public class LootContainerListener implements Listener {
                 members.remove(slot);
 
                 if (members.isEmpty()) {
-                    // Last item picked up — clean up everything normally
+                    // Last item picked up - clean up everything normally
                     if (spawner != null) spawner.removeGlow(itemUuid);
                     item.remove();
                     player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_ITEM_PICKUP, 0.5f, 1.5f);
@@ -102,12 +106,30 @@ public class LootContainerListener implements Listener {
                     plugin.getStateRepository().getGroupMembers().remove(leaderUuid);
                     plugin.getStateRepository().getGroupedItems().remove(remainingUuid);
 
-                    org.bukkit.entity.ItemDisplay bagDisplay = plugin.getStateRepository().getActiveItemVisuals().remove(leaderUuid);
+                    ItemDisplay bagDisplay = plugin.getStateRepository().getActiveItemVisuals().remove(leaderUuid);
                     if (bagDisplay != null && bagDisplay.isValid()) {
+                        plugin.getStateRepository().getEntityIdMap().remove(bagDisplay.getEntityId());
                         bagDisplay.remove();
                     }
 
+                    TextDisplay bagLabel = plugin.getStateRepository().getActiveLabels().remove(leaderUuid);
+                    if (bagLabel != null && bagLabel.isValid()) {
+                        bagLabel.remove();
+                    }
+
+                    var beamMgr = plugin.getService(fr.skynex.lootglow.managers.BeamManager.class);
+                    if (beamMgr != null) {
+                        beamMgr.removeBeam(leaderUuid);
+                    }
+
+                    var rpgMgr = plugin.getService(fr.skynex.lootglow.managers.RPGDropManager.class);
+                    if (rpgMgr != null) {
+                        rpgMgr.removeShadow(leaderUuid);
+                    }
+
                     if (remainingItem != null && remainingItem.isValid()) {
+                        remainingItem.teleport(oldLoc);
+                        remainingItem.setVelocity(new org.bukkit.util.Vector(0, 0, 0));
                         try { remainingItem.setVisibleByDefault(true); } catch (Throwable ignored) {}
                         if (trackedMgr != null) {
                             fr.skynex.lootglow.model.TrackedItem ti = trackedMgr.getTrackedItem(remainingUuid);
@@ -115,6 +137,11 @@ public class LootContainerListener implements Listener {
                                 ti.visualMaterial = remainingItem.getItemStack().getType();
                                 ti.isBlockItem = null;
                             }
+                        }
+                        var surfMgr = plugin.getService(fr.skynex.lootglow.managers.SurfaceAlignmentManager.class);
+                        if (surfMgr != null) {
+                            surfMgr.getSurfaceStates().remove(remainingUuid);
+                            surfMgr.updateSurfaceAlignment(remainingItem, null);
                         }
                         for (Player p : remainingItem.getWorld().getPlayers()) {
                             p.showEntity(plugin, remainingItem);
@@ -127,19 +154,20 @@ public class LootContainerListener implements Listener {
                     player.closeInventory();
                 } else {
                     if (slot == 0) {
-                        // ── Leader was removed ──
+                        // Leader was removed
                         UUID newLeaderUuid = members.get(0);
                         Item newLeaderItem = activeItems.get(newLeaderUuid);
                         if (newLeaderItem != null && newLeaderItem.isValid()) {
-                            fr.skynex.lootglow.util.FoliaScheduler.runAtEntity(plugin, newLeaderItem, () -> {
-                                if (newLeaderItem.isValid()) {
-                                    newLeaderItem.teleport(oldLoc);
-                                }
-                            });
+                            newLeaderItem.teleport(oldLoc);
+                            newLeaderItem.setVelocity(new org.bukkit.util.Vector(0, 0, 0));
                         }
 
-                        if (gcMgr != null) gcMgr.transferLeaderVisuals(leaderUuid, newLeaderUuid);
-                        openContainers.put(player.getUniqueId(), newLeaderUuid);
+                        if (gcMgr != null) gcMgr.transferLeaderVisuals(leaderUuid, newLeaderUuid, oldLoc);
+                        for (Map.Entry<UUID, UUID> entry : openContainers.entrySet()) {
+                            if (entry.getValue().equals(leaderUuid)) {
+                                entry.setValue(newLeaderUuid);
+                            }
+                        }
 
                         if (spawner != null) spawner.removeGlowKeepDisplays(itemUuid);
                         plugin.getStateRepository().getGroupedItems().remove(itemUuid);
@@ -148,6 +176,25 @@ public class LootContainerListener implements Listener {
                         // Non-leader slot removed
                         if (spawner != null) spawner.removeGlow(itemUuid);
                         item.remove();
+
+                        // Recalculate total items count and refresh hologram
+                        int total = 0;
+                        for (UUID mUuid : members) {
+                            Item it = activeItems.get(mUuid);
+                            if (it != null && it.isValid() && it.getItemStack() != null) {
+                                total += it.getItemStack().getAmount();
+                            }
+                        }
+                        plugin.getStateRepository().getGroupLeaders().put(leaderUuid, total);
+
+                        var holoSvc = plugin.getService(fr.skynex.lootglow.service.HologramService.class);
+                        var cfgMgr = plugin.getConfigManager();
+                        Item leaderItem = activeItems.get(leaderUuid);
+                        if (leaderItem != null && leaderItem.isValid() && holoSvc != null && cfgMgr != null) {
+                            holoSvc.refreshHologram(leaderItem, cfgMgr.isHoloEnabled(), cfgMgr.isHoloHideUncategorized(),
+                                    plugin.getStateRepository().getItemCategoriesCache(), plugin.getStateRepository().getItemCategories(),
+                                    cfgMgr.getDefaultColor(), plugin.getStateRepository().getLastHoloState());
+                        }
                     }
 
                     player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_ITEM_PICKUP, 0.5f, 1.5f);

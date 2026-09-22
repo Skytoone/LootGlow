@@ -6,12 +6,15 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
+import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.TextDisplay;
 import org.bukkit.inventory.Inventory;
 
 import java.util.*;
+
 /**
  * Manages item grouping, visual bags, and group loot container interactions.
  */
@@ -52,13 +55,14 @@ public class GroupContainerManager {
     }
 
     public void transferLeaderVisuals(UUID oldLeader, UUID newLeader) {
+        transferLeaderVisuals(oldLeader, newLeader, null);
+    }
+
+    public void transferLeaderVisuals(UUID oldLeader, UUID newLeader, Location forcedLoc) {
         if (oldLeader == null || newLeader == null) return;
         
         var stateRepo = plugin.getStateRepository();
         Integer count = stateRepo.getGroupLeaders().remove(oldLeader);
-        if (count != null) {
-            stateRepo.getGroupLeaders().put(newLeader, count);
-        }
         stateRepo.getGroupedItems().remove(newLeader);
 
         List<UUID> members = stateRepo.getGroupMembers().remove(oldLeader);
@@ -76,13 +80,39 @@ public class GroupContainerManager {
             stateRepo.getActiveItemVisuals().put(newLeader, visualDisp);
         }
 
-        org.bukkit.entity.TextDisplay labelDisp = stateRepo.getActiveLabels().remove(oldLeader);
-        org.bukkit.entity.TextDisplay existingNewLabel = stateRepo.getActiveLabels().remove(newLeader);
+        TextDisplay labelDisp = stateRepo.getActiveLabels().remove(oldLeader);
+        TextDisplay existingNewLabel = stateRepo.getActiveLabels().remove(newLeader);
         if (existingNewLabel != null && existingNewLabel.isValid() && existingNewLabel != labelDisp) {
             existingNewLabel.remove();
         }
         if (labelDisp != null) {
             stateRepo.getActiveLabels().put(newLeader, labelDisp);
+        }
+
+        BlockDisplay beamDisp = stateRepo.getActiveBeams().remove(oldLeader);
+        BlockDisplay existingNewBeam = stateRepo.getActiveBeams().remove(newLeader);
+        if (existingNewBeam != null && existingNewBeam.isValid() && existingNewBeam != beamDisp) {
+            existingNewBeam.getPassengers().forEach(e -> { if (e != null) e.remove(); });
+            existingNewBeam.remove();
+        }
+        if (beamDisp != null) {
+            stateRepo.getActiveBeams().put(newLeader, beamDisp);
+        }
+
+        var beamMgr = plugin.getService(BeamManager.class);
+        if (beamMgr != null) {
+            BeamManager.BeamConfig bCfg = beamMgr.getActiveBeamConfigs().remove(oldLeader);
+            if (bCfg != null) {
+                beamMgr.getActiveBeamConfigs().put(newLeader, bCfg);
+            }
+        }
+
+        var rpgMgr = plugin.getService(RPGDropManager.class);
+        if (rpgMgr != null) {
+            var shadow = rpgMgr.getActiveShadows().remove(oldLeader);
+            if (shadow != null) {
+                rpgMgr.getActiveShadows().put(newLeader, shadow);
+            }
         }
 
         var trackedMgr = plugin.getService(TrackedItemManager.class);
@@ -92,11 +122,17 @@ public class GroupContainerManager {
             tiOld = trackedMgr.getTrackedItems().remove(oldLeader);
             if (tiOld != null) {
                 tiOld.baseName = null;
+                tiOld.visual = visualDisp;
+                tiOld.label = labelDisp;
+                tiOld.beam = beamDisp;
                 if (visualDisp != null) {
                     trackedMgr.registerDisplayEntity(visualDisp.getUniqueId(), newLeader);
                 }
                 if (labelDisp != null) {
                     trackedMgr.registerDisplayEntity(labelDisp.getUniqueId(), newLeader);
+                }
+                if (beamDisp != null) {
+                    trackedMgr.registerDisplayEntity(beamDisp.getUniqueId(), newLeader);
                 }
                 trackedMgr.getTrackedItems().put(newLeader, tiOld);
             }
@@ -110,17 +146,30 @@ public class GroupContainerManager {
         plugin.getStateRepository().getBaseNameCache().remove(oldLeader);
         plugin.getStateRepository().getBaseNameCache().remove(newLeader);
 
-        // Instantly refresh hologram label and visual model for the new leader
         var activeItems = trackedMgr != null ? trackedMgr.getActiveItems() : plugin.getStateRepository().getActiveItems();
         Item newLeaderItem = activeItems.get(newLeader);
         var cfgMgr = plugin.getConfigManager();
+
+        Location targetLoc = forcedLoc;
+        if (targetLoc == null && newLeaderItem != null && newLeaderItem.isValid()) {
+            targetLoc = newLeaderItem.getLocation();
+        }
+
         if (newLeaderItem != null && newLeaderItem.isValid()) {
-            Location nLoc = newLeaderItem.getLocation();
-            if (visualDisp != null && visualDisp.isValid()) {
-                visualDisp.teleport(nLoc);
+            if (forcedLoc != null) {
+                newLeaderItem.teleport(forcedLoc);
+                newLeaderItem.setVelocity(new org.bukkit.util.Vector(0, 0, 0));
             }
-            if (labelDisp != null && labelDisp.isValid()) {
-                labelDisp.teleport(nLoc);
+            if (targetLoc != null) {
+                if (visualDisp != null && visualDisp.isValid()) {
+                    visualDisp.teleport(targetLoc);
+                }
+                if (labelDisp != null && labelDisp.isValid()) {
+                    labelDisp.teleport(targetLoc);
+                }
+                if (beamDisp != null && beamDisp.isValid()) {
+                    beamDisp.teleport(targetLoc);
+                }
             }
             if (tiOld != null && tiOld.visual != null && tiOld.visual.isValid()) {
                 boolean useVisualBag = cfgMgr != null && cfgMgr.isUseVisualBag();
@@ -129,6 +178,22 @@ public class GroupContainerManager {
                 }
             }
         }
+
+        int total = 0;
+        if (members != null) {
+            for (UUID mUuid : members) {
+                Item it = activeItems.get(mUuid);
+                if (it != null && it.isValid() && it.getItemStack() != null) {
+                    total += it.getItemStack().getAmount();
+                }
+            }
+        }
+        if (total > 0) {
+            stateRepo.getGroupLeaders().put(newLeader, total);
+        } else if (count != null) {
+            stateRepo.getGroupLeaders().put(newLeader, count);
+        }
+
         var holoSvc = plugin.getService(fr.skynex.lootglow.service.HologramService.class);
         if (newLeaderItem != null && newLeaderItem.isValid() && holoSvc != null && cfgMgr != null) {
             holoSvc.refreshHologram(newLeaderItem, cfgMgr.isHoloEnabled(), cfgMgr.isHoloHideUncategorized(), plugin.getStateRepository().getItemCategoriesCache(), plugin.getStateRepository().getItemCategories(), cfgMgr.getDefaultColor(), plugin.getStateRepository().getLastHoloState());

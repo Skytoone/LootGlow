@@ -114,6 +114,7 @@ public class ItemInteractionListener implements Listener {
                     if (!finalTargetItem.isValid() || finalTargetItem.isDead()) return;
                     HashMap<Integer, ItemStack> leftovers = player.getInventory().addItem(finalTargetItem.getItemStack());
                     if (leftovers.isEmpty()) {
+                        Location bagLoc = finalTargetItem.getLocation().clone();
                         if (isGroup && gcMgr != null) {
                             List<UUID> members = gcMgr.getGroupMembers().get(leaderUuid);
                             if (members != null) {
@@ -127,17 +128,63 @@ public class ItemInteractionListener implements Listener {
                                     plugin.getStateRepository().getGroupLeaders().remove(leaderUuid);
                                     plugin.getStateRepository().getGroupMembers().remove(leaderUuid);
                                     plugin.getStateRepository().getGroupedItems().remove(remainingUuid);
-                                    org.bukkit.entity.ItemDisplay bagDisplay = plugin.getStateRepository().getActiveItemVisuals().remove(leaderUuid);
-                                    if (bagDisplay != null && bagDisplay.isValid()) bagDisplay.remove();
+
+                                    ItemDisplay bagDisplay = plugin.getStateRepository().getActiveItemVisuals().remove(leaderUuid);
+                                    if (bagDisplay != null && bagDisplay.isValid()) {
+                                        plugin.getStateRepository().getEntityIdMap().remove(bagDisplay.getEntityId());
+                                        bagDisplay.remove();
+                                    }
+                                    TextDisplay bagLabel = plugin.getStateRepository().getActiveLabels().remove(leaderUuid);
+                                    if (bagLabel != null && bagLabel.isValid()) bagLabel.remove();
+                                    var beamMgr = plugin.getService(fr.skynex.lootglow.managers.BeamManager.class);
+                                    if (beamMgr != null) beamMgr.removeBeam(leaderUuid);
+                                    var rpgMgr = plugin.getService(fr.skynex.lootglow.managers.RPGDropManager.class);
+                                    if (rpgMgr != null) rpgMgr.removeShadow(leaderUuid);
+
                                     if (remainingItem != null && remainingItem.isValid()) {
+                                        remainingItem.teleport(bagLoc);
+                                        remainingItem.setVelocity(new org.bukkit.util.Vector(0, 0, 0));
                                         try { remainingItem.setVisibleByDefault(true); } catch (Throwable ignored) {}
+                                        if (trackedMgr != null) {
+                                            fr.skynex.lootglow.model.TrackedItem ti = trackedMgr.getTrackedItem(remainingUuid);
+                                            if (ti != null) {
+                                                ti.visualMaterial = remainingItem.getItemStack().getType();
+                                                ti.isBlockItem = null;
+                                            }
+                                        }
+                                        var surfMgr = plugin.getService(fr.skynex.lootglow.managers.SurfaceAlignmentManager.class);
+                                        if (surfMgr != null) {
+                                            surfMgr.getSurfaceStates().remove(remainingUuid);
+                                            surfMgr.updateSurfaceAlignment(remainingItem, null);
+                                        }
                                         for (Player p : remainingItem.getWorld().getPlayers()) p.showEntity(plugin, remainingItem);
                                         var glowSvc = plugin.getService(fr.skynex.lootglow.service.ItemGlowApplyService.class);
                                         if (glowSvc != null) glowSvc.applyGlow(remainingItem, false, fr.skynex.lootglow.model.ItemGlowContext.from(plugin));
                                     }
                                 } else if (finalTargetItem.getUniqueId().equals(leaderUuid)) {
                                     UUID newLeaderUuid = members.get(0);
-                                    gcMgr.transferLeaderVisuals(leaderUuid, newLeaderUuid);
+                                    Item newLeaderItem = plugin.getStateRepository().getActiveItems().get(newLeaderUuid);
+                                    if (newLeaderItem != null && newLeaderItem.isValid()) {
+                                        newLeaderItem.teleport(bagLoc);
+                                        newLeaderItem.setVelocity(new org.bukkit.util.Vector(0, 0, 0));
+                                    }
+                                    gcMgr.transferLeaderVisuals(leaderUuid, newLeaderUuid, bagLoc);
+                                } else {
+                                    int total = 0;
+                                    for (UUID mUuid : members) {
+                                        Item it = plugin.getStateRepository().getActiveItems().get(mUuid);
+                                        if (it != null && it.isValid() && it.getItemStack() != null) {
+                                            total += it.getItemStack().getAmount();
+                                        }
+                                    }
+                                    plugin.getStateRepository().getGroupLeaders().put(leaderUuid, total);
+                                    var holoSvc = plugin.getService(fr.skynex.lootglow.service.HologramService.class);
+                                    Item leaderItem = plugin.getStateRepository().getActiveItems().get(leaderUuid);
+                                    if (leaderItem != null && leaderItem.isValid() && holoSvc != null && cfgMgr != null) {
+                                        holoSvc.refreshHologram(leaderItem, cfgMgr.isHoloEnabled(), cfgMgr.isHoloHideUncategorized(),
+                                                plugin.getStateRepository().getItemCategoriesCache(), plugin.getStateRepository().getItemCategories(),
+                                                cfgMgr.getDefaultColor(), plugin.getStateRepository().getLastHoloState());
+                                    }
                                 }
                             }
                         }
@@ -145,7 +192,13 @@ public class ItemInteractionListener implements Listener {
                         var rpgMgr = plugin.getService(fr.skynex.lootglow.managers.RPGDropManager.class);
                         if (rpgMgr != null) rpgMgr.playAspirationAnimation(finalTargetItem, player, plugin.getStateRepository().getActiveItemVisuals(), cfgMgr.isAspirationEnabled());
                         var spawner = plugin.getService(fr.skynex.lootglow.managers.VisualSpawner.class);
-                        if (spawner != null) spawner.removeGlow(finalTargetItem.getUniqueId());
+                        if (spawner != null) {
+                            if (isGroup && finalTargetItem.getUniqueId().equals(leaderUuid) && gcMgr != null && gcMgr.getGroupMembers().get(leaderUuid) != null && !gcMgr.getGroupMembers().get(leaderUuid).isEmpty()) {
+                                spawner.removeGlowKeepDisplays(finalTargetItem.getUniqueId());
+                            } else {
+                                spawner.removeGlow(finalTargetItem.getUniqueId());
+                            }
+                        }
                         finalTargetItem.remove();
                         player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 0.5f, 1.5f);
                     } else {

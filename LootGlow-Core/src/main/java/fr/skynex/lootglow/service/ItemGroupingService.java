@@ -62,6 +62,26 @@ public class ItemGroupingService {
         Map<UUID, List<UUID>> tempMembers = new HashMap<>();
         Set<UUID> processed = new HashSet<>();
 
+        Map<UUID, UUID> openContainers = plugin.getStateRepository().getOpenContainers();
+        if (openContainers != null && !openContainers.isEmpty()) {
+            for (UUID openLeaderUuid : new HashSet<>(openContainers.values())) {
+                if (groupLeaders.containsKey(openLeaderUuid)) {
+                    List<UUID> openMembers = groupMembers.get(openLeaderUuid);
+                    if (openMembers != null && !openMembers.isEmpty()) {
+                        tempLeaders.put(openLeaderUuid, groupLeaders.get(openLeaderUuid));
+                        tempMembers.put(openLeaderUuid, new ArrayList<>(openMembers));
+                        processed.add(openLeaderUuid);
+                        for (UUID mUuid : openMembers) {
+                            if (!mUuid.equals(openLeaderUuid)) {
+                                tempGrouped.add(mUuid);
+                                processed.add(mUuid);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         for (List<Item> items : worldItemsMap.values()) {
             int size = items.size();
             if (size < minItems) continue;
@@ -118,7 +138,11 @@ public class ItemGroupingService {
                                 Item item2 = nearby.get(n);
                                 if (item2 == null || !item2.isValid() || item2.isDead()) continue;
                                 if (mergeMgr.canMerge(item1, item2)) {
-                                    mergeMgr.mergeAmount(item1, item2);
+                                    if (groupLeaders.containsKey(item2.getUniqueId()) && !groupLeaders.containsKey(item1.getUniqueId())) {
+                                        mergeMgr.mergeAmount(item2, item1);
+                                    } else {
+                                        mergeMgr.mergeAmount(item1, item2);
+                                    }
                                 }
                             }
                         }
@@ -142,6 +166,7 @@ public class ItemGroupingService {
                     if (groupEvent.isCancelled()) continue;
 
                     UUID leaderUuid = leaderItem.getUniqueId();
+                    org.bukkit.Location leaderLoc = leaderItem.getLocation();
                     int totalCount = 0;
                     List<UUID> members = new ArrayList<>();
                     for (int k = 0; k < nearby.size(); k++) {
@@ -154,6 +179,12 @@ public class ItemGroupingService {
                         if (!mUuid.equals(leaderUuid)) {
                             tempGrouped.add(mUuid);
                             processed.add(mUuid);
+                            if (ni != null && ni.isValid() && leaderLoc != null) {
+                                if (ni.getLocation().distanceSquared(leaderLoc) > 0.01) {
+                                    ni.teleport(leaderLoc);
+                                    ni.setVelocity(new org.bukkit.util.Vector(0, 0, 0));
+                                }
+                            }
                         }
                     }
                     tempLeaders.put(leaderUuid, totalCount);
@@ -233,6 +264,20 @@ public class ItemGroupingService {
             }
 
             processItemGrouping(trackedItems, activeItems, itemCategoriesCache, groupedItems, groupLeaders, groupMembers, minItems, radiusSq, byCategory);
+
+            activeItemVisuals.entrySet().removeIf(entry -> {
+                UUID u = entry.getKey();
+                ItemDisplay d = entry.getValue();
+                Item it = activeItems.get(u);
+                if (it == null || !it.isValid() || it.isDead() || d == null || !d.isValid()) {
+                    if (d != null && d.isValid()) {
+                        plugin.getStateRepository().getEntityIdMap().remove(d.getEntityId());
+                        d.remove();
+                    }
+                    return true;
+                }
+                return false;
+            });
 
             // Update visual bag model
             if (useVisualBag) {

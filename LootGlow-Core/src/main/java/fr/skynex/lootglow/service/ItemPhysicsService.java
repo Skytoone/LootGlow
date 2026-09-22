@@ -141,15 +141,6 @@ public class ItemPhysicsService {
                 if (groupLeaders != null && groupLeaders.containsKey(itemUuid)) {
                     Material activeBagMat = bagMaterial != null ? bagMaterial : Material.PLAYER_HEAD;
                     visualYOffset = ItemVisualSpawnService.getBagYOffset(activeBagMat);
-                } else {
-                    Material vMat = ti.visualMaterial;
-                    if (vMat == null && visual.getItemStack() != null) {
-                        vMat = visual.getItemStack().getType();
-                        ti.visualMaterial = vMat;
-                    }
-                    if (vMat == Material.PLAYER_HEAD || vMat == Material.BUNDLE || vMat == Material.CHEST || vMat == Material.TRAPPED_CHEST || vMat == Material.ENDER_CHEST) {
-                        visualYOffset = ItemVisualSpawnService.getBagYOffset(vMat);
-                    }
                 }
                 if (cfgMgr != null && !cfgMgr.isShadowsEnabled()) {
                     visual.setShadowRadius(0.0f);
