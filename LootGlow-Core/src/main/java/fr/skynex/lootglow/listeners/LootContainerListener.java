@@ -56,6 +56,7 @@ public class LootContainerListener implements Listener {
         Item item = activeItems.get(itemUuid);
 
         if (item == null || !item.isValid() || item.isDead()) {
+            members.remove(slot);
             refreshInventory(event.getClickedInventory(), members, activeItems);
             event.setCancelled(true);
             return;
@@ -154,7 +155,7 @@ public class LootContainerListener implements Listener {
                     player.closeInventory();
                 } else {
                     if (slot == 0) {
-                        // Leader was removed
+                        // Leader was removed: members.remove(0) was called above, so members.get(0) is now the new leader.
                         UUID newLeaderUuid = members.get(0);
                         Item newLeaderItem = activeItems.get(newLeaderUuid);
                         if (newLeaderItem != null && newLeaderItem.isValid()) {
@@ -162,6 +163,8 @@ public class LootContainerListener implements Listener {
                             newLeaderItem.setVelocity(new org.bukkit.util.Vector(0, 0, 0));
                         }
 
+                        // Transfer visuals BEFORE mutating the members list so transferLeaderVisuals
+                        // can read the full group state.
                         if (gcMgr != null) gcMgr.transferLeaderVisuals(leaderUuid, newLeaderUuid, oldLoc);
                         for (Map.Entry<UUID, UUID> entry : openContainers.entrySet()) {
                             if (entry.getValue().equals(leaderUuid)) {
@@ -214,10 +217,12 @@ public class LootContainerListener implements Listener {
 
     private void refreshInventory(Inventory inv, List<UUID> members, java.util.Map<UUID, Item> activeItems) {
         inv.clear();
-        members.removeIf(mUuid -> {
-            Item it = activeItems.get(mUuid);
-            return it == null || !it.isValid() || it.isDead();
-        });
+        // Bug fix: do NOT call members.removeIf() here.
+        // Mutating the members list during a GUI refresh caused race conditions where the leader
+        // entity could be briefly invalid (e.g. mid-tick teleport), pruning it from the list and
+        // making the visual loot bag lose its reference, causing it to disappear randomly.
+        // Invalid entries are simply skipped visually; the members list is only cleaned up
+        // at the authoritative pick-up site (top of onInventoryClick).
         int slotIdx = 0;
         for (UUID mUuid : members) {
             if (slotIdx >= inv.getSize()) break;
