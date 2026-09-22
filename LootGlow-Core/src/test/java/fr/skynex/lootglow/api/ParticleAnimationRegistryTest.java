@@ -1,7 +1,6 @@
 package fr.skynex.lootglow.api;
 
 import fr.skynex.lootglow.api.particle.ParticleAnimation;
-import fr.skynex.lootglow.api.particle.ParticleAnimationContext;
 import fr.skynex.lootglow.api.particle.ParticleAnimationRegistry;
 import fr.skynex.lootglow.managers.ParticleAnimationManager;
 import org.bukkit.Color;

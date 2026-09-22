@@ -8,6 +8,10 @@ import org.bukkit.Particle;
 import org.bukkit.Registry;
 import org.bukkit.Sound;
 
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+
 /**
  * Utility parser for colors, particles, sounds, and configuration parameters.
  */
@@ -46,34 +50,70 @@ public class ConfigParser {
         };
     }
 
+    private static final Map<String, Sound> SOUND_CACHE = new HashMap<>();
+    private static volatile boolean soundCacheInitialized = false;
+
+    private static void ensureSoundCache() {
+        if (soundCacheInitialized) return;
+        synchronized (SOUND_CACHE) {
+            if (soundCacheInitialized) return;
+            try {
+                for (Sound sound : Registry.SOUNDS) {
+                    NamespacedKey key = Registry.SOUNDS.getKey(sound);
+                    if (key == null) continue;
+                    String full = key.toString().toLowerCase(Locale.ROOT);
+                    String path = key.getKey().toLowerCase(Locale.ROOT);
+                    String enumStyle = path.replace('.', '_');
+
+                    SOUND_CACHE.putIfAbsent(full, sound);
+                    SOUND_CACHE.putIfAbsent(path, sound);
+                    SOUND_CACHE.putIfAbsent(enumStyle, sound);
+                }
+                soundCacheInitialized = true;
+            } catch (Throwable ignored) {}
+        }
+    }
+
     public Sound parseSound(String soundStr) {
         if (soundStr == null || soundStr.trim().isEmpty()) return null;
-        String lower = soundStr.trim().toLowerCase();
+        String trimmed = soundStr.trim();
+        String lower = trimmed.toLowerCase(Locale.ROOT);
         if (lower.equals("none") || lower.equals("off") || lower.equals("disabled") || lower.equals("false") || lower.equals("\"\"") || lower.equals("''")) {
             return null;
         }
 
-        try {
-            return Sound.valueOf(soundStr.trim().toUpperCase());
-        } catch (Exception ignored) {}
+        // 1. Check sound cache populated from Registry.SOUNDS (supports minecraft:key, key, and legacy ENUM_STYLE)
+        ensureSoundCache();
+        Sound cached = SOUND_CACHE.get(lower);
+        if (cached != null) {
+            return cached;
+        }
 
+        // 2. Direct Registry lookup for NamespacedKey (for datapacks or dynamically registered sounds)
         try {
             if (lower.contains(":")) {
                 NamespacedKey key = NamespacedKey.fromString(lower);
                 if (key != null) {
-                    Sound sound = Registry.SOUND_EVENT.get(key);
+                    Sound sound = Registry.SOUNDS.get(key);
                     if (sound != null) return sound;
                 }
+            } else {
+                NamespacedKey mcKey = NamespacedKey.minecraft(lower);
+                Sound mcSound = Registry.SOUNDS.get(mcKey);
+                if (mcSound != null) return mcSound;
+
+                NamespacedKey legacyKey = NamespacedKey.minecraft(lower.replace('_', '.'));
+                Sound legacySound = Registry.SOUNDS.get(legacyKey);
+                if (legacySound != null) return legacySound;
             }
+        } catch (Throwable ignored) {}
 
-            NamespacedKey mcKey = NamespacedKey.minecraft(lower);
-            Sound mcSound = Registry.SOUND_EVENT.get(mcKey);
-            if (mcSound != null) return mcSound;
-
-            NamespacedKey legacyKey = NamespacedKey.minecraft(lower.replace("_", "."));
-            Sound legacySound = Registry.SOUND_EVENT.get(legacyKey);
-            if (legacySound != null) return legacySound;
-        } catch (Exception ignored) {}
+        // 3. Fallback for offline/unit-test environments where Registry may not be initialized
+        try {
+            @SuppressWarnings("deprecation")
+            Sound legacy = Sound.valueOf(trimmed.toUpperCase(Locale.ROOT));
+            return legacy;
+        } catch (Throwable ignored) {}
 
         return null;
     }

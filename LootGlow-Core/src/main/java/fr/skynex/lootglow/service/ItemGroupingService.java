@@ -312,7 +312,6 @@ public class ItemGroupingService {
                         if (ti == null || ti.label == null || !ti.label.isValid()) {
                             var holoSvc = plugin.getService(HologramService.class);
                             var cfgMgr = plugin.getConfigManager();
-                            String lCat = itemCategoriesCache.get(lUuid);
                             net.kyori.adventure.text.format.NamedTextColor lColor = getHighestRarityColor(lUuid, groupMembers, itemCategoriesCache, itemCategories, defaultColor);
                             if (holoSvc != null && cfgMgr != null) {
                                 fr.skynex.lootglow.model.HologramContext ctxHolo = new fr.skynex.lootglow.model.HologramContext(
