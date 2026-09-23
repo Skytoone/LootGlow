@@ -13,6 +13,8 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -20,6 +22,15 @@ import java.util.UUID;
 public class LootContainerListener implements Listener {
 
     private final LootGlow plugin;
+
+    /**
+     * Maps each player UUID to the ordered list of item UUIDs currently displayed in
+     * their open loot-container GUI.
+     * Slot N in the inventory corresponds to slotMap.get(playerUuid).get(N).
+     * This is necessary because refreshInventory skips invalid items, so the GUI
+     * slot index no longer matches the raw members list index.
+     */
+    private final Map<UUID, List<UUID>> slotMap = new HashMap<>();
 
     public LootContainerListener(LootGlow plugin) {
         this.plugin = plugin;
@@ -47,17 +58,28 @@ public class LootContainerListener implements Listener {
 
         int slot = event.getSlot();
         List<UUID> members = groupMembers.get(leaderUuid);
-        if (members == null || slot < 0 || slot >= members.size()) {
+        if (members == null) {
             event.setCancelled(true);
             return;
         }
 
-        UUID itemUuid = members.get(slot);
+        // Resolve the clicked slot using the slot map built by refreshInventory.
+        // Lazily build the slot map on the very first click (before any refresh has run).
+        List<UUID> currentSlotMap = slotMap.computeIfAbsent(player.getUniqueId(),
+                k -> buildSlotList(members, activeItems));
+        if (slot < 0 || slot >= currentSlotMap.size()) {
+            event.setCancelled(true);
+            return;
+        }
+
+        UUID itemUuid = currentSlotMap.get(slot);
         Item item = activeItems.get(itemUuid);
 
         if (item == null || !item.isValid() || item.isDead()) {
-            members.remove(slot);
-            refreshInventory(event.getClickedInventory(), members, activeItems);
+            // Remove by UUID (Object), not by index — the members list index != GUI slot index.
+            members.remove(itemUuid);
+            List<UUID> newSlotOrder = refreshInventory(event.getClickedInventory(), members, activeItems);
+            slotMap.put(player.getUniqueId(), newSlotOrder);
             event.setCancelled(true);
             return;
         }
@@ -86,7 +108,9 @@ public class LootContainerListener implements Listener {
                 }
 
                 // Remove from members list first so we know the new state
-                members.remove(slot);
+                // Use Object form remove(itemUuid) — NOT remove(int slot) —
+                // because the slotMap index != the members list index.
+                members.remove(itemUuid);
 
                 if (members.isEmpty()) {
                     // Last item picked up - clean up everything normally
@@ -154,8 +178,9 @@ public class LootContainerListener implements Listener {
                     }
                     player.closeInventory();
                 } else {
-                    if (slot == 0) {
-                        // Leader was removed: members.remove(0) was called above, so members.get(0) is now the new leader.
+                    if (slot == 0 || itemUuid.equals(leaderUuid)) {
+                        // Leader was removed: members.remove(slot) was called above (members no longer
+                        // contains the old leader), so members.get(0) is now the new leader.
                         UUID newLeaderUuid = members.get(0);
                         Item newLeaderItem = activeItems.get(newLeaderUuid);
                         if (newLeaderItem != null && newLeaderItem.isValid()) {
@@ -163,18 +188,23 @@ public class LootContainerListener implements Listener {
                             newLeaderItem.setVelocity(new org.bukkit.util.Vector(0, 0, 0));
                         }
 
-                        // Transfer visuals BEFORE mutating the members list so transferLeaderVisuals
-                        // can read the full group state.
+                        // Detach glow/grouped state from the old leader BEFORE transferLeaderVisuals
+                        // so that removeGlowKeepDisplays cannot race with the visual transfer.
+                        if (spawner != null) spawner.removeGlowKeepDisplays(itemUuid);
+                        plugin.getStateRepository().getGroupedItems().remove(itemUuid);
+                        item.remove();
+
+                        // Transfer visuals to the new leader after the old leader's entity is removed.
                         if (gcMgr != null) gcMgr.transferLeaderVisuals(leaderUuid, newLeaderUuid, oldLoc);
+                        // Update open-container map so players who have the GUI open track the new leader.
                         for (Map.Entry<UUID, UUID> entry : openContainers.entrySet()) {
                             if (entry.getValue().equals(leaderUuid)) {
                                 entry.setValue(newLeaderUuid);
                             }
                         }
-
-                        if (spawner != null) spawner.removeGlowKeepDisplays(itemUuid);
-                        plugin.getStateRepository().getGroupedItems().remove(itemUuid);
-                        item.remove();
+                        // Also update our slot map key
+                        List<UUID> sm = slotMap.remove(player.getUniqueId());
+                        if (sm != null) slotMap.put(player.getUniqueId(), sm);
                     } else {
                         // Non-leader slot removed
                         if (spawner != null) spawner.removeGlow(itemUuid);
@@ -202,8 +232,9 @@ public class LootContainerListener implements Listener {
 
                     player.playSound(player.getLocation(), org.bukkit.Sound.ENTITY_ITEM_PICKUP, 0.5f, 1.5f);
 
-                    // Refresh GUI
-                    refreshInventory(event.getClickedInventory(), members, activeItems);
+                    // Refresh GUI and rebuild the slot map so future clicks resolve correctly
+                    List<UUID> newSlotOrder = refreshInventory(event.getClickedInventory(), members, activeItems);
+                    slotMap.put(player.getUniqueId(), newSlotOrder);
                 }
             } else {
                 // Inventory full
@@ -215,28 +246,54 @@ public class LootContainerListener implements Listener {
         event.setCancelled(true);
     }
 
-    private void refreshInventory(Inventory inv, List<UUID> members, java.util.Map<UUID, Item> activeItems) {
+    /**
+     * Rebuilds the inventory contents from the current members list, skipping invalid items.
+     * Returns the ordered list of UUIDs actually placed into GUI slots so that
+     * {@link #slotMap} can be updated — ensuring slot N in the GUI always resolves to
+     * the correct item UUID even when some members are temporarily invalid.
+     *
+     * Note: do NOT call members.removeIf() here.
+     * Mutating the members list during a GUI refresh caused race conditions where the leader
+     * entity could be briefly invalid (e.g. mid-tick teleport), pruning it from the list and
+     * making the visual loot bag lose its reference, causing it to disappear randomly.
+     * Invalid entries are simply skipped visually; the members list is only cleaned up
+     * at the authoritative pick-up site (top of onInventoryClick).
+     */
+    private List<UUID> refreshInventory(Inventory inv, List<UUID> members, java.util.Map<UUID, Item> activeItems) {
         inv.clear();
-        // Bug fix: do NOT call members.removeIf() here.
-        // Mutating the members list during a GUI refresh caused race conditions where the leader
-        // entity could be briefly invalid (e.g. mid-tick teleport), pruning it from the list and
-        // making the visual loot bag lose its reference, causing it to disappear randomly.
-        // Invalid entries are simply skipped visually; the members list is only cleaned up
-        // at the authoritative pick-up site (top of onInventoryClick).
-        int slotIdx = 0;
+        List<UUID> slotOrder = new ArrayList<>();
         for (UUID mUuid : members) {
-            if (slotIdx >= inv.getSize()) break;
+            if (slotOrder.size() >= inv.getSize()) break;
             Item item = activeItems.get(mUuid);
             if (item != null && item.isValid() && !item.isDead()) {
-                inv.setItem(slotIdx++, item.getItemStack());
+                inv.setItem(slotOrder.size(), item.getItemStack());
+                slotOrder.add(mUuid);
             }
         }
+        return slotOrder;
+    }
+
+    /**
+     * Builds the ordered list of valid item UUIDs without modifying any inventory.
+     * Used for lazy initialisation of {@link #slotMap} on the first click.
+     */
+    private List<UUID> buildSlotList(List<UUID> members, java.util.Map<UUID, Item> activeItems) {
+        List<UUID> slotOrder = new ArrayList<>();
+        for (UUID mUuid : members) {
+            Item item = activeItems.get(mUuid);
+            if (item != null && item.isValid() && !item.isDead()) {
+                slotOrder.add(mUuid);
+            }
+        }
+        return slotOrder;
     }
 
     @EventHandler
     public void onInventoryClose(InventoryCloseEvent event) {
+        UUID playerUuid = event.getPlayer().getUniqueId();
         var gcMgr = plugin.getService(fr.skynex.lootglow.managers.GroupContainerManager.class);
         var openContainers = gcMgr != null ? gcMgr.getOpenContainers() : plugin.getStateRepository().getOpenContainers();
-        openContainers.remove(event.getPlayer().getUniqueId());
+        openContainers.remove(playerUuid);
+        slotMap.remove(playerUuid);
     }
 }
