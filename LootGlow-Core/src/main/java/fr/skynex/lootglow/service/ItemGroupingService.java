@@ -65,17 +65,26 @@ public class ItemGroupingService {
         Map<UUID, UUID> openContainers = plugin.getStateRepository().getOpenContainers();
         if (openContainers != null && !openContainers.isEmpty()) {
             for (UUID openLeaderUuid : new HashSet<>(openContainers.values())) {
-                if (groupLeaders.containsKey(openLeaderUuid)) {
-                    List<UUID> openMembers = groupMembers.get(openLeaderUuid);
-                    if (openMembers != null && !openMembers.isEmpty()) {
-                        tempLeaders.put(openLeaderUuid, groupLeaders.get(openLeaderUuid));
-                        tempMembers.put(openLeaderUuid, new ArrayList<>(openMembers));
-                        processed.add(openLeaderUuid);
-                        for (UUID mUuid : openMembers) {
-                            if (!mUuid.equals(openLeaderUuid)) {
-                                tempGrouped.add(mUuid);
-                                processed.add(mUuid);
-                            }
+                List<UUID> openMembers = groupMembers.get(openLeaderUuid);
+                if (openMembers == null) {
+                    openMembers = plugin.getStateRepository().getGroupMembers().get(openLeaderUuid);
+                }
+                if (openMembers != null && !openMembers.isEmpty()) {
+                    int count = 0;
+                    for (UUID mUuid : openMembers) {
+                        Item it = activeItems.get(mUuid);
+                        if (it != null && it.isValid() && it.getItemStack() != null) {
+                            count += it.getItemStack().getAmount();
+                        }
+                    }
+                    Integer prevCount = groupLeaders.get(openLeaderUuid);
+                    tempLeaders.put(openLeaderUuid, count > 0 ? count : (prevCount != null ? prevCount : 1));
+                    tempMembers.put(openLeaderUuid, new ArrayList<>(openMembers));
+                    processed.add(openLeaderUuid);
+                    for (UUID mUuid : openMembers) {
+                        if (!mUuid.equals(openLeaderUuid)) {
+                            tempGrouped.add(mUuid);
+                            processed.add(mUuid);
                         }
                     }
                 }

@@ -178,8 +178,8 @@ public class LootContainerListener implements Listener {
                     }
                     player.closeInventory();
                 } else {
-                    if (slot == 0 || itemUuid.equals(leaderUuid)) {
-                        // Leader was removed: members.remove(slot) was called above (members no longer
+                    if (itemUuid.equals(leaderUuid)) {
+                        // Leader was removed: members.remove(itemUuid) was called above (members no longer
                         // contains the old leader), so members.get(0) is now the new leader.
                         UUID newLeaderUuid = members.get(0);
                         Item newLeaderItem = activeItems.get(newLeaderUuid);
@@ -188,26 +188,35 @@ public class LootContainerListener implements Listener {
                             newLeaderItem.setVelocity(new org.bukkit.util.Vector(0, 0, 0));
                         }
 
-                        // Detach glow/grouped state from the old leader BEFORE transferLeaderVisuals
-                        // so that removeGlowKeepDisplays cannot race with the visual transfer.
-                        if (spawner != null) spawner.removeGlowKeepDisplays(itemUuid);
+                        // 1. Transfer visuals to the new leader BEFORE destroying old leader's entity & displays
+                        if (gcMgr != null) {
+                            gcMgr.transferLeaderVisuals(leaderUuid, newLeaderUuid, oldLoc);
+                        }
+
+                        // 2. Clean up scoreboard team and grouped/active state for old leader
+                        try {
+                            org.bukkit.scoreboard.Scoreboard scoreboard = org.bukkit.Bukkit.getScoreboardManager().getMainScoreboard();
+                            String itemEntry = leaderUuid.toString();
+                            org.bukkit.scoreboard.Team itemTeam = scoreboard.getEntryTeam(itemEntry);
+                            if (itemTeam != null && itemTeam.getName().startsWith("LG_")) {
+                                itemTeam.removeEntry(itemEntry);
+                            }
+                        } catch (Exception ignored) {}
+
                         plugin.getStateRepository().getGroupedItems().remove(itemUuid);
+                        plugin.getStateRepository().getActiveItems().remove(itemUuid);
                         item.remove();
 
-                        // Transfer visuals to the new leader after the old leader's entity is removed.
-                        if (gcMgr != null) gcMgr.transferLeaderVisuals(leaderUuid, newLeaderUuid, oldLoc);
-                        // Update open-container map so players who have the GUI open track the new leader.
+                        // 3. Update open-container map so players who have the GUI open track the new leader.
                         for (Map.Entry<UUID, UUID> entry : openContainers.entrySet()) {
                             if (entry.getValue().equals(leaderUuid)) {
                                 entry.setValue(newLeaderUuid);
                             }
                         }
-                        // Also update our slot map key
-                        List<UUID> sm = slotMap.remove(player.getUniqueId());
-                        if (sm != null) slotMap.put(player.getUniqueId(), sm);
                     } else {
                         // Non-leader slot removed
                         if (spawner != null) spawner.removeGlow(itemUuid);
+                        plugin.getStateRepository().getGroupedItems().remove(itemUuid);
                         item.remove();
 
                         // Recalculate total items count and refresh hologram

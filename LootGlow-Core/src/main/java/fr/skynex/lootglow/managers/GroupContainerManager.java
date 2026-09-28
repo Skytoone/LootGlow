@@ -241,15 +241,24 @@ public class GroupContainerManager {
             }
         }
 
+        // Register immediately so background processItemGrouping preserves this group during animation
+        getOpenContainers().put(player.getUniqueId(), leaderUuid);
+
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            if (!player.isOnline()) return;
+            if (!player.isOnline()) {
+                getOpenContainers().remove(player.getUniqueId());
+                return;
+            }
 
             members.removeIf(mUuid -> {
                 Item it = activeItems.get(mUuid);
                 return it == null || !it.isValid() || it.isDead();
             });
 
-            if (members.isEmpty()) return;
+            if (members.isEmpty()) {
+                getOpenContainers().remove(player.getUniqueId());
+                return;
+            }
 
             int size = ((members.size() / 9) + 1) * 9;
             if (size > 54) size = 54;
