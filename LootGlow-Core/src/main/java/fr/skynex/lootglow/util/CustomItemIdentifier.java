@@ -35,6 +35,14 @@ public class CustomItemIdentifier {
     private static final NamespacedKey ITEMEDIT_KEY = new NamespacedKey("itemedit", "id");
     private static final NamespacedKey ECO_KEY = new NamespacedKey("ecoitems", "id");
     private static final NamespacedKey ECO_KEY_ALT = new NamespacedKey("auxilium", "id");
+    private static final NamespacedKey ECO_KEY_ITEM = new NamespacedKey("ecoitems", "item");
+    private static final NamespacedKey ECO_KEY_ITEM_ID = new NamespacedKey("ecoitems", "item_id");
+    private static final NamespacedKey ECO_KEY_ITEM_DASH = new NamespacedKey("ecoitems", "item-id");
+    private static final NamespacedKey ECO_CORE_ID = new NamespacedKey("eco", "id");
+    private static final NamespacedKey ECO_CORE_ITEM = new NamespacedKey("eco", "item");
+    private static final NamespacedKey ECO_CORE_ITEM_ID = new NamespacedKey("eco", "item_id");
+    private static final NamespacedKey LIBREFORGE_ID = new NamespacedKey("libreforge", "id");
+    private static final NamespacedKey LIBREFORGE_ITEM = new NamespacedKey("libreforge", "item");
 
     private static final NamespacedKey EXECUTABLEITEMS_KEY = new NamespacedKey("executableitems", "id");
     private static final NamespacedKey EXECUTABLEITEMS_KEY_EI_ID = new NamespacedKey("executableitems", "ei-id");
@@ -254,11 +262,52 @@ public class CustomItemIdentifier {
         if (pdc.has(ITEMEDIT_KEY, PersistentDataType.STRING))
             return "ITEMEDIT:" + pdc.get(ITEMEDIT_KEY, PersistentDataType.STRING).toUpperCase();
 
-        // EcoItems & Auxilium
+        // EcoItems & Auxilium & LibreForge
         if (pdc.has(ECO_KEY, PersistentDataType.STRING))
             return "ECOITEMS:" + pdc.get(ECO_KEY, PersistentDataType.STRING).toUpperCase();
         if (pdc.has(ECO_KEY_ALT, PersistentDataType.STRING))
             return "ECOITEMS:" + pdc.get(ECO_KEY_ALT, PersistentDataType.STRING).toUpperCase();
+        if (pdc.has(ECO_KEY_ITEM, PersistentDataType.STRING))
+            return "ECOITEMS:" + pdc.get(ECO_KEY_ITEM, PersistentDataType.STRING).toUpperCase();
+        if (pdc.has(ECO_KEY_ITEM_ID, PersistentDataType.STRING))
+            return "ECOITEMS:" + pdc.get(ECO_KEY_ITEM_ID, PersistentDataType.STRING).toUpperCase();
+        if (pdc.has(ECO_KEY_ITEM_DASH, PersistentDataType.STRING))
+            return "ECOITEMS:" + pdc.get(ECO_KEY_ITEM_DASH, PersistentDataType.STRING).toUpperCase();
+        if (pdc.has(ECO_CORE_ID, PersistentDataType.STRING))
+            return "ECOITEMS:" + pdc.get(ECO_CORE_ID, PersistentDataType.STRING).toUpperCase();
+        if (pdc.has(ECO_CORE_ITEM, PersistentDataType.STRING))
+            return "ECOITEMS:" + pdc.get(ECO_CORE_ITEM, PersistentDataType.STRING).toUpperCase();
+        if (pdc.has(ECO_CORE_ITEM_ID, PersistentDataType.STRING))
+            return "ECOITEMS:" + pdc.get(ECO_CORE_ITEM_ID, PersistentDataType.STRING).toUpperCase();
+        if (pdc.has(LIBREFORGE_ID, PersistentDataType.STRING))
+            return "ECOITEMS:" + pdc.get(LIBREFORGE_ID, PersistentDataType.STRING).toUpperCase();
+        if (pdc.has(LIBREFORGE_ITEM, PersistentDataType.STRING))
+            return "ECOITEMS:" + pdc.get(LIBREFORGE_ITEM, PersistentDataType.STRING).toUpperCase();
+
+        for (NamespacedKey k : pdc.getKeys()) {
+            String ns = k.getNamespace().toLowerCase();
+            if (ns.equals("ecoitems") || ns.equals("eco") || ns.equals("libreforge") || ns.equals("auxilium")) {
+                try {
+                    String val = pdc.get(k, PersistentDataType.STRING);
+                    if (val != null && !val.isBlank() && !val.equalsIgnoreCase("true") && !val.equalsIgnoreCase("false")) {
+                        return "ECOITEMS:" + val.toUpperCase();
+                    }
+                } catch (Throwable ignored) {}
+            }
+        }
+
+        try {
+            Class<?> ecoItemsClass = Class.forName("com.willfp.ecoitems.items.EcoItems");
+            java.lang.reflect.Method getMethod = ecoItemsClass.getMethod("get", ItemStack.class);
+            Object ecoItem = getMethod.invoke(null, item);
+            if (ecoItem != null) {
+                java.lang.reflect.Method getIdMethod = ecoItem.getClass().getMethod("getId");
+                Object id = getIdMethod.invoke(ecoItem);
+                if (id != null) {
+                    return "ECOITEMS:" + id.toString().toUpperCase();
+                }
+            }
+        } catch (Throwable ignored) {}
 
         // MMOItems (PDC variants)
         if (pdc.has(MMO_TYPE_KEY, PersistentDataType.STRING) && pdc.has(MMO_ID_KEY, PersistentDataType.STRING)) {

@@ -117,6 +117,9 @@ public class CategoryConfig {
                 }
             }
 
+            String catAnim = config.getString("categories." + key + ".particle-animation", particleAnimType);
+            categoryAnimTypes.put(key, catAnim);
+
             for (String material : config.getStringList("categories." + key + ".items")) {
                 String mat = material.toUpperCase();
                 itemCategories.put(mat, color);
@@ -124,9 +127,6 @@ public class CategoryConfig {
                 if (particle != null) {
                     categoryParticles.put(mat, particle);
                 }
-
-                String catAnim = config.getString("categories." + key + ".particle-animation", particleAnimType);
-                categoryAnimTypes.put(key, catAnim);
 
                 if (sound != null) {
                     categorySounds.put(mat, sound);

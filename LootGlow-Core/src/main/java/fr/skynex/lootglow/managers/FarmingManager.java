@@ -1,6 +1,7 @@
 package fr.skynex.lootglow.managers;
 
 import fr.skynex.lootglow.LootGlow;
+import fr.skynex.lootglow.model.CropSymbol;
 import fr.skynex.lootglow.util.FoliaScheduler;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -9,7 +10,6 @@ import org.bukkit.entity.BlockDisplay;
 import org.bukkit.util.Transformation;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -20,18 +20,12 @@ import java.util.UUID;
  */
 public class FarmingManager {
 
-    public static final class CropSymbol extends ArrayList<BlockDisplay> {
-        public final Location location;
-        public CropSymbol(Location location) {
-            this.location = location;
-        }
-    }
-
     private final LootGlow plugin;
-    private final Map<Block, CropSymbol> activeCropSymbols = new HashMap<>();
+    private final Map<Block, CropSymbol> activeCropSymbols;
 
     public FarmingManager(LootGlow plugin) {
         this.plugin = plugin;
+        this.activeCropSymbols = plugin.getStateRepository().getActiveCropSymbols();
     }
 
     public Map<Block, CropSymbol> getActiveCropSymbols() {
@@ -75,6 +69,8 @@ public class FarmingManager {
         BlockDisplay bar = block.getWorld().spawn(loc, BlockDisplay.class, bd -> {
             bd.setBlock(finalMat.createBlockData());
             bd.setPersistent(false);
+            bd.setInterpolationDuration(2);
+            bd.setInterpolationDelay(0);
             Transformation t = bd.getTransformation();
             t.getScale().set(scale, scale * 3.0f, scale);
             t.getTranslation().set(-scale / 2.0f, 0, -scale / 2.0f);
@@ -84,6 +80,8 @@ public class FarmingManager {
         BlockDisplay dot = block.getWorld().spawn(loc.clone().add(0, scale * 3.5, 0), BlockDisplay.class, bd -> {
             bd.setBlock(finalMat.createBlockData());
             bd.setPersistent(false);
+            bd.setInterpolationDuration(2);
+            bd.setInterpolationDelay(0);
             Transformation t = bd.getTransformation();
             t.getScale().set(scale * 1.2f, scale * 1.2f, scale * 1.2f);
             t.getTranslation().set(-scale * 0.6f, 0, -scale * 0.6f);
@@ -107,6 +105,7 @@ public class FarmingManager {
     public void tickFarmingAnimation(float angle, boolean farmingEnabled, boolean farmingAnimation, Set<UUID> globallyVisibleEntities) {
         if (!farmingEnabled || !farmingAnimation) return;
 
+        boolean lodEnabled = plugin.getConfig().getBoolean("settings.performance.lod.enabled", true);
         final org.joml.Quaternionf rot = new org.joml.Quaternionf().rotationY(angle);
 
         for (List<BlockDisplay> parts : activeCropSymbols.values()) {
@@ -114,22 +113,22 @@ public class FarmingManager {
             BlockDisplay bar = parts.get(0);
             BlockDisplay dot = parts.get(1);
             if (!bar.isValid()) continue;
-            if (!globallyVisibleEntities.contains(bar.getUniqueId())) continue;
+            if (lodEnabled && !globallyVisibleEntities.contains(bar.getUniqueId())) continue;
 
             FoliaScheduler.runAtEntity(plugin, bar, () -> {
                 if (!bar.isValid()) return;
+                bar.setInterpolationDuration(2);
+                bar.setInterpolationDelay(0);
                 Transformation bT = bar.getTransformation();
                 bT.getLeftRotation().set(rot);
                 bar.setTransformation(bT);
-                bar.setInterpolationDuration(2);
-                bar.setInterpolationDelay(0);
 
                 if (dot != null && dot.isValid()) {
+                    dot.setInterpolationDuration(2);
+                    dot.setInterpolationDelay(0);
                     Transformation dT = dot.getTransformation();
                     dT.getLeftRotation().set(rot);
                     dot.setTransformation(dT);
-                    dot.setInterpolationDuration(2);
-                    dot.setInterpolationDelay(0);
                 }
             });
         }

@@ -21,12 +21,19 @@ public class FarmingConfig {
     private final Set<Material> crops = new HashSet<>();
 
     public void load(FileConfiguration config, LootGlow plugin) {
-        var cfgParser = plugin.getConfigManager() != null ? plugin.getConfigManager().getConfigParser() : new fr.skynex.lootglow.config.ConfigParser();
+        this.enabled = config.getBoolean("settings.farming.enabled", true);
+        var cfgParser = (plugin != null && plugin.getConfigManager() != null) ? plugin.getConfigManager().getConfigParser() : new fr.skynex.lootglow.config.ConfigParser();
         this.glowColor = cfgParser.parseNamedColor(config.getString("settings.farming.glow-color", "GREEN"));
         String symbolMatStr = config.getString("settings.farming.symbol-material", "EMERALD_BLOCK");
         this.material = Material.matchMaterial(symbolMatStr);
-        if (this.material == null || !this.material.isBlock()) {
-            if (symbolMatStr != null && !symbolMatStr.isEmpty()) {
+        boolean isBlock = true;
+        try {
+            if (this.material != null) {
+                isBlock = this.material.isBlock();
+            }
+        } catch (Throwable ignored) {}
+        if (this.material == null || !isBlock) {
+            if (symbolMatStr != null && !symbolMatStr.isEmpty() && plugin != null) {
                 plugin.getLogger().warning("[LootGlow] Farming symbol-material '" + symbolMatStr + "' is invalid or not a block! Falling back to EMERALD_BLOCK.");
             }
             this.material = Material.EMERALD_BLOCK;

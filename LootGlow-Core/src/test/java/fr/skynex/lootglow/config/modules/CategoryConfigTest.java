@@ -82,4 +82,19 @@ public class CategoryConfigTest {
         // Display name overrides cache
         assertNotNull(displayNameOverridesCache.get("DIAMOND_SWORD"));
     }
+
+    @Test
+    public void testCategoryWithNoItemsPopulatesAnimationAndPatterns() {
+        YamlConfiguration config = new YamlConfiguration();
+        config.set("categories.epic.color", "DARK_PURPLE");
+        config.set("categories.epic.particle-animation", "PULSE");
+        config.set("categories.epic.lore-patterns", List.of("épique", "rare"));
+
+        categoryConfig.load(config, configParser, 1.0, "ORBIT", displayNameOverridesCache);
+
+        assertEquals(NamedTextColor.DARK_PURPLE, categoryConfig.getCategoryColors().get("epic"));
+        assertEquals("PULSE", categoryConfig.getCategoryAnimTypes().get("epic"));
+        assertEquals(List.of("épique", "rare"), categoryConfig.getCategoryLorePatterns().get("epic"));
+        assertTrue(categoryConfig.getItemCategories().isEmpty());
+    }
 }

@@ -114,21 +114,27 @@ public class RarityManager {
             }
         }
 
-        // Hardcoded default fallbacks if not configured
-        if (mat == Material.NETHER_STAR || mat == Material.DRAGON_EGG || mat == Material.ENCHANTED_GOLDEN_APPLE || mat == Material.BEACON) {
-            return ItemRarity.MYTHIC;
-        }
-        if (mat == Material.NETHERITE_SWORD || mat == Material.NETHERITE_CHESTPLATE || mat == Material.NETHERITE_INGOT || mat == Material.TOTEM_OF_UNDYING || mat == Material.ELYTRA) {
-            return ItemRarity.LEGENDARY;
-        }
-        if (mat == Material.DIAMOND_SWORD || mat == Material.DIAMOND_CHESTPLATE || mat == Material.DIAMOND_BLOCK || mat == Material.HEART_OF_THE_SEA) {
-            return ItemRarity.EPIC;
-        }
-        if (mat == Material.DIAMOND || mat == Material.GOLDEN_APPLE || mat == Material.EMERALD_BLOCK) {
-            return ItemRarity.RARE;
+        // Hardcoded default fallbacks only if rarities section is not configured in config
+        if (!hasConfiguredRaritiesSection()) {
+            if (mat == Material.NETHER_STAR || mat == Material.DRAGON_EGG || mat == Material.ENCHANTED_GOLDEN_APPLE || mat == Material.BEACON) {
+                return ItemRarity.MYTHIC;
+            }
+            if (mat == Material.NETHERITE_SWORD || mat == Material.NETHERITE_CHESTPLATE || mat == Material.NETHERITE_INGOT || mat == Material.TOTEM_OF_UNDYING || mat == Material.ELYTRA) {
+                return ItemRarity.LEGENDARY;
+            }
+            if (mat == Material.DIAMOND_SWORD || mat == Material.DIAMOND_CHESTPLATE || mat == Material.DIAMOND_BLOCK || mat == Material.HEART_OF_THE_SEA) {
+                return ItemRarity.EPIC;
+            }
+            if (mat == Material.DIAMOND || mat == Material.GOLDEN_APPLE || mat == Material.EMERALD_BLOCK) {
+                return ItemRarity.RARE;
+            }
         }
 
         return null;
+    }
+
+    private boolean hasConfiguredRaritiesSection() {
+        return plugin.getConfig().contains("rarities") || plugin.getConfig().contains("settings.rarities");
     }
 
     private ItemRarity matchKeywords(String textUpper) {
